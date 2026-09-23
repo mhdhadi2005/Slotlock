@@ -1,0 +1,151 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/lib.css"><link rel="stylesheet" href="/ui.css"><script src="/lib.js"></script>
+<script type="importmap">{ "imports": { "three": "/three.js", "three/addons/": "/addons/" } }</script>
+</head><body><div id="gl"></div><div id="bubbles"></div>
+<script type="module">
+import { THREE, setup, mesh, toon, flat, textTexture, makeLockie, makeGhost, makeBlob, makeCoin, makeConfetti, makePoof, blinkAt, BLOB_COLORS } from "/kit.js";
+import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+import { bubbles, showBubbles } from "/ui.js";
+base();
+await document.fonts.load("900 40px 'Bricolage Grotesque'"); await document.fonts.load("700 40px 'Inter'");
+const S = setup({ camPos: [0, 2.6, 13], look: [0, 1.95, 0] });
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+
+// Calendar wall: the club Lockie guards.
+const board = new THREE.Group(); board.position.set(0, 2.75, -2.6); S.scene.add(board);
+board.add(mesh(new RoundedBoxGeometry(3.9, 2.5, 0.12, 4, 0.1), toon(0x2a2420), 0.03));
+const title = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 0.42), new THREE.MeshBasicMaterial({ map: textTexture("", { w: 1024, h: 128, font: "900 84px 'Bricolage Grotesque'", color: "#ff7a52", bg: null, lines: ["YOUR CALENDAR"] }), transparent: true }));
+title.position.set(0, 0.95, 0.07); board.add(title);
+const tiles = [];
+for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) {
+  const mat = toon(0x4a423c);
+  const tile = mesh(new RoundedBoxGeometry(0.78, 0.5, 0.08, 3, 0.07), mat, 0.02);
+  tile.position.set(-1.29 + c * 0.86, 0.38 - r * 0.6, 0.08); board.add(tile);
+  const lock = new THREE.Group(); lock.position.set(tile.position.x, tile.position.y, 0.16); board.add(lock);
+  lock.add(mesh(new RoundedBoxGeometry(0.2, 0.16, 0.06, 2, 0.04), flat(0xffffff), 0.012));
+  const arc = mesh(new THREE.TorusGeometry(0.065, 0.02, 8, 16, Math.PI), flat(0xffffff), 0.01); arc.position.y = 0.08; lock.add(arc);
+  lock.visible = false; tiles.push({ mat, lock });
+}
+// Velvet rope entrance.
+const gold = toon(0xffc53d, { emissive: 0x3a2600 });
+const posts = [-1.6, -0.5].map((x) => { const p = new THREE.Group(); p.position.set(x, 0, 0.3); S.scene.add(p);
+  p.add(mesh(new THREE.CylinderGeometry(0.075, 0.075, 1.0, 12), gold, 0.015)).position.y = 0.5;
+  p.add(mesh(new THREE.SphereGeometry(0.12, 14, 10), gold, 0.015)).position.y = 1.02;
+  p.add(mesh(new THREE.CylinderGeometry(0.18, 0.2, 0.06, 16), gold, 0.015)).position.y = 0.03; return p; });
+const ropeMat = toon(0xc0163a);
+const rope = new THREE.Mesh(new THREE.BufferGeometry(), ropeMat); S.scene.add(rope);
+function setRope(open) {
+  const a = V(-1.6, 0.95, 0.3), bClosed = V(-0.5, 0.95, 0.3), bOpen = V(-1.55, 0.2, 0.45);
+  const b = bClosed.clone().lerp(bOpen, open);
+  const mid = a.clone().add(b).multiplyScalar(0.5); mid.y -= 0.28 * (1 - open) + 0.05;
+  rope.geometry.dispose();
+  rope.geometry = new THREE.TubeGeometry(new THREE.QuadraticBezierCurve3(a, mid, b), 24, 0.045, 8, false);
+}
+
+const L = makeLockie(); L.shades.visible = true; L.root.position.set(0.1, 0, 0.6); S.scene.add(L.root);
+const G = makeGhost(); S.scene.add(G.root);
+const coin = makeCoin(); S.scene.add(coin);
+const confetti = makeConfetti(80, 11); S.scene.add(confetti);
+const poof = makePoof(14, 4); S.scene.add(poof);
+// Clients in order: [color, arrive, leave, kind, tile]
+const Q = [
+  [BLOB_COLORS[3], 2.4, 5.0, "bonk"], [BLOB_COLORS[4], 5.8, 8.0, "shoo"],
+  [BLOB_COLORS[1], 11.6, 13.7, "pay", 5], [BLOB_COLORS[0], 15.0, 15.7, "pay", 2], [BLOB_COLORS[2], 15.9, 16.6, "pay", 9],
+  [BLOB_COLORS[5], 16.8, 17.5, "pay", 0], [BLOB_COLORS[3], 17.7, 18.4, "pay", 7], [BLOB_COLORS[4], 18.6, 19.3, "pay", 11],
+];
+const blobs = Q.map(([col]) => { const b = makeBlob(col, 0.85); S.scene.add(b.root); return b; });
+const tilePos = (i) => board.localToWorld(V(-1.29 + (i % 4) * 0.86, 0.38 - Math.floor(i / 4) * 0.6, 0.2));
+
+const bub = bubbles([
+  { t0: 2.9, t1: 4.5, text: "i'll pay the deposit later 😇", anchor: () => blobs[0].root.position.clone().add(V(0, 1.2, 0)), align: 0.8, tail: "80%" },
+  { t0: 4.1, t1: 5.0, text: "nope.", cls: "dark", anchor: () => V(0.1, 2.1, 0.6), align: 0.5 },
+  { t0: 5.0, t1: 5.8, sfx: true, text: "BONK!", anchor: () => V(1.2, 1.5, 0.6), rot: 10 },
+  { t0: 6.3, t1: 7.9, text: "can u hold it? i'm like 90% sure 🙏", anchor: () => blobs[1].root.position.clone().add(V(0, 1.2, 0)), align: 0.85, tail: "85%" },
+  { t0: 12.0, t1: 13.3, text: "deposit sent ✅", cls: "accent", anchor: () => blobs[2].root.position.clone().add(V(0, 1.2, 0)), align: 0.75, tail: "75%" },
+  { t0: 13.4, t1: 14.2, sfx: true, text: "CLICK!", anchor: () => V(0.1, 2.45, 0.6), rot: -6 },
+  { t0: 10.75, t1: 11.5, sfx: true, text: "POOF!", anchor: () => V(-0.6, 1.5, -0.8), rot: -8 },
+]);
+
+window.DUR = 22.5;
+window.render = (t) => {
+  captions(t, [
+    { t0: 0, t1: 2.4, html: "POV: your calendar hired a <em>bouncer</em>" },
+    { t0: 2.4, t1: 5.8, html: "“I'll pay later” 🙅" },
+    { t0: 5.8, t1: 8.8, html: "“Hold it for me?” 🙅" },
+    { t0: 8.8, t1: 11.6, html: "Ghosts? <em>Not tonight.</em>" },
+    { t0: 11.6, t1: 15.0, html: "Deposit sent? <em>Come on in.</em>" },
+    { t0: 15.0, t1: 19.3, html: "Full books. <em>Zero chasing.</em>" },
+  ]);
+  S.aim(V(Math.sin(t * 0.3) * 0.25, 2.6, 13), V(0, 1.95, 0));
+
+  // Rope opens for each paying client.
+  let open = 0;
+  for (const q of Q) if (q[3] === "pay") open = Math.max(open, Math.min(E.inOut(prog(t, q[2] - 0.1, q[2] + 0.2)), 1 - E.inOut(prog(t, q[2] + 0.75, q[2] + 1.0))));
+  setRope(open);
+
+  // Lockie: tough stance, head-bob, reacts.
+  const shake = t > 4.1 && t < 5.0 ? Math.sin(t * 30) * 0.12 : 0;
+  const bonk = E.out(prog(t, 4.85, 5.05)) * (1 - prog(t, 5.3, 5.6));
+  const point = E.back(prog(t, 7.7, 8.0)) * (1 - prog(t, 8.6, 8.8));
+  const turn = t > 10.1 && t < 11.0;
+  const dance = prog(t, 15.0, 15.3) * (1 - prog(t, 19.2, 19.4));
+  L.root.position.y = dance * Math.abs(Math.sin(t * 8)) * 0.18;
+  L.root.rotation.y = turn ? -0.5 : 0;
+  L.pose({
+    squash: Math.sin(t * 6.2) * 0.04 + dance * Math.sin(t * 16) * 0.12, tilt: shake + dance * Math.sin(t * 8) * 0.12,
+    armL: 0.55 + dance * (1.2 + Math.sin(t * 8) * 0.5), armR: 0.55 + bonk * 1.6 + point * 0.9 + dance * (1.2 - Math.sin(t * 8) * 0.5),
+    blink: blinkAt(t, 0.7), lookX: turn ? -0.9 : 0.5, open: 1 - E.out(prog(t, 13.35, 13.5)),
+    mouth: t > 4.1 && t < 5.0 ? "flat" : turn ? "flat" : "smile",
+  });
+
+  // Clients.
+  Q.forEach(([col, arrive, leave, kind, tile], i) => {
+    const b = blobs[i];
+    const inK = E.out(prog(t, arrive - 0.6, arrive));
+    let x = lerp(3.2, 1.2, inK), y = 0, z = 0.6, rot = 0, sc = 0.85, vis = t > arrive - 0.6;
+    let mouth = "smile";
+    if (kind === "bonk" && t > leave) { const k = prog(t, leave, leave + 0.9); x = 1.2 + k * 3.5; y = Math.sin(k * Math.PI) * 2.2 + k * 1.5; rot = -k * 12; mouth = "o"; vis = k < 1; }
+    if (kind === "shoo" && t > leave) { const k = E.inOut(prog(t, leave, leave + 0.9)); x = 1.2 + k * 2.2; mouth = "frown"; vis = k < 1; }
+    if (kind === "pay" && t > leave) {
+      const k = prog(t, leave, leave + 1.0), path = E.inOut(k);
+      const tp = tilePos(tile);
+      if (k < 0.55) { const kk = E.inOut(k / 0.55); x = lerp(1.2, -1.05, kk); z = lerp(0.6, 0.2, kk); }
+      else { const kk = E.inOut((k - 0.55) / 0.45); x = lerp(-1.05, tp.x, kk); y = lerp(0, tp.y - 0.4, kk) + Math.sin(kk * Math.PI) * 0.5; z = lerp(0.2, tp.z, kk); sc = 0.85 * (1 - kk); }
+      vis = k < 1;
+    }
+    const hopping = (t > arrive - 0.6 && t < arrive) || (kind === "pay" && t > leave && t < leave + 0.55);
+    b.root.visible = vis && sc > 0.02;
+    b.root.position.set(x, y + (hopping ? Math.abs(Math.sin(t * 11)) * 0.18 : 0), z);
+    b.root.scale.setScalar(sc);
+    b.root.rotation.z = rot;
+    b.pose({ blink: blinkAt(t, i * 0.7), lookX: -0.7, mouth: kind === "pay" && t > arrive ? "smile" : mouth,
+      armL: kind === "pay" && t > arrive && t < leave ? 1.3 + Math.sin(t * 9) * 0.3 : 0.3, squash: t > arrive && t < arrive + 0.2 ? 0.3 : 0 });
+    if (kind === "pay") {
+      const lit = E.back(prog(t, leave + 0.95, leave + 1.2));
+      tiles[tile].mat.color.setHex(0x4a423c).lerp(new THREE.Color(0xff5c39), clamp(lit));
+      tiles[tile].lock.visible = lit > 0.01; tiles[tile].lock.scale.setScalar(Math.max(0.01, clamp(lit) * lerp(0.6, 1, lit)));
+    }
+  });
+
+  // First paying client flips the coin to Lockie.
+  const ct = prog(t, 12.9, 13.4);
+  coin.visible = ct > 0 && ct < 1;
+  coin.position.set(lerp(1.1, 0.1, ct), lerp(1.0, 2.0, ct) + Math.sin(ct * Math.PI) * 1.0, 0.6);
+  coin.rotation.y = ct * 16;
+  confetti.position.set(-0.2, 2.2, 0.4); confetti.userData.at(t - 18.4);
+
+  // Ghost tiptoes behind Lockie, gets caught, poofs.
+  const gk = prog(t, 8.8, 10.1);
+  G.root.visible = t > 8.8 && t < 11.0;
+  G.root.position.set(lerp(2.6, -0.6, E.inOut(gk)), 0, -0.8);
+  const gv = prog(t, 10.7, 11.0);
+  G.pose({ opacity: 1 - gv, scale: 0.85 * (1 - gv * 0.6), float: Math.abs(Math.sin(t * 7)) * 0.08, tilt: Math.sin(t * 7) * 0.08,
+    lookX: t > 10.2 ? 0.8 : -0.8, mouth: t > 10.2 ? "o" : "smile", sweat: t > 10.3, blink: t < 10.2 ? 0.35 : 0 }, t);
+  poof.position.set(-0.6, 0.8, -0.8); poof.userData.at(prog(t, 10.7, 11.5));
+
+  showBubbles(t, bub, S.toScreen);
+  outro(t, 19.3, { h: "Hire the<br>bouncer.", p: "Booking + deposits for tattoo artists.<br>Free for founding artists." });
+  S.frame();
+};
+render(0);
+window.READY = true;
+</script></body></html>

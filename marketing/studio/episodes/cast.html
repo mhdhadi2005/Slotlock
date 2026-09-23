@@ -1,0 +1,24 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/lib.css"><link rel="stylesheet" href="/ui.css"><script src="/lib.js"></script>
+<script type="importmap">{ "imports": { "three": "/three.js", "three/addons/": "/addons/" } }</script>
+</head><body><div id="gl"></div><div id="bubbles"></div>
+<script type="module">
+import { setup, makeLockie, makeGhost, makeArtist, makeBlob, makeChair, makeClock, makeSign, makeCoin, BLOB_COLORS } from "/kit.js";
+base();
+await document.fonts.load("900 40px 'Bricolage Grotesque'");
+const S = setup();
+const L = makeLockie(), G = makeGhost(), A = makeArtist(), B1 = makeBlob(BLOB_COLORS[0], 0.8), B2 = makeBlob(BLOB_COLORS[2], 0.8);
+L.root.position.set(0, 0, 1); G.root.position.set(1.35, 0, -0.3); A.root.position.set(-1.3, 0, 0);
+B1.root.position.set(-0.9, 0, 2.2); B2.root.position.set(0.9, 0, 2.2);
+const sign = makeSign(["DEPOSIT", "FIRST"]); sign.position.set(0.95, 1.0, 1.3); sign.scale.setScalar(0.55); S.scene.add(sign);
+const clock = makeClock(); clock.position.set(-0.6, 3.6, -1.5); clock.userData.setTime(118);
+const coin = makeCoin(); coin.position.set(0.9, 1.4, 2.2);
+[L, G, A, B1, B2].forEach((c) => S.scene.add(c.root)); S.scene.add(clock, coin);
+window.DUR = 1;
+window.render = (t) => {
+  L.pose({ armR: 1.2, open: 0.3 }); G.pose({ mouth: "o", float: 0.1 }, t); A.pose({ armR: 0.5 }); B1.pose({ mouth: "o" }); B2.pose({});
+  captions(t, [{ t0: 0, t1: 9, html: "Meet the <em>cast</em>" }]);
+  S.frame();
+};
+render(0.5);
+window.READY = true;
+</script></body></html>

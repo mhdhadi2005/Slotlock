@@ -1,0 +1,21 @@
+html, body { margin: 0; width: 1080px; height: 1920px; overflow: hidden; }
+body { background: #0b0a09; color: #f6f2eb; font-family: var(--font); position: relative; }
+* { box-sizing: border-box; }
+.glow { position: absolute; inset: 0; background: radial-gradient(60% 38% at 82% 8%, rgba(255,92,57,.30), transparent 70%), radial-gradient(55% 35% at 0% 100%, rgba(255,138,76,.14), transparent 70%); }
+#cap { position: absolute; top: 110px; left: 84px; right: 84px; font: 800 82px/1.02 var(--display); letter-spacing: -.048em; color: #f6f2eb; text-wrap: balance; z-index: 5; will-change: transform, opacity; }
+em { font-style: normal; background: linear-gradient(100deg,#ffa066,#ff5c39 62%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.phone { position: absolute; left: 50%; top: 430px; width: 410px; padding: 10px; border-radius: 52px; background: #1b1816; transform-origin: top center;
+  box-shadow: 0 0 0 1px #34302c, 0 50px 110px -30px rgba(0,0,0,.95), 0 30px 80px -30px rgba(255,92,57,.45); }
+.screen { position: relative; width: 390px; height: 844px; border-radius: 42px; overflow: hidden; background: #0b0a09; }
+.screen img { position: absolute; left: 0; top: 0; width: 390px; opacity: 0; }
+.tap { position: absolute; width: 64px; height: 64px; margin: -32px 0 0 -32px; border-radius: 50%; border: 3px solid rgba(255,255,255,.95); background: rgba(255,255,255,.28); opacity: 0; z-index: 4; }
+#foot { position: absolute; left: 0; right: 0; bottom: 70px; display: flex; justify-content: center; align-items: center; color: #998f84; z-index: 5; }
+#foot .brand { font-size: 44px; } #foot .brand-mark { width: 54px; height: 54px; border-radius: 16px; }
+#outro { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; opacity: 0; z-index: 20;
+  background: radial-gradient(60% 40% at 50% 30%, rgba(255,92,57,.35), transparent 70%), #0b0a09; }
+#outro .brand { font-size: 96px; gap: 30px; justify-content: center; } #outro .brand-mark { width: 124px; height: 124px; border-radius: 36px; }
+#outro h2 { font: 800 92px/1 var(--display); letter-spacing: -.05em; color: #f6f2eb; margin: 90px 0 26px; }
+#outro p { font: 500 40px/1.35 var(--font); color: #d0c8bc; margin: 0; }
+#outro .cta { display: inline-flex; margin-top: 70px; height: 116px; padding: 0 60px; border-radius: 999px; align-items: center;
+  background: linear-gradient(180deg,#ff9b7d,#ff5c39); color: #1a0905; font: 800 46px var(--display); letter-spacing: -.02em; }
+.pill { display: inline-flex; align-items: center; gap: 10px; height: 64px; padding: 0 28px; border-radius: 999px; font: 700 30px var(--font); }

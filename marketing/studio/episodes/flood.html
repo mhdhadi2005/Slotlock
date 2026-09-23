@@ -1,0 +1,125 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/lib.css"><link rel="stylesheet" href="/ui.css"><script src="/lib.js"></script>
+<script type="importmap">{ "imports": { "three": "/three.js", "three/addons/": "/addons/" } }</script>
+</head><body><div id="gl"></div><div id="bubbles"></div>
+<script type="module">
+import { THREE, setup, mesh, toon, flat, textTexture, makeLockie, makeArtist, makeBlob, makeCoin, makeSign, makeConfetti, blinkAt, rng, BLOB_COLORS } from "/kit.js";
+import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+import { bubbles, showBubbles } from "/ui.js";
+base();
+await document.fonts.load("900 40px 'Bricolage Grotesque'"); await document.fonts.load("700 40px 'Inter'");
+const S = setup({ camPos: [0, 2.6, 13], look: [0, 1.95, 0] });
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const A = makeArtist(); A.root.position.set(-0.45, 0, 0); S.scene.add(A.root);
+const L = makeLockie(); S.scene.add(L.root);
+// The phone in the artist's hand.
+const phone = new THREE.Group(); S.scene.add(phone);
+phone.add(mesh(new RoundedBoxGeometry(0.34, 0.6, 0.06, 3, 0.05), toon(0x1b1816), 0.015));
+const glow = new THREE.Mesh(new THREE.PlaneGeometry(0.28, 0.5), flat(0xffd2c0)); glow.position.z = 0.032; phone.add(glow);
+
+// DM bubbles as physical 3D objects that pile up.
+const MSGS = ["hiii", "how much??", "can i pay friday", "u free tmrw?", "is this still available", "price for a small one", "hello??", "can my friend come too",
+  "i'll send the deposit later", "what's ur availability", "?", "hiii 👋", "sat??", "can u hold it", "how much for a hand tattoo", "u there?", "👀", "nvm", "wait no",
+  "do u take cash", "hiii again", "???", "book me pls", "is 3am ok"];
+const r = rng(21), pile = [];
+const rows = [[0.28, 4], [0.76, 4], [1.24, 4], [1.72, 4], [2.2, 3], [2.62, 3], [3.0, 2]];
+let idx = 0;
+for (const [y, n] of rows) for (let k = 0; k < n && idx < MSGS.length; k++, idx++) {
+  const text = MSGS[idx], w = Math.min(1.45, 0.42 + text.length * 0.062);
+  const g = new THREE.Group();
+  g.add(mesh(new RoundedBoxGeometry(w, 0.46, 0.16, 3, 0.1), toon(idx % 5 === 3 ? 0xdbe9ff : 0xffffff), 0.022));
+  const face = new THREE.Mesh(new THREE.PlaneGeometry(w - 0.08, 0.4), new THREE.MeshBasicMaterial({
+    map: textTexture("", { w: Math.round((w - 0.08) * 200), h: 80, font: "700 34px 'Inter'", color: "#1a0905", bg: idx % 5 === 3 ? "#dbe9ff" : "#ffffff", lines: [text] }) }));
+  face.position.z = 0.085; g.add(face);
+  S.scene.add(g);
+  const front = (k + idx) % 2 === 0;
+  pile.push({ g, tx: -0.45 + (k - (n - 1) / 2) * (2.0 / n) + (r() - 0.5) * 0.25, ty: y, tz: front ? 0.75 + r() * 0.2 : -0.35 + r() * 0.3,
+    rz: (r() - 0.5) * 0.5, ry: (r() - 0.5) * 0.5, t0: 2.2 + 4.6 * Math.pow(idx / (MSGS.length - 1), 0.8), ex: (r() - 0.5) * 2, ey: 0.5 + r(), spin: (r() - 0.5) * 8 });
+}
+const sign = makeSign(["ONE LINK.", "DEPOSIT FIRST."], { w: 1.9, h: 0.9 }); S.scene.add(sign);
+const Q = [[BLOB_COLORS[0], 12.9], [BLOB_COLORS[2], 13.9], [BLOB_COLORS[1], 14.9], [BLOB_COLORS[3], 15.9]];
+const blobs = Q.map(([c]) => { const b = makeBlob(c, 0.8); S.scene.add(b.root); return b; });
+const coins = Q.map(() => { const c = makeCoin(); c.scale.setScalar(0.8); S.scene.add(c); return c; });
+const confetti = makeConfetti(90, 5); S.scene.add(confetti);
+
+const bub = bubbles([
+  { t0: 0.6, t1: 1.6, sfx: true, text: "ding!", anchor: () => V(0.2, 1.9, 0.6), rot: -8 },
+  { t0: 7.3, t1: 8.4, text: "help", cls: "dark", anchor: () => V(-0.45, 2.5, 1.4), align: 0.5 },
+  { t0: 8.55, t1: 9.4, sfx: true, text: "BOOM!", anchor: () => V(-0.2, 2.6, 1.2), rot: 8 },
+  { t0: 14.4, t1: 16.2, text: "wait… that's it?", anchor: () => V(-1.2, 2.6, 0), align: 0.25, tail: "25%" },
+]);
+
+window.DUR = 21.5;
+window.render = (t) => {
+  captions(t, [
+    { t0: 0, t1: 2.2, html: "Books open ✨" },
+    { t0: 2.2, t1: 8.5, html: "Books open. <em>DMs explode.</em>" },
+    { t0: 8.5, t1: 12.8, html: "One link. <em>Deposits first.</em>" },
+    { t0: 12.8, t1: 17.2, html: "They pick a time. They pay. <em>Done.</em>" },
+    { t0: 17.2, t1: 18.5, html: "Peace. And. <em>Quiet.</em>" },
+  ]);
+  const shake = t > 6.8 && t < 8.5 ? Math.sin(t * 50) * 0.04 * prog(t, 6.8, 8.4) : 0;
+  S.aim(V(shake, 2.6 + shake, 13 - E.inOut(prog(t, 2.2, 8.4)) * 0.5 + E.inOut(prog(t, 8.5, 9.2)) * 0.5), V(0, 1.95, 0));
+
+  // Artist: happy scrolling, buried, dizzy, then relaxed and tattooing.
+  const out = t > 8.6;
+  const ax = out ? lerp(-0.45, -1.2, E.out(prog(t, 8.6, 9.2))) : -0.45;
+  const buried = t > 5.5 && t < 8.6;
+  A.root.position.set(ax, t < 2.2 ? Math.abs(Math.sin(t * 6)) * 0.05 : 0, 0);
+  const dizzy = t > 8.6 && t < 10.5;
+  const cheer = E.back(prog(t, 17.2, 17.5)) * (1 - prog(t, 18.3, 18.5));
+  A.pose({ blink: dizzy ? 0.5 : blinkAt(t, 0.3), lookY: t < 5.5 ? -0.6 : 0, lookX: t > 10.5 ? 0.6 : 0,
+    mouth: t < 2.4 ? "smile" : t < 8.6 ? "o" : dizzy ? "o" : "smile", headTilt: dizzy ? Math.sin(t * 6) * 0.15 : 0,
+    armL: out ? 0.2 + cheer * 2.4 : 0.05, armLx: out ? 0 : -1.0, armR: 0.2 + cheer * 2.4 + (t > 15 && t < 17 ? Math.sin(t * 40) * 0.05 : 0),
+    squash: dizzy ? 0.15 : 0 });
+  phone.visible = !out;
+  phone.position.set(ax + 0.02, 0.98, 0.62); phone.rotation.x = -0.6;
+  glow.material.color.setHex(t > 0.5 && t < 8.6 && Math.floor(t * 8) % 2 === 0 ? 0xffffff : 0xffc2ad);
+
+  // Bubbles fall, pile up, then explode outward.
+  const boom = prog(t, 8.55, 9.4);
+  for (const p of pile) {
+    const f = prog(t, p.t0, p.t0 + 0.45);
+    p.g.visible = t > p.t0 && boom < 1;
+    const land = t > p.t0 + 0.45 ? Math.exp(-(t - p.t0 - 0.45) * 7) * Math.sin((t - p.t0 - 0.45) * 24) * 0.08 : 0;
+    let x = p.tx, y = lerp(p.ty + 8, p.ty, f * f) + land, z = p.tz, rz = p.rz, ry = p.ry;
+    if (buried) { x += Math.sin(t * 40 + p.tx * 9) * 0.015 * prog(t, 6.8, 8.4); }
+    if (boom > 0) { const e = E.out(boom); x += p.ex * 3 * e; y += (p.ey * 3 * e) - boom * boom * 2; z += 1.5 * e; rz += p.spin * e; }
+    p.g.position.set(x, y, z); p.g.rotation.set(0, ry, rz);
+    p.g.scale.setScalar(boom > 0.6 ? 1 - (boom - 0.6) / 0.4 : 1);
+  }
+
+  // Lockie bursts out of the pile and lands to the right.
+  const lk = prog(t, 8.55, 9.3);
+  L.root.visible = t > 8.55;
+  L.root.position.set(lerp(-0.45, 0.35, E.out(lk)), (t < 9.3 ? Math.sin(lk * Math.PI) * 2.6 + (1 - lk) * 1.5 : 0) + (t > 12.8 && t < 17 ? 0 : 0), 0.7);
+  const landK = t > 9.3 ? Math.exp(-(t - 9.3) * 6) * Math.cos((t - 9.3) * 18) : 0;
+  let chomp = 0;
+  Q.forEach(([, at]) => { chomp = Math.max(chomp, Math.exp(-Math.max(0, t - at - 0.55) * 8) * (t > at + 0.55 ? 1 : 0)); });
+  const signUp = E.back(prog(t, 9.8, 10.2)) * (1 - E.inOut(prog(t, 12.4, 12.8)));
+  const dance = prog(t, 17.2, 17.4) * (1 - prog(t, 18.4, 18.5));
+  L.root.position.y += dance * Math.abs(Math.sin(t * 9)) * 0.25;
+  L.pose({ squash: landK * 0.8 + chomp * 0.35 - (t < 9.3 && t > 8.55 ? 0.2 : 0), open: chomp * 0.6, tilt: t < 9.3 ? (1 - lk) * 2 : dance * Math.sin(t * 9) * 0.15,
+    armR: 0.25 + signUp * 1.1 + dance * 2, armL: 0.25 + dance * 2, blink: blinkAt(t, 1.1), lookX: t > 12.8 ? 0.6 : -0.3, mouth: chomp > 0.3 ? "o" : "smile" });
+  sign.visible = signUp > 0.01;
+  sign.position.set(1.0, 1.0, 1.05); sign.scale.setScalar(0.55 * signUp); sign.rotation.z = -0.08 + Math.sin(t * 3) * 0.03;
+
+  // Orderly queue: each client hops in, flips a coin to Lockie, hops off happy.
+  Q.forEach(([, at], i) => {
+    const b = blobs[i], c = coins[i];
+    const inK = E.out(prog(t, at - 0.6, at)), outK = E.inOut(prog(t, at + 0.7, at + 1.2));
+    b.root.visible = t > at - 0.6 && outK < 1;
+    b.root.position.set(lerp(3.0, 1.45, inK) + outK * 2, Math.abs(Math.sin(t * 11)) * 0.15 * (inK < 1 || outK > 0 ? 1 : 0), 0.9);
+    b.pose({ blink: blinkAt(t, i), lookX: -0.7, armL: t > at && t < at + 0.5 ? 1.5 : 0.3, mouth: "smile" });
+    const ck = prog(t, at + 0.1, at + 0.55);
+    c.visible = ck > 0 && ck < 1;
+    c.position.set(lerp(1.25, 0.35, ck), lerp(1.0, 1.9, ck) + Math.sin(ck * Math.PI) * 0.9, lerp(0.9, 0.7, ck)); c.rotation.y = ck * 16;
+  });
+  confetti.position.set(-0.4, 2.2, 0.6); confetti.userData.at(t - 17.2);
+
+  showBubbles(t, bub, S.toScreen);
+  outro(t, 18.5, { h: "One link.<br>Zero chaos.", p: "Booking + deposits for tattoo artists.<br>Free for founding artists." });
+  S.frame();
+};
+render(0);
+window.READY = true;
+</script></body></html>

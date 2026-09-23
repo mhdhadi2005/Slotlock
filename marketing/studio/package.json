@@ -1,0 +1,9 @@
+{
+  "name": "slotlock-studio",
+  "private": true,
+  "description": "Renders the Lockie 3D character reels for Instagram.",
+  "dependencies": {
+    "three": "0.169.0",
+    "@ffmpeg-installer/linux-x64": "4.1.0"
+  }
+}

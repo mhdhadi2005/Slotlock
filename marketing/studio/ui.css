@@ -1,0 +1,9 @@
+#gl { position: absolute; inset: 0; z-index: 2; }
+#gl canvas { display: block; }
+#bubbles { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+.bub { position: absolute; left: 0; top: 0; max-width: 980px; padding: 22px 32px; border-radius: 40px; background: #fff; color: #1a0905;
+  font: 700 42px/1.2 var(--font); letter-spacing: -.01em; white-space: nowrap; box-shadow: 0 16px 40px -12px rgba(0,0,0,.6); opacity: 0; transform-origin: 50% 100%; }
+.bub::after { content: ""; position: absolute; bottom: -18px; left: var(--tail, 50%); width: 36px; height: 36px; background: #fff; transform: translateX(-50%) rotate(45deg); border-radius: 6px; z-index: -1; }
+.bub.dark { background: #1d1a18; color: #f6f2eb; border: 2px solid #3a3430; } .bub.dark::after { background: #1d1a18; }
+.bub.accent { background: linear-gradient(180deg,#ff9b7d,#ff5c39); color: #1a0905; } .bub.accent::after { background: #ff6b47; }
+.sfx { position: absolute; left: 0; top: 0; font: 800 96px/1 var(--display); letter-spacing: -.04em; color: #fff; opacity: 0; z-index: 4; -webkit-text-stroke: 4px #1a0905; paint-order: stroke fill; }
