@@ -110,10 +110,16 @@ p:last-child { margin-bottom: 0; }
   font: 800 1.28rem/1 var(--display); letter-spacing: -0.03em; text-decoration: none; color: var(--text);
 }
 .brand-mark {
-  width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; flex: none;
+  width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; flex: none; overflow: hidden;
   background: linear-gradient(145deg, #ff8a4c, #ff5c39 55%, #e8401f);
   color: #1a0905; box-shadow: 0 6px 18px -6px rgba(255, 92, 57, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
+
+.brand-mark svg { display: block; }
+.wordmark { display: inline-flex; align-items: center; font-family: var(--display); font-weight: 800; letter-spacing: -0.045em; line-height: 1; }
+.wm-key, .wm-dot { display: inline-block; flex: none; width: 0.56em; height: 0.56em; border-radius: 50%; margin: 0 0.025em; transform: translateY(0.05em); }
+.wm-key { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Ccircle cx='10' cy='7.6' r='3.4' fill='%231a0905'/%3E%3Cpath d='M8.2 9.6 7.2 16h5.6l-1-6.4Z' fill='%231a0905'/%3E%3C/svg%3E") center / 62% no-repeat, linear-gradient(145deg, #ff8a4c, #ff5c39 55%, #e8401f); }
+.wm-dot { width: 0.5em; height: 0.5em; border: 0.115em solid #ff5c39; }
 
 /* ---- Buttons -------------------------------------------------------------- */
 .btn {
@@ -730,6 +736,7 @@ dialog.lightbox img { width: 100%; height: auto; max-height: calc(100dvh - 48px)
 .powered a { display: inline-flex; align-items: center; gap: 8px; color: var(--faint); font-size: 0.84rem; text-decoration: none; }
 .powered a:hover { color: var(--text-2); }
 .powered .brand-mark { width: 20px; height: 20px; border-radius: 6px; box-shadow: none; }
+.powered .wordmark { color: var(--text-2); font-size: 0.95rem; }
 
 /* ---- Booking status / deposit page ---------------------------------------- */
 .bs-top { display: flex; align-items: center; gap: 12px; padding: 20px 0 6px; text-decoration: none; }

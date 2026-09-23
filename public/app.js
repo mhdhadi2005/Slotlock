@@ -53,7 +53,7 @@ function navLinks() {
 function renderShell() {
   const pageUrl = me.bookingUrl.replace(/^https?:\/\//, "");
   fill(document.getElementById("sidebar"),
-    h("a.brand", { href: "/" }, brandMark(), "slotlock"),
+    h("a.brand", { href: "/" }, brandMark(), wordmark()),
     navLinks(),
     h("div.side-spacer"),
     h("div.side-card",
@@ -69,7 +69,7 @@ function renderShell() {
   );
   fill(document.getElementById("mobilebar"),
     h("div.top",
-      h("a.brand", { href: "#home" }, brandMark(16), "slotlock"),
+      h("a.brand", { href: "#home" }, brandMark(), wordmark()),
       h("div.row.tight",
         h("a.btn.sm", { href: me.bookingUrl, target: "_blank", rel: "noopener" }, icon("external", 15), "My page"),
         h("button.btn.ghost.sm.icon-only", { type: "button", "aria-label": "Log out", onclick: logout }, icon("logout", 17)))),

@@ -3,7 +3,7 @@ const card = document.getElementById("card");
 const path = location.pathname;
 const mode = path === "/signup" ? "signup" : path === "/forgot" ? "forgot" : path.startsWith("/reset/") ? "reset" : "login";
 
-const logo = () => h("a.brand", { href: "/" }, brandMark(), "slotlock");
+const logo = () => h("a.brand", { href: "/" }, brandMark(), wordmark());
 
 function field(label, input, hint) {
   input.id ||= "f-" + Math.random().toString(36).slice(2);

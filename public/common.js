@@ -324,6 +324,14 @@ function setAccent(color) {
   if (color) document.documentElement.style.setProperty("--accent", color);
 }
 
-const brandMark = (size = 18) => h("span.brand-mark", icon("lock", size));
+// The logo: a padlock whose body is a calendar with one booked slot (the
+// icon), and "slotlock" with a keyhole and a booking dot for its o's.
+const MARK_SVG = '<svg viewBox="0 0 64 64" width="100%" height="100%" aria-hidden="true"><path d="M22 28v-7a10 10 0 0 1 20 0v7" fill="none" stroke="#1a0905" stroke-width="5" stroke-linecap="round"/><rect x="13" y="27" width="38" height="27" rx="6" fill="#1a0905"/><rect x="18.5" y="32" width="7" height="7" rx="2" fill="#ff7a4f" opacity=".55"/><rect x="28.5" y="32" width="7" height="7" rx="2" fill="#ff7a4f" opacity=".55"/><rect x="38.5" y="32" width="7" height="7" rx="2" fill="#ff7a4f" opacity=".55"/><rect x="18.5" y="42.5" width="7" height="7" rx="2" fill="#ff7a4f" opacity=".55"/><rect x="28.5" y="42.5" width="7" height="7" rx="2" fill="#ff7a4f" opacity=".55"/><rect x="38.5" y="42.5" width="7" height="7" rx="2" fill="#f5f0e8"/></svg>';
+function brandMark() {
+  const el = h("span.brand-mark");
+  el.innerHTML = MARK_SVG;
+  return el;
+}
+const wordmark = () => h("span.wordmark", { role: "img", "aria-label": "slotlock" }, "sl", h("span.wm-key"), "tl", h("span.wm-dot"), "ck");
 
 document.addEventListener("DOMContentLoaded", () => hydrateIcons());
