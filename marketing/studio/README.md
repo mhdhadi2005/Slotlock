@@ -33,6 +33,10 @@ characters and props from `kit.js`, and `bubbles()` / `showBubbles()` from `ui.j
   send the deposit straight to the artist (Venmo, PayPal, Cash App, Zelle…),
   unpaid holds expire on their own, and the artist confirms the deposit.
   Slotlock never holds money. Email features need email switched on first.
+  Also real now: consult-first services (client sends idea + photos, artist
+  quotes, client books the quote), books open/closed with a waitlist and a
+  "books are open" email, digital consent forms signed on the client's phone,
+  and automatic aftercare instructions after the appointment.
 
 ## Cast
 
@@ -57,6 +61,11 @@ Add every new episode here so ideas never repeat.
 | 2026-09-23 | flood | DM bubbles bury the artist; Lockie bursts out with one link | One link. Zero chaos. |
 
 ## Idea backlog
+
+- The waitlist stampede: artist opens books, Lockie rings a bell and the waitlist rushes in (orderly, with deposits)
+- Consult-first: a client sends a blurry "like this but different" photo; Lockie hands over the idea form and a quote comes back
+- Paper consent forms flying everywhere vs. one tap to sign on the phone
+- Aftercare: Lockie as a tiny nurse reminding the client "no pool for 2 weeks"
 
 - "I'm 5 min away" client (a clock shows it's been 45 min)
 - The Ghost tries a fake Venmo screenshot; Lockie squints and waits for it to land
