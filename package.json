@@ -1,0 +1,20 @@
+{
+  "name": "slotlock",
+  "version": "0.1.0",
+  "description": "Booking pages with deposits for tattoo artists and stylists",
+  "main": "src/server.js",
+  "private": true,
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "seed": "node src/seed-demo.js",
+    "test": "node --test --test-concurrency=1 test/*.test.js"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1"
+  }
+}
