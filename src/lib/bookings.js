@@ -1,14 +1,15 @@
 const { db } = require("../db");
-const stripe = require("./stripe");
 const { sendEmail } = require("./email");
-const { hasConflict } = require("./slots");
 const { formatWhen } = require("./time");
-const { baseUrl, money } = require("./util");
+const { baseUrl, money, httpError } = require("./util");
+const { parseMethods, TYPES } = require("./payments");
+const { hasConflict } = require("./slots");
 
 const getBooking = (id) => db.prepare("SELECT * FROM bookings WHERE id = ?").get(id);
 const getArtist = (id) => db.prepare("SELECT * FROM artists WHERE id = ?").get(id);
 
-function bookingLink(b) { return `${baseUrl()}/booking/${b.public_token}`; }
+const bookingLink = (b) => `${baseUrl()}/booking/${b.public_token}`;
+const dashboardLink = (tab = "bookings") => `${baseUrl()}/app#${tab}`;
 
 function googleCalendarLink(b, artist) {
   const fmt = (iso) => iso.replace(/[-:]/g, "").replace(/\.\d{3}/, "");
@@ -22,11 +23,83 @@ function googleCalendarLink(b, artist) {
   return `https://calendar.google.com/calendar/render?${q}`;
 }
 
-async function notifyConfirmed(b) {
+// Demo pages never send email: the "client" on a demo is whoever typed an
+// address into a public form.
+async function mail(artist, msg) {
+  if (!artist.is_demo) await sendEmail(msg);
+}
+
+// When an unpaid request stops holding its slot: after the artist's hold
+// window, but never later than two hours before the appointment, and never
+// sooner than 30 minutes from now.
+function holdUntil(startMs, holdHours, now = Date.now()) {
+  const byHold = now + holdHours * 3600000;
+  const beforeStart = startMs - 2 * 3600000;
+  return new Date(Math.max(now + 30 * 60000, Math.min(byHold, beforeStart))).toISOString();
+}
+
+const moneySent = (b) => b.deposit_cents > 0 && (!!b.deposit_paid || !!b.deposit_reported_at);
+
+// Cancel early enough and the deposit comes back; inside the artist's window
+// they keep it (that's what a deposit is for).
+function clientRefundEligible(b, artist, now = Date.now()) {
+  return Date.parse(b.starts_at) - now >= artist.cancel_window_hours * 3600000;
+}
+
+// ---- Emails ----------------------------------------------------------------
+
+function paymentLines(b, artist) {
+  const methods = parseMethods(artist.payment_methods);
+  const lines = methods.map((m) => `  • ${TYPES[m.type].label}: ${m.type === "venmo" ? "@" : m.type === "cashapp" ? "$" : ""}${m.value}`);
+  if (artist.payment_note) lines.push("", artist.payment_note);
+  return lines.join("\n");
+}
+
+async function notifyRequested(b) {
   const a = getArtist(b.artist_id);
   const when = formatWhen(b.starts_at, a.timezone);
-  const deposit = b.deposit_paid ? `Deposit paid: ${money(b.deposit_cents, b.currency)}\n` : "";
-  await sendEmail({
+  const amount = money(b.deposit_cents, b.currency);
+  const due = formatWhen(b.hold_expires_at, a.timezone);
+  await mail(a, {
+    to: b.client_email,
+    subject: `Send your ${amount} deposit to lock in ${when}`,
+    text:
+      `Hi ${b.client_name},\n\n${a.display_name} is holding ${when} for your ${b.service_name}.\n\n` +
+      `To lock it in, send the ${amount} deposit by ${due}. Put this reference in the payment note: ${b.ref_code}\n\n` +
+      `Ways to pay:\n${paymentLines(b, a)}\n\n` +
+      `Once you've sent it, tap "I've sent the deposit" here:\n${bookingLink(b)}\n\n` +
+      `If the deposit doesn't arrive by then, the time is released for someone else.\n`,
+  });
+  await mail(a, {
+    to: a.email,
+    subject: `New request: ${b.client_name}, ${when} (deposit pending)`,
+    text:
+      `${b.client_name} requested ${b.service_name} for ${when}.\n\n` +
+      `They've been sent your payment details for the ${amount} deposit (reference ${b.ref_code}). ` +
+      `The slot is held until ${due}.\n\n${clientDetails(b)}\nDashboard: ${dashboardLink()}\n`,
+  });
+}
+
+async function notifyReported(b) {
+  const a = getArtist(b.artist_id);
+  const when = formatWhen(b.starts_at, a.timezone);
+  const via = b.deposit_method && TYPES[b.deposit_method] ? ` via ${TYPES[b.deposit_method].label}` : "";
+  await mail(a, {
+    to: a.email,
+    subject: `${b.client_name} says they sent the ${money(b.deposit_cents, b.currency)} deposit`,
+    text:
+      `${b.client_name} says they've sent the ${money(b.deposit_cents, b.currency)} deposit${via} ` +
+      `for ${b.service_name} on ${when} (reference ${b.ref_code}).\n\n` +
+      `Check it arrived, then confirm the booking:\n${dashboardLink()}\n\n` +
+      `The slot stays held until you confirm or decline.\n`,
+  });
+}
+
+async function notifyConfirmed(b, { instant }) {
+  const a = getArtist(b.artist_id);
+  const when = formatWhen(b.starts_at, a.timezone);
+  const deposit = b.deposit_paid ? `Deposit received: ${money(b.deposit_cents, b.currency)}\n` : "";
+  await mail(a, {
     to: b.client_email,
     subject: `You're booked with ${a.display_name}: ${when}`,
     text:
@@ -36,117 +109,127 @@ async function notifyConfirmed(b) {
       `View or cancel: ${bookingLink(b)}\n` +
       (a.policy ? `\nPolicy:\n${a.policy}\n` : ""),
   });
-  await sendEmail({
-    to: a.email,
-    subject: `New booking: ${b.client_name}, ${when}`,
-    text:
-      `${b.client_name} booked ${b.service_name} for ${when}.\n\n` +
-      `Email: ${b.client_email}\n` +
-      (b.client_phone ? `Phone: ${b.client_phone}\n` : "") +
-      (b.client_instagram ? `Instagram: ${b.client_instagram}\n` : "") +
-      deposit +
-      (b.notes ? `\nNotes:\n${b.notes}\n` : "") +
-      (b.reference_url ? `\nReference: ${b.reference_url}\n` : "") +
-      `\nDashboard: ${baseUrl()}/app#bookings\n`,
-  });
+  if (instant) {
+    await mail(a, {
+      to: a.email,
+      subject: `New booking: ${b.client_name}, ${when}`,
+      text: `${b.client_name} booked ${b.service_name} for ${when}.\n\n${clientDetails(b)}\nDashboard: ${dashboardLink()}\n`,
+    });
+  }
 }
 
-async function notifyCancelled(b, reason) {
+function clientDetails(b) {
+  return `Email: ${b.client_email}\n` +
+    (b.client_phone ? `Phone: ${b.client_phone}\n` : "") +
+    (b.client_instagram ? `Instagram: ${b.client_instagram}\n` : "") +
+    (b.notes ? `\nNotes:\n${b.notes}\n` : "") +
+    (b.reference_url ? `\nReference: ${b.reference_url}\n` : "");
+}
+
+async function notifyCancelled(b) {
   const a = getArtist(b.artist_id);
   const when = formatWhen(b.starts_at, a.timezone);
-  const refund = b.refunded ? `Your ${money(b.deposit_cents, b.currency)} deposit has been refunded.\n` : "";
-  await sendEmail({
+  const amount = money(b.deposit_cents, b.currency);
+  const sent = moneySent(b);
+
+  let clientMoney = "";
+  if (sent && b.refund_status === "owed") clientMoney = `${a.display_name} will send your ${amount} deposit back to you.\n`;
+  else if (sent && b.refund_status === "refunded") clientMoney = `Your ${amount} deposit has been refunded.\n`;
+  else if (sent) clientMoney = `The ${amount} deposit isn't refundable this close to the appointment, per ${a.display_name}'s policy.\n`;
+
+  const byArtist = b.cancelled_by === "artist";
+  await mail(a, {
     to: b.client_email,
-    subject: `Booking cancelled: ${when}`,
-    text: `Hi ${b.client_name},\n\nYour ${b.service_name} booking with ${a.display_name} on ${when} ` +
-      `has been cancelled. ${reason}\n${refund}\nBook again: ${baseUrl()}/${a.handle}\n`,
+    subject: byArtist && b.status === "cancelled" && !b.deposit_paid ? `Booking request declined: ${when}` : `Booking cancelled: ${when}`,
+    text:
+      `Hi ${b.client_name},\n\nYour ${b.service_name} booking with ${a.display_name} on ${when} has been cancelled` +
+      `${byArtist ? ` by ${a.display_name}` : ""}.\n` +
+      (b.cancel_reason ? `\n"${b.cancel_reason}"\n` : "") + `\n${clientMoney}` +
+      `\nBook another time: ${baseUrl()}/${a.handle}\n`,
   });
-  if (b.cancelled_by !== "artist") {
-    await sendEmail({
+
+  if (!byArtist) {
+    let artistMoney = "";
+    if (sent && b.refund_status === "owed") {
+      artistMoney = `They cancelled before your ${a.cancel_window_hours}-hour cutoff, so they're owed their ${amount} deposit back. ` +
+        `Send it the way they paid, then mark it refunded:\n${dashboardLink()}\n`;
+    } else if (sent) {
+      artistMoney = `It's inside your ${a.cancel_window_hours}-hour cutoff, so you keep the ${amount} deposit.\n`;
+    }
+    await mail(a, {
       to: a.email,
       subject: `Cancelled: ${b.client_name}, ${when}`,
-      text: `${b.client_name}'s ${b.service_name} booking on ${when} was cancelled. ${reason}\n` +
-        (b.deposit_paid && !b.refunded ? "The deposit was kept per your cancellation policy.\n" : "") +
-        (b.refunded ? "The deposit was refunded.\n" : ""),
+      text: `${b.client_name} cancelled their ${b.service_name} booking on ${when}.\n\n${artistMoney}`,
     });
   }
 }
 
-async function refundDeposit(b) {
-  if (!b.deposit_paid || b.refunded) return false;
-  if (stripe.enabled()) {
-    if (!b.stripe_payment_intent_id) return false;
-    // reverse_transfer pulls the money back from the artist's connected
-    // account, since deposits are destination charges.
-    await stripe.call("POST", "/refunds", {
-      payment_intent: b.stripe_payment_intent_id,
-      reverse_transfer: true,
-      metadata: { booking_id: b.id },
-    });
-  }
-  db.prepare("UPDATE bookings SET refunded = 1 WHERE id = ?").run(b.id);
-  return true;
+async function notifyExpired(b) {
+  const a = getArtist(b.artist_id);
+  const when = formatWhen(b.starts_at, a.timezone);
+  await mail(a, {
+    to: b.client_email,
+    subject: `Your hold for ${when} has expired`,
+    text:
+      `Hi ${b.client_name},\n\nThe deposit for your ${b.service_name} request with ${a.display_name} on ${when} ` +
+      `wasn't marked as sent in time, so the slot has been released.\n\n` +
+      `If you already paid, reply to ${a.display_name} directly. Otherwise, pick a new time: ${baseUrl()}/${a.handle}\n`,
+  });
 }
 
-// Called when a deposit payment succeeds (Stripe webhook, or the demo button).
-async function confirmPaidBooking(bookingId, { paymentIntentId = null } = {}) {
-  const b = getBooking(bookingId);
-  if (!b || b.deposit_paid) return b;
+// ---- State changes ---------------------------------------------------------
 
-  db.prepare("UPDATE bookings SET deposit_paid = 1, stripe_payment_intent_id = ? WHERE id = ?")
-    .run(paymentIntentId, b.id);
-
-  // The hold normally outlives Checkout, so this is rare: the booking was
-  // released (client backed out, or the hold lapsed) and someone else took
-  // the slot before the payment landed. Refund rather than double-book.
-  const released = b.status !== "pending_payment" && b.status !== "confirmed";
-  if (released && (b.status === "cancelled" || hasConflict(b.artist_id, b.starts_at, b.ends_at, b.id))) {
-    db.prepare("UPDATE bookings SET status = 'cancelled', cancelled_by = 'system' WHERE id = ?").run(b.id);
-    await refundDeposit(getBooking(b.id));
-    await notifyCancelled(getBooking(b.id), "That time was taken before your payment went through.");
-    return getBooking(b.id);
+async function reportDeposit(b, method) {
+  if (b.status !== "awaiting_deposit") throw httpError(409, "This booking isn't waiting on a deposit.");
+  if (b.deposit_reported_at) return b;
+  if (Date.parse(b.hold_expires_at) <= Date.now()) {
+    db.prepare("UPDATE bookings SET status = 'expired', hold_expires_at = NULL WHERE id = ?").run(b.id);
+    throw httpError(409, "Sorry, this hold has expired and the time was released. Please pick a new time.");
   }
+  db.prepare("UPDATE bookings SET deposit_reported_at = ?, deposit_method = ? WHERE id = ?")
+    .run(new Date().toISOString(), method || "", b.id);
 
-  db.prepare("UPDATE bookings SET status = 'confirmed', hold_expires_at = NULL WHERE id = ?").run(b.id);
-  const confirmed = getBooking(b.id);
-  await notifyConfirmed(confirmed);
-  return confirmed;
+  const artist = getArtist(b.artist_id);
+  // On the demo there's no artist to check the money, so play their part.
+  if (artist.is_demo) return confirmDeposit(getBooking(b.id));
+
+  const updated = getBooking(b.id);
+  await notifyReported(updated);
+  return updated;
 }
 
-// Clients get their deposit back when cancelling outside the artist's
-// window; inside it the deposit is kept (that's the point of a deposit).
-// Artists cancelling always refund unless they choose otherwise.
-async function cancelBooking(b, { by, refund }) {
-  if (!["pending_payment", "confirmed"].includes(b.status)) {
-    throw Object.assign(new Error("This booking can't be cancelled."), { status: 409 });
+async function confirmDeposit(b) {
+  if (b.status !== "awaiting_deposit") throw httpError(409, "This booking isn't waiting on a deposit.");
+  // A hold that ran out (and was never reported as paid) stops blocking the
+  // calendar, so someone else may have taken the time since.
+  const lapsed = !b.deposit_reported_at && Date.parse(b.hold_expires_at) <= Date.now();
+  if (lapsed && hasConflict(b.artist_id, b.starts_at, b.ends_at, b.id)) {
+    throw httpError(409, "This request's hold ran out and someone else has booked that time since. Decline it and ask them to pick a new time.");
   }
-  if (Date.parse(b.starts_at) <= Date.now()) {
-    throw Object.assign(new Error("This appointment has already started."), { status: 409 });
-  }
-
-  const wasPending = b.status === "pending_payment";
-  db.prepare("UPDATE bookings SET status = 'cancelled', cancelled_by = ?, hold_expires_at = NULL WHERE id = ?")
-    .run(by, b.id);
-
-  if (wasPending) {
-    if (b.stripe_checkout_session_id && stripe.enabled()) {
-      stripe.call("POST", `/checkout/sessions/${b.stripe_checkout_session_id}/expire`)
-        .catch(() => { /* already expired or completed */ });
-    }
-    return getBooking(b.id);
-  }
-
-  if (refund) await refundDeposit(getBooking(b.id));
-  const reason = by === "artist" ? `${getArtist(b.artist_id).display_name} cancelled it.` : "";
-  await notifyCancelled(getBooking(b.id), reason);
-  return getBooking(b.id);
+  db.prepare("UPDATE bookings SET status = 'confirmed', deposit_paid = 1, hold_expires_at = NULL WHERE id = ?").run(b.id);
+  const updated = getBooking(b.id);
+  await notifyConfirmed(updated, { instant: false });
+  return updated;
 }
 
-function clientRefundEligible(b, artist, now = Date.now()) {
-  return Date.parse(b.starts_at) - now >= artist.cancel_window_hours * 3600000;
+async function cancelBooking(b, { by, refund = false, reason = "" }) {
+  if (!["awaiting_deposit", "confirmed"].includes(b.status)) throw httpError(409, "This booking can't be cancelled.");
+  if (Date.parse(b.starts_at) <= Date.now()) throw httpError(409, "This appointment has already started.");
+
+  const refundStatus = moneySent(b) && refund ? "owed" : "none";
+  db.prepare(`UPDATE bookings SET status = 'cancelled', cancelled_by = ?, cancel_reason = ?, refund_status = ?,
+    hold_expires_at = NULL WHERE id = ?`).run(by, reason, refundStatus, b.id);
+  const updated = getBooking(b.id);
+  await notifyCancelled(updated);
+  return updated;
+}
+
+async function expireHold(b) {
+  db.prepare("UPDATE bookings SET status = 'expired', hold_expires_at = NULL WHERE id = ?").run(b.id);
+  await notifyExpired(getBooking(b.id));
 }
 
 module.exports = {
-  getBooking, confirmPaidBooking, cancelBooking, clientRefundEligible,
-  notifyConfirmed, googleCalendarLink, bookingLink,
+  getBooking, getArtist, holdUntil, moneySent, clientRefundEligible, googleCalendarLink, bookingLink,
+  notifyRequested, notifyConfirmed, reportDeposit, confirmDeposit, cancelBooking, expireHold,
 };

@@ -3,14 +3,18 @@ const { zonedTimeToUtc, localDateStr, addDays, weekdayOf } = require("./time");
 
 const MIN = 60 * 1000;
 
-// Bookings that occupy calendar time: confirmed ones, plus unpaid ones whose
-// checkout hold hasn't run out yet.
+// Bookings that occupy calendar time: confirmed ones, plus requests still
+// waiting on a deposit — either inside their hold, or already reported as
+// paid (those wait for the artist to confirm and must not be double-booked).
+const OCCUPYING = `(status = 'confirmed' OR (status = 'awaiting_deposit'
+  AND (deposit_reported_at IS NOT NULL OR hold_expires_at > ?)))`;
+
 function busyIntervals(artistId, fromIso, toIso, nowIso, excludeBookingId = 0) {
   return db.prepare(`
     SELECT starts_at, ends_at FROM bookings
     WHERE artist_id = ? AND id != ?
       AND starts_at < ? AND ends_at > ?
-      AND (status = 'confirmed' OR (status = 'pending_payment' AND hold_expires_at > ?))
+      AND ${OCCUPYING}
   `).all(artistId, excludeBookingId, toIso, fromIso, nowIso)
     .map((b) => ({ start: Date.parse(b.starts_at), end: Date.parse(b.ends_at) }));
 }
@@ -68,4 +72,4 @@ function slotsForService(artist, service, fromDate, days, now = Date.now()) {
   });
 }
 
-module.exports = { generateSlots, slotsForService, hasConflict };
+module.exports = { generateSlots, slotsForService, hasConflict, OCCUPYING };

@@ -2,41 +2,31 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Slotlock</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#0b0a09">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <div class="narrow" style="padding:40px 16px">
-    <a class="logo" href="/">slot<b>lock</b></a>
-
-    <form id="signup" class="card stack hidden" style="margin-top:1.5rem" novalidate>
+  <div class="auth">
+    <aside class="auth-side">
+      <a class="brand" href="/"><span class="brand-mark"><i data-icon="lock" data-size="18"></i></span>slotlock</a>
       <div>
-        <h1 style="font-size:1.8rem">Create your booking page</h1>
-        <p class="muted small">14 days free. No card needed.</p>
+        <h2>Lock the slot. Take the deposit.</h2>
+        <ul>
+          <li><i data-icon="check" data-size="20"></i>One booking link for your bio</li>
+          <li><i data-icon="check" data-size="20"></i>Deposits paid straight to you</li>
+          <li><i data-icon="check" data-size="20"></i>Unpaid holds release themselves</li>
+          <li><i data-icon="check" data-size="20"></i>Reminders the day before</li>
+        </ul>
       </div>
-      <div class="field"><label for="s-name">Your name or studio</label><input id="s-name" autocomplete="name" required></div>
-      <div class="field">
-        <label for="s-handle">Your link</label>
-        <div class="prefix"><span id="s-origin">slotlock.com/</span><input id="s-handle" autocapitalize="none" spellcheck="false" required></div>
-        <div class="hint">Lowercase letters, numbers and dashes.</div>
-      </div>
-      <div class="field"><label for="s-email">Email</label><input id="s-email" type="email" autocomplete="email" required></div>
-      <div class="field"><label for="s-password">Password</label><input id="s-password" type="password" autocomplete="new-password" minlength="8" required><div class="hint">At least 8 characters.</div></div>
-      <div class="field"><label for="s-tz">Timezone</label><select id="s-tz"></select></div>
-      <div class="error" id="s-error" role="alert"></div>
-      <button class="btn primary block" type="submit">Create my page</button>
-      <p class="small muted center">Already have an account? <a href="/login">Log in</a></p>
-    </form>
-
-    <form id="login" class="card stack hidden" style="margin-top:1.5rem" novalidate>
-      <h1 style="font-size:1.8rem">Welcome back</h1>
-      <div class="field"><label for="l-email">Email</label><input id="l-email" type="email" autocomplete="email" required></div>
-      <div class="field"><label for="l-password">Password</label><input id="l-password" type="password" autocomplete="current-password" required></div>
-      <div class="error" id="l-error" role="alert"></div>
-      <button class="btn primary block" type="submit">Log in</button>
-      <p class="small muted center">New here? <a href="/signup">Create a page</a></p>
-    </form>
+      <p class="auth-quote">Free during early access. No card needed.</p>
+    </aside>
+    <main class="auth-main">
+      <div class="auth-card" id="card"></div>
+    </main>
   </div>
   <script src="/common.js"></script>
   <script src="/auth.js"></script>

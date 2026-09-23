@@ -1,11 +1,19 @@
 // Sends through Resend when RESEND_API_KEY is set, otherwise logs the email so
-// local dev and demo mode still show what would have gone out. Never throws —
-// a failed email shouldn't fail a booking.
+// local dev still shows what would have gone out. Never throws — a failed
+// email shouldn't fail a booking.
+
+// Tests read what would have been sent from here.
+const outbox = [];
+
+const emailEnabled = () => !!process.env.RESEND_API_KEY;
+
 async function sendEmail({ to, subject, text }) {
-  if (!process.env.RESEND_API_KEY) {
-    if (process.env.NODE_ENV !== "test") {
-      console.log(`[email] to=${to} subject="${subject}"\n${text}\n`);
-    }
+  if (process.env.NODE_ENV === "test") {
+    outbox.push({ to, subject, text });
+    return { skipped: true };
+  }
+  if (!emailEnabled()) {
+    console.log(`[email not sent: RESEND_API_KEY unset] to=${to} subject="${subject}"\n${text}\n`);
     return { skipped: true };
   }
   try {
@@ -28,4 +36,4 @@ async function sendEmail({ to, subject, text }) {
   }
 }
 
-module.exports = { sendEmail };
+module.exports = { sendEmail, emailEnabled, outbox };

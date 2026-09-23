@@ -2,30 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Dashboard · Slotlock</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Slotlock</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#100f0d">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <div class="wrap">
-    <header class="topbar">
-      <a class="logo" href="/app">slot<b>lock</b></a>
-      <div class="bar-actions">
-        <a class="btn small" id="view-page" target="_blank" rel="noopener">View my page</a>
-        <button class="btn ghost small" id="logout">Log out</button>
-      </div>
-    </header>
-    <div id="banner"></div>
-    <div class="app-shell">
-      <nav class="nav" id="nav">
-        <a href="#setup">Home</a>
-        <a href="#bookings">Bookings</a>
-        <a href="#services">Services</a>
-        <a href="#hours">Hours</a>
-        <a href="#settings">Settings</a>
-        <a href="#billing">Billing</a>
-      </nav>
-      <main id="view" aria-live="polite"></main>
+  <div class="dash">
+    <aside class="sidebar" id="sidebar"></aside>
+    <div style="min-width: 0">
+      <div class="mobile-bar" id="mobilebar"></div>
+      <main class="main" id="view">
+        <div class="skeleton" style="height: 44px; width: 260px; margin-bottom: 28px"></div>
+        <div class="skeleton" style="height: 140px"></div>
+      </main>
     </div>
   </div>
   <script src="/common.js"></script>

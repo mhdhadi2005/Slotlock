@@ -1,5 +1,8 @@
 -- All timestamps are ISO-8601 UTC strings ("2026-10-01T15:00:00.000Z") so they
--- compare correctly as text. Money is integer cents.
+-- compare correctly as text. Money is integer hundredths of the currency unit.
+--
+-- Columns added after the first release also live in ADDED_COLUMNS in
+-- index.js, which brings older databases up to date on boot.
 
 CREATE TABLE IF NOT EXISTS artists (
   id                     INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -17,8 +20,15 @@ CREATE TABLE IF NOT EXISTS artists (
   min_notice_hours       INTEGER NOT NULL DEFAULT 12,
   max_days_ahead         INTEGER NOT NULL DEFAULT 60,
   cancel_window_hours    INTEGER NOT NULL DEFAULT 48,
-  stripe_account_id      TEXT,
-  stripe_charges_enabled INTEGER NOT NULL DEFAULT 0,
+  -- How long an unpaid request holds its slot before it's released.
+  hold_hours             INTEGER NOT NULL DEFAULT 24,
+  -- JSON array of {type, value}: how clients send the artist their deposit.
+  payment_methods        TEXT NOT NULL DEFAULT '[]',
+  payment_note           TEXT NOT NULL DEFAULT '',
+  theme                  TEXT NOT NULL DEFAULT 'vermilion',
+  avatar_image_id        INTEGER,
+  calendar_token         TEXT,
+  is_demo                INTEGER NOT NULL DEFAULT 0,
   stripe_customer_id     TEXT,
   stripe_subscription_id TEXT,
   subscription_status    TEXT,
@@ -30,6 +40,13 @@ CREATE TABLE IF NOT EXISTS sessions (
   token_hash TEXT PRIMARY KEY,
   artist_id  INTEGER NOT NULL REFERENCES artists(id) ON DELETE CASCADE,
   expires_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS password_resets (
+  token_hash TEXT PRIMARY KEY,
+  artist_id  INTEGER NOT NULL REFERENCES artists(id) ON DELETE CASCADE,
+  expires_at TEXT NOT NULL,
+  used_at    TEXT
 );
 
 CREATE TABLE IF NOT EXISTS services (
@@ -60,32 +77,50 @@ CREATE TABLE IF NOT EXISTS blocked_dates (
 );
 
 CREATE TABLE IF NOT EXISTS bookings (
-  id                         INTEGER PRIMARY KEY AUTOINCREMENT,
-  artist_id                  INTEGER NOT NULL REFERENCES artists(id) ON DELETE CASCADE,
-  service_id                 INTEGER NOT NULL REFERENCES services(id),
-  public_token               TEXT NOT NULL UNIQUE,
-  service_name               TEXT NOT NULL,
-  starts_at                  TEXT NOT NULL,
-  ends_at                    TEXT NOT NULL,
-  -- pending_payment | confirmed | cancelled | expired
-  status                     TEXT NOT NULL,
-  hold_expires_at            TEXT,
-  client_name                TEXT NOT NULL,
-  client_email               TEXT NOT NULL,
-  client_phone               TEXT NOT NULL DEFAULT '',
-  client_instagram           TEXT NOT NULL DEFAULT '',
-  notes                      TEXT NOT NULL DEFAULT '',
-  reference_url              TEXT NOT NULL DEFAULT '',
-  deposit_cents              INTEGER NOT NULL DEFAULT 0,
-  currency                   TEXT NOT NULL,
-  stripe_checkout_session_id TEXT,
-  stripe_payment_intent_id   TEXT,
-  deposit_paid               INTEGER NOT NULL DEFAULT 0,
-  refunded                   INTEGER NOT NULL DEFAULT 0,
-  cancelled_by               TEXT,
-  reminder_sent_at           TEXT,
-  created_at                 TEXT NOT NULL
+  id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+  artist_id           INTEGER NOT NULL REFERENCES artists(id) ON DELETE CASCADE,
+  service_id          INTEGER NOT NULL REFERENCES services(id),
+  public_token        TEXT NOT NULL UNIQUE,
+  ref_code            TEXT,
+  service_name        TEXT NOT NULL,
+  starts_at           TEXT NOT NULL,
+  ends_at             TEXT NOT NULL,
+  -- awaiting_deposit | confirmed | cancelled | expired
+  status              TEXT NOT NULL,
+  hold_expires_at     TEXT,
+  client_name         TEXT NOT NULL,
+  client_email        TEXT NOT NULL,
+  client_phone        TEXT NOT NULL DEFAULT '',
+  client_instagram    TEXT NOT NULL DEFAULT '',
+  notes               TEXT NOT NULL DEFAULT '',
+  reference_url       TEXT NOT NULL DEFAULT '',
+  deposit_cents       INTEGER NOT NULL DEFAULT 0,
+  currency            TEXT NOT NULL,
+  deposit_paid        INTEGER NOT NULL DEFAULT 0,
+  -- When the client said they'd sent the deposit, and which way.
+  deposit_reported_at TEXT,
+  deposit_method      TEXT NOT NULL DEFAULT '',
+  -- none | owed | refunded. Slotlock never moves money: "owed" is a reminder
+  -- for the artist to send the deposit back themselves.
+  refund_status       TEXT NOT NULL DEFAULT 'none',
+  cancelled_by        TEXT,
+  cancel_reason       TEXT NOT NULL DEFAULT '',
+  reminder_sent_at    TEXT,
+  created_at          TEXT NOT NULL
+);
+
+-- Profile photos and portfolio pieces. Small (resized in the browser before
+-- upload), so they live in the database next to everything else.
+CREATE TABLE IF NOT EXISTS images (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  artist_id  INTEGER NOT NULL REFERENCES artists(id) ON DELETE CASCADE,
+  kind       TEXT NOT NULL,           -- avatar | portfolio
+  mime       TEXT NOT NULL,
+  data       BLOB NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_bookings_artist_start ON bookings(artist_id, starts_at);
 CREATE INDEX IF NOT EXISTS idx_bookings_status_start ON bookings(status, starts_at);
+CREATE INDEX IF NOT EXISTS idx_images_artist ON images(artist_id, kind);

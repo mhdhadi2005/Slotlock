@@ -2,15 +2,20 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex">
   <title>Your booking</title>
+  <meta name="theme-color" content="#0b0a09">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <div class="narrow" style="padding:40px 16px">
-    <main id="main" class="stack"><p class="muted">Loading…</p></main>
-    <p class="small muted center" style="margin-top:2.5rem">Booking by <a href="/">Slotlock</a></p>
+  <div class="narrow" style="padding-bottom: 48px">
+    <main id="main">
+      <div class="skeleton" style="height: 50px; margin-top: 24px; width: 60%"></div>
+      <div class="skeleton" style="height: 200px; margin-top: 24px"></div>
+    </main>
+    <div class="powered"><a href="/"><span class="brand-mark"><i data-icon="lock" data-size="12"></i></span>Booking by Slotlock</a></div>
   </div>
   <script src="/common.js"></script>
   <script src="/booking.js"></script>

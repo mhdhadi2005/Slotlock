@@ -1,5 +1,6 @@
 const crypto = require("crypto");
 const { db } = require("../db");
+const { randomToken } = require("./ids");
 
 const COOKIE = "sl_session";
 const SESSION_DAYS = 30;
@@ -18,7 +19,6 @@ function verifyPassword(password, stored) {
   return crypto.timingSafeEqual(actual, expected);
 }
 
-const randomToken = (bytes = 32) => crypto.randomBytes(bytes).toString("base64url");
 const sha256 = (s) => crypto.createHash("sha256").update(s).digest("hex");
 
 function createSession(artistId) {
@@ -31,6 +31,11 @@ function createSession(artistId) {
 
 function destroySession(token) {
   if (token) db.prepare("DELETE FROM sessions WHERE token_hash = ?").run(sha256(token));
+}
+
+// After a password change: everyone else is signed out, this device stays in.
+function destroyOtherSessions(artistId, keepToken) {
+  db.prepare("DELETE FROM sessions WHERE artist_id = ? AND token_hash != ?").run(artistId, keepToken ? sha256(keepToken) : "");
 }
 
 function parseCookies(header = "") {
@@ -70,6 +75,6 @@ function requireAuth(req, res, next) {
 }
 
 module.exports = {
-  hashPassword, verifyPassword, randomToken, createSession, destroySession,
+  hashPassword, verifyPassword, randomToken, sha256, createSession, destroySession, destroyOtherSessions,
   setSessionCookie, clearSessionCookie, attachArtist, requireAuth,
 };

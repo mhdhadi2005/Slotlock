@@ -1,21 +1,23 @@
 const { db } = require("../db");
 const { sendEmail } = require("../lib/email");
 const { formatWhen } = require("../lib/time");
-const { bookingLink } = require("../lib/bookings");
+const { bookingLink, expireHold } = require("../lib/bookings");
 
-// Every 10 minutes: tidy lapsed holds and send day-before reminders.
-// Reminders are what actually cut no-shows, alongside the deposit.
+// Every 10 minutes: release unpaid holds, send day-before reminders, and
+// tidy the demo page and old sessions.
 
-function expireHolds(now = Date.now()) {
-  return db.prepare(`UPDATE bookings SET status = 'expired', hold_expires_at = NULL
-    WHERE status = 'pending_payment' AND hold_expires_at <= ?`).run(new Date(now).toISOString()).changes;
+async function expireHolds(now = Date.now()) {
+  const due = db.prepare(`SELECT * FROM bookings WHERE status = 'awaiting_deposit'
+    AND deposit_reported_at IS NULL AND hold_expires_at <= ?`).all(new Date(now).toISOString());
+  for (const b of due) await expireHold(b);
+  return due.length;
 }
 
 async function sendReminders(now = Date.now()) {
   const due = db.prepare(`
-    SELECT b.*, a.display_name, a.timezone, a.location, a.cancel_window_hours
+    SELECT b.*, a.display_name, a.timezone, a.location
     FROM bookings b JOIN artists a ON a.id = b.artist_id
-    WHERE b.status = 'confirmed' AND b.reminder_sent_at IS NULL
+    WHERE b.status = 'confirmed' AND b.reminder_sent_at IS NULL AND a.is_demo = 0
       AND b.starts_at > ? AND b.starts_at <= ?
   `).all(new Date(now).toISOString(), new Date(now + 24 * 3600000).toISOString());
 
@@ -34,10 +36,25 @@ async function sendReminders(now = Date.now()) {
   return due.length;
 }
 
+// Visitors try the demo all day; clear their pretend bookings after 30
+// minutes so its calendar never fills up.
+function cleanDemo(now = Date.now()) {
+  return db.prepare(`DELETE FROM bookings WHERE created_at <= ?
+    AND artist_id IN (SELECT id FROM artists WHERE is_demo = 1)`).run(new Date(now - 30 * 60000).toISOString()).changes;
+}
+
+function cleanSessions(now = Date.now()) {
+  const iso = new Date(now).toISOString();
+  db.prepare("DELETE FROM sessions WHERE expires_at <= ?").run(iso);
+  db.prepare("DELETE FROM password_resets WHERE expires_at <= ?").run(iso);
+}
+
 async function tick() {
   try {
-    expireHolds();
+    await expireHolds();
     await sendReminders();
+    cleanDemo();
+    cleanSessions();
   } catch (err) {
     console.error(`[scheduler] ${err.message}`);
   }
@@ -49,4 +66,4 @@ function startScheduler() {
   setInterval(tick, 10 * 60 * 1000).unref();
 }
 
-module.exports = { startScheduler, expireHolds, sendReminders };
+module.exports = { startScheduler, expireHolds, sendReminders, cleanDemo };

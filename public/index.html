@@ -2,99 +2,230 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Slotlock: lock the slot, take the deposit, end no-shows</title>
-  <meta name="description" content="A booking link for your Instagram bio. Clients pick a time and pay a deposit up front. No more DM back-and-forth, no more no-shows.">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Slotlock: booking and deposits for tattoo artists</title>
+  <meta name="description" content="One link in your bio. Clients pick a real opening and send your deposit straight to you. No more DM back-and-forth, no more no-shows.">
+  <meta property="og:title" content="Slotlock: lock the slot, take the deposit, end no-shows">
+  <meta property="og:description" content="Booking pages for tattoo artists. Clients pick a time and send the deposit straight to you.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="{{base}}/og.png">
+  <meta property="og:url" content="{{base}}/">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#0b0a09">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="/fonts/bricolage-grotesque-latin-wght.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <div class="wrap">
-    <header class="topbar">
-      <a class="logo" href="/">slot<b>lock</b></a>
-      <nav class="bar-actions">
-        <a class="btn ghost small" href="/login">Log in</a>
-        <a class="btn primary small" href="/signup">Start free</a>
+  <header class="site-nav" id="nav">
+    <div class="container">
+      <a class="brand" href="/"><span class="brand-mark"><i data-icon="lock" data-size="18"></i></span>slotlock</a>
+      <nav class="nav-links">
+        <a class="hide-sm" href="#how">How it works</a>
+        <a class="hide-sm" href="#pricing">Pricing</a>
+        <a class="hide-sm" href="/demo">Live example</a>
+        <a href="/login">Log in</a>
+        <a class="btn primary sm" href="/signup">Start free</a>
       </nav>
-    </header>
+    </div>
+  </header>
 
+  <main>
     <section class="hero">
-      <p class="eyebrow">Lock the slot. Take the deposit. End no-shows.</p>
-      <h1>Stop losing days to no-shows.</h1>
-      <p class="lead">One link for your Instagram bio. Clients pick a time, pay your deposit, and get reminded the day before. You stop chasing DMs and get paid for the time you block out.</p>
-      <div class="row">
-        <a class="btn primary" href="/signup">Create your page, free for 14 days</a>
+      <div class="container">
+        <div>
+          <div class="eyebrow"><span class="pulse"></span>Booking + deposits for tattoo artists</div>
+          <h1>Stop losing days to <em>no-shows.</em></h1>
+          <p class="lead">One link in your bio. Clients pick a real opening and send the deposit straight to you, by PayPal, Venmo, Cash App, Zelle or bank transfer. You tap confirm. They show up.</p>
+          <div class="hero-cta">
+            <a class="btn primary lg" href="/signup">Create your free page <i data-icon="arrow" data-size="18"></i></a>
+            <a class="btn lg" href="/demo"><i data-icon="eye" data-size="18"></i>See a live example</a>
+          </div>
+          <div class="hero-meta">
+            <span><i data-icon="check" data-size="16"></i>No card needed</span>
+            <span><i data-icon="check" data-size="16"></i>Set up in 10 minutes</span>
+            <span><i data-icon="check" data-size="16"></i>We never touch your money</span>
+          </div>
+        </div>
+
+        <div class="phone-wrap" aria-hidden="true">
+          <div class="float-card one">
+            <div class="fc-icon" style="background: var(--ok-soft); color: var(--ok)"><i data-icon="banknote" data-size="18"></i></div>
+            <div><b>$75 deposit sent</b>Alex, Thu 1:00 PM · via Venmo</div>
+          </div>
+          <div class="phone">
+            <div class="phone-notch"></div>
+            <div class="phone-screen">
+              <div class="mock-cover"></div>
+              <div class="mock-body">
+                <div class="mock-avatar">RV</div>
+                <div class="mock-name">Rosa Vega Tattoo</div>
+                <div class="mock-meta">Fine line · botanical · blackwork</div>
+                <div class="mock-art">
+                  <img alt=""><img alt=""><img alt=""><img alt="">
+                </div>
+                <div class="mock-service"><div><b>Small custom</b>2 hr · $75 deposit</div><span>$300</span></div>
+                <div class="mock-days">
+                  <div class="mock-day">Tue<b>6</b></div><div class="mock-day">Wed<b>7</b></div><div class="mock-day on">Thu<b>8</b></div><div class="mock-day">Fri<b>9</b></div><div class="mock-day">Sat<b>10</b></div>
+                </div>
+                <div class="mock-slots">
+                  <div class="mock-slot">11:00</div><div class="mock-slot on">1:00</div><div class="mock-slot">1:30</div>
+                  <div class="mock-slot">3:00</div><div class="mock-slot">3:30</div><div class="mock-slot">5:00</div>
+                </div>
+                <div class="mock-btn">Request booking</div>
+              </div>
+            </div>
+          </div>
+          <div class="float-card two">
+            <div class="fc-icon" style="background: var(--accent-soft); color: var(--accent)"><i data-icon="calcheck" data-size="18"></i></div>
+            <div><b>Booking confirmed</b>Reminder goes out the day before</div>
+          </div>
+        </div>
       </div>
-      <p class="small muted" style="margin-top:.8rem">No card needed to start. <a href="/demo">See a live example →</a></p>
+    </section>
+
+    <section class="pay-strip">
+      <div class="container">
+        <span>Deposits go straight to you with</span>
+        <b>PayPal</b><b>Venmo</b><b>Cash App</b><b>Zelle</b><b>Revolut</b><b>Monzo</b><b>UPI</b><b>Bank transfer</b>
+      </div>
     </section>
 
     <section class="section">
-      <div class="features">
-        <div class="card">
-          <h3>Deposits, collected for you</h3>
-          <p class="muted">Set a deposit per service. Clients pay by card before the slot is theirs, and the money lands in your own Stripe account.</p>
+      <div class="container">
+        <div class="section-head">
+          <div class="kicker">Why artists switch</div>
+          <h2>Your DMs weren't built for bookings.</h2>
         </div>
-        <div class="card">
-          <h3>Your rules on cancellations</h3>
-          <p class="muted">Cancel early and the client gets a refund automatically. Cancel late and you keep the deposit. You choose where the line is.</p>
+        <div class="compare">
+          <div class="card before">
+            <h3>Booking over DMs</h3>
+            <ul>
+              <li><i data-icon="x" data-size="18"></i>"Are you free Thursday?" back-and-forth for days</li>
+              <li><i data-icon="x" data-size="18"></i>Chasing deposits across three different apps</li>
+              <li><i data-icon="x" data-size="18"></i>Blocking a whole day for someone who never shows</li>
+              <li><i data-icon="x" data-size="18"></i>References and ideas buried in screenshots</li>
+            </ul>
+          </div>
+          <div class="card after">
+            <h3>With Slotlock</h3>
+            <ul>
+              <li><i data-icon="check" data-size="18"></i>Clients only see openings that fit the piece</li>
+              <li><i data-icon="check" data-size="18"></i>Deposit instructions sent automatically, with a reference code</li>
+              <li><i data-icon="check" data-size="18"></i>Unpaid requests release the slot on their own</li>
+              <li><i data-icon="check" data-size="18"></i>Idea, placement and references arrive with the booking</li>
+            </ul>
+          </div>
         </div>
-        <div class="card">
-          <h3>Reminders that go out on their own</h3>
-          <p class="muted">Confirmation right away, a reminder the day before, plus calendar links. Fewer "wait, was that today?" messages.</p>
+      </div>
+    </section>
+
+    <section class="section" id="how">
+      <div class="container">
+        <div class="section-head center">
+          <div class="kicker">How it works</div>
+          <h2>Set it up once. Let it run.</h2>
+          <p>Ten minutes of setup, then every booking handles itself.</p>
         </div>
-        <div class="card">
-          <h3>Only real openings</h3>
-          <p class="muted">Set your hours and days off once. Every service knows its length, so nobody books a 4-hour piece into a 1-hour gap.</p>
-        </div>
-        <div class="card">
-          <h3>References up front</h3>
-          <p class="muted">Clients add their idea, placement and reference link when they book, so you walk in prepared.</p>
-        </div>
-        <div class="card">
-          <h3>Made for your phone</h3>
-          <p class="muted">Clients book from Instagram in under a minute. You manage everything from the same phone.</p>
+        <div class="steps">
+          <div class="step-card"><div class="num">1</div><div class="step-icon"><i data-icon="layers" data-size="22"></i></div><h3>Add your services</h3><p>Flash, small custom, half day. Each one gets a length, a price and a deposit.</p></div>
+          <div class="step-card"><div class="num">2</div><div class="step-icon"><i data-icon="wallet" data-size="22"></i></div><h3>Choose how you get paid</h3><p>Add the apps you already use. Clients pay you directly. No new accounts, no processor.</p></div>
+          <div class="step-card"><div class="num">3</div><div class="step-icon"><i data-icon="link" data-size="22"></i></div><h3>Share your link</h3><p><span data-host>slotlock.com</span>/yourname in your bio, stories and DM replies.</p></div>
         </div>
       </div>
     </section>
 
     <section class="section">
-      <h2>Set up in 10 minutes</h2>
-      <div class="grid3">
-        <div><div class="step-num">1</div><h3>Add your services</h3><p class="muted">Flash, small custom, half day, full day. Each gets a length and a deposit.</p></div>
-        <div><div class="step-num">2</div><h3>Connect Stripe</h3><p class="muted">Deposits go straight to your bank. Slotlock never holds your money.</p></div>
-        <div><div class="step-num">3</div><h3>Put the link in your bio</h3><p class="muted">slotlock.com/yourname. Share it in stories, DMs and your link-in-bio.</p></div>
+      <div class="container">
+        <div class="section-head">
+          <div class="kicker">The deposit flow</div>
+          <h2>Your money never touches us.</h2>
+          <p>Slotlock handles the scheduling and the reminders. The deposit goes from your client straight to you.</p>
+        </div>
+        <div class="flow">
+          <div class="flow-step"><div class="who"><i data-icon="user" data-size="15"></i>Client</div><h4>Requests a time</h4><p>Picks a service and a real opening, adds their idea and references.</p></div>
+          <div class="flow-step money"><div class="who"><i data-icon="banknote" data-size="15"></i>Client → you</div><h4>Sends the deposit</h4><p>With your payment details and a reference code. The slot is held while they pay.</p></div>
+          <div class="flow-step"><div class="who"><i data-icon="check" data-size="15"></i>You</div><h4>Tap confirm</h4><p>See it land in your account, confirm in one tap. They get a confirmation email.</p></div>
+          <div class="flow-step"><div class="who"><i data-icon="bell" data-size="15"></i>Slotlock</div><h4>Reminds them</h4><p>A reminder goes out the day before, with calendar links and your address.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="section-head center">
+          <div class="kicker">Everything included</div>
+          <h2>Built for how tattoo artists actually work.</h2>
+        </div>
+        <div class="features">
+          <div class="feature"><div class="f-icon"><i data-icon="wallet" data-size="20"></i></div><h3>Deposits straight to you</h3><p>Clients pay you directly. No processor in the middle, no fees from us.</p></div>
+          <div class="feature"><div class="f-icon"><i data-icon="hourglass" data-size="20"></i></div><h3>Holds that expire</h3><p>Unpaid requests hold the slot for as long as you choose, then free it up automatically.</p></div>
+          <div class="feature"><div class="f-icon"><i data-icon="shield" data-size="20"></i></div><h3>Your cancellation rules</h3><p>Set a refund cutoff. Slotlock tells the client, and you, whether the deposit comes back.</p></div>
+          <div class="feature"><div class="f-icon"><i data-icon="image" data-size="20"></i></div><h3>Portfolio on your page</h3><p>Show your best pieces right where clients book, plus your bio and studio address.</p></div>
+          <div class="feature"><div class="f-icon"><i data-icon="calendar" data-size="20"></i></div><h3>Syncs to your calendar</h3><p>Every booking shows up in Google or Apple Calendar on your phone, automatically.</p></div>
+          <div class="feature"><div class="f-icon"><i data-icon="bell" data-size="20"></i></div><h3>Reminders built in</h3><p>Confirmations right away and a nudge the day before. Fewer "wait, was that today?" messages.</p></div>
+        </div>
       </div>
     </section>
 
     <section class="section" id="pricing">
-      <div class="row" style="align-items:flex-start;gap:2rem">
+      <div class="container pricing">
         <div>
+          <div class="kicker">Pricing</div>
           <h2>One plan. Pays for itself with one saved no-show.</h2>
-          <p class="muted">No per-booking fees from us, just Stripe's standard card processing on deposits.</p>
+          <p class="muted" style="margin-top: 14px; font-size: 1.05rem">No commission, no per-booking fees. Deposits are yours, all of them.</p>
         </div>
-        <div class="card">
+        <div class="price-card">
           <div class="price">$19<small> / month</small></div>
+          <p class="muted" id="price-note" style="margin-top: 10px">Free while we're in early access. No card needed.</p>
           <ul class="ticks">
-            <li>Unlimited bookings and services</li>
-            <li>Deposits paid to your Stripe account</li>
-            <li>Automatic reminders and refunds</li>
-            <li>Your own booking link</li>
-            <li>Cancel anytime</li>
+            <li><i data-icon="check" data-size="18"></i>Unlimited bookings and services</li>
+            <li><i data-icon="check" data-size="18"></i>Deposits paid straight to you</li>
+            <li><i data-icon="check" data-size="18"></i>Automatic holds, reminders and refund tracking</li>
+            <li><i data-icon="check" data-size="18"></i>Portfolio, calendar sync, your own link</li>
           </ul>
-          <a class="btn primary block" href="/signup">Start 14-day free trial</a>
+          <a class="btn primary lg block" href="/signup" id="price-cta">Start free</a>
         </div>
       </div>
     </section>
 
     <section class="section">
-      <h2>Questions</h2>
-      <details><summary>Do my clients need an account?</summary><p>No. They pick a time, enter their name and email, and pay the deposit. That's it.</p></details>
-      <details><summary>Where does the deposit money go?</summary><p>Straight to your own Stripe account, then to your bank on Stripe's normal payout schedule.</p></details>
-      <details><summary>What if a client cancels?</summary><p>If they cancel before your cutoff (48 hours by default), their deposit is refunded automatically. After that, you keep it. You can also cancel from your dashboard and refund with one tap.</p></details>
-      <details><summary>Does it work for hair, nails and lashes too?</summary><p>Yes. Anything booked by appointment with a deposit works the same way.</p></details>
-      <details><summary>What happens after the trial?</summary><p>Subscribe for $19/month to keep your page taking bookings. If you don't, your page stops accepting new bookings. Nothing is deleted.</p></details>
+      <div class="container">
+        <div class="section-head center"><div class="kicker">Questions</div><h2>Good questions.</h2></div>
+        <div class="faq">
+          <details><summary>Do my clients need an account?<i data-icon="plus" data-size="20"></i></summary><p>No. They pick a time, enter their name and email, and send the deposit. That's it.</p></details>
+          <details><summary>Does Slotlock handle the money?<i data-icon="plus" data-size="20"></i></summary><p>No. Clients pay you directly with the methods you choose. You confirm when it arrives. We never touch it and we don't take a cut.</p></details>
+          <details><summary>What if someone never sends the deposit?<i data-icon="plus" data-size="20"></i></summary><p>Their hold expires after the time you set (24 hours by default) and the slot opens up again automatically. They get an email letting them know.</p></details>
+          <details><summary>What if a client cancels?<i data-icon="plus" data-size="20"></i></summary><p>If they cancel before your cutoff, Slotlock marks their deposit as owed back and reminds you to send it. After the cutoff, you keep it. Either way, both of you know where you stand.</p></details>
+          <details><summary>Does it work for barbers, nail and lash techs?<i data-icon="plus" data-size="20"></i></summary><p>Yes. Anyone who books by appointment and takes deposits can use it.</p></details>
+          <details><summary>Which countries does it work in?<i data-icon="plus" data-size="20"></i></summary><p>Anywhere. Since clients pay you directly, you can use whatever payment apps work where you are, in your own currency.</p></details>
+        </div>
+      </div>
     </section>
 
-    <footer>© Slotlock · <a href="/demo">Live example</a> · <a href="/login">Log in</a></footer>
-  </div>
+    <section class="section" style="padding-top: 20px">
+      <div class="container">
+        <div class="cta-band">
+          <h2>Make your next books-open painless.</h2>
+          <p>Create your page in minutes. It's free.</p>
+          <div class="hero-cta">
+            <a class="btn primary lg" href="/signup">Create your free page</a>
+            <a class="btn lg" href="/demo">See the example</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <a class="brand" href="/" style="font-size: 1.05rem"><span class="brand-mark" style="width: 26px; height: 26px; border-radius: 8px"><i data-icon="lock" data-size="15"></i></span>slotlock</a>
+      <nav><a href="/demo">Live example</a><a href="#pricing">Pricing</a><a href="/login">Log in</a><a href="/signup">Sign up</a></nav>
+      <span>© <span id="year">2026</span> Slotlock</span>
+    </div>
+  </footer>
+
+  <script src="/common.js"></script>
+  <script src="/landing.js"></script>
 </body>
 </html>

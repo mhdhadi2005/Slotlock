@@ -2,15 +2,31 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Book an appointment</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{{title}}</title>
+  <meta name="description" content="{{description}}">
+  <meta property="og:title" content="{{title}}">
+  <meta property="og:description" content="{{description}}">
+  <meta property="og:image" content="{{image}}">
+  <meta property="og:url" content="{{url}}">
+  <meta property="og:type" content="profile">
+  <meta name="twitter:card" content="summary">
+  <meta name="theme-color" content="#0b0a09">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <div class="narrow" style="padding-bottom:48px">
-    <header class="artist-head" id="head"></header>
-    <main id="main" class="stack"><p class="muted">Loading…</p></main>
-    <p class="small muted center" style="margin-top:2.5rem">Booking by <a href="/">Slotlock</a></p>
+  <div class="bp">
+    <div class="bp-cover" id="cover"></div>
+    <div class="narrow">
+      <header class="bp-head" id="head">
+        <div class="skeleton" style="width: 114px; height: 114px; border-radius: 50%"></div>
+        <div class="skeleton" style="height: 40px; width: 70%; margin-top: 18px"></div>
+      </header>
+      <div id="saved"></div>
+      <main id="booking"></main>
+      <div class="powered"><a href="/"><span class="brand-mark"><i data-icon="lock" data-size="12"></i></span>Booking by Slotlock</a></div>
+    </div>
   </div>
   <script src="/common.js"></script>
   <script src="/book.js"></script>

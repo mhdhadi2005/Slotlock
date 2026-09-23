@@ -11,10 +11,10 @@ outreach. This is a sales job more than a code job now: the product is built.
       `slotlock.app`. Skip the add-ons (email, site builder, SSL); Railway
       provides SSL free. Grab the `@slotlock` Instagram handle too.
 - [ ] Deploy on Railway (README → Deploy). Point the domain at it.
-- [ ] Stripe: test mode first, do one full booking with a test card
-      (4242 4242 4242 4242), then switch to live keys.
+- [ ] Do one full test booking yourself: sign up, add a service and a payment
+      method, book it from your phone, tap "I've sent the deposit", confirm it.
 - [ ] Resend: verify the domain so emails don't land in spam.
-- [ ] `npm run seed` so `/demo` works. The landing page links to it.
+- [ ] Check `/demo` works. The landing page links to it and it's your best sales tool.
 - [ ] Make an Instagram account for the product. Post 3 things: what it is, a
       screen recording of booking in 30 seconds, and the pricing.
 
@@ -47,8 +47,9 @@ in their bio. Remove every bit of friction.
 
 **If they describe the pain:**
 > That's exactly why I made this: one link for your bio, clients pick a time
-> from your real openings and pay your deposit up front. Cancel late = you keep
-> it, automatically. Here's what it looks like: [yourdomain]/demo
+> from your real openings and send the deposit straight to your PayPal/Venmo/
+> Cash App before the slot is theirs. Unpaid holds free up on their own.
+> Here's what it looks like: [yourdomain]/demo
 > I'm giving the first 10 artists 3 months free. Want me to set yours up? Takes
 > me 10 min.
 
@@ -58,7 +59,8 @@ in their bio. Remove every bit of friction.
 
 **Books-open angle** (when an artist posts "books open"):
 > Saw your books are opening! If you want, I can set you up with a booking link
-> that takes deposits automatically, so no chasing Venmo. Free for 3 months.
+> that collects deposits for you, straight to your own Venmo/PayPal, so no
+> chasing people. Free for 3 months.
 
 ## Months 2–3: 10 → 30
 
@@ -103,5 +105,7 @@ do the setup for them.
   artists who book on Instagram*. Don't try to out-feature the big ones.
 - **Instagram DMs are slow** and can get rate-limited if you paste the same
   message too often. Personalise the first line every time.
-- **Stripe Connect region:** your platform account's country decides where
-  artists can be. Start with your own country.
+- **Deposits are on trust until the artist confirms.** Clients tap "I've sent
+  it" and the artist checks their own account. That's how artists already work
+  over DMs, and it's what lets Slotlock work anywhere with no payment setup.
+  If artists later ask for card payments in-app, that's a paid add-on to build.
