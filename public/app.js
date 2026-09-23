@@ -24,9 +24,20 @@ const currentRoute = () => (ROUTES[location.hash.slice(1)] ? location.hash.slice
 
 // ---- Shell -----------------------------------------------------------------
 
+// If the server doesn't know its public address, the links it hands back
+// point at localhost. The browser knows where it really is, so use that.
+function setMe(artist) {
+  const local = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/;
+  if (!["localhost", "127.0.0.1"].includes(location.hostname)) {
+    for (const key of ["bookingUrl", "calendarUrl"]) artist[key] = artist[key].replace(local, location.origin);
+  }
+  me = artist;
+  return me;
+}
+
 async function refreshMeta() {
   const [meRes, statsRes] = await Promise.all([api("/api/me"), api("/api/bookings/stats")]);
-  me = meRes.artist;
+  setMe(meRes.artist);
   stats = statsRes;
   renderShell();
   document.title = (stats.needsAction ? `(${stats.needsAction}) ` : "") + "Slotlock";
@@ -583,10 +594,10 @@ function renderDeposits() {
         field("Booking policy", policy, "Clients must agree to this before booking."),
         field("Clients get their deposit back if they cancel", cutoff, "Cancel later than this and you keep the deposit. Slotlock tells you when a refund is owed."))),
     saveBar("Save deposit settings", async () => {
-      me = (await api("/api/me", { method: "PATCH", body: {
+      setMe((await api("/api/me", { method: "PATCH", body: {
         paymentMethods: methods.filter((m) => m.value.trim()),
         paymentNote: note.value, holdHours: Number(hold.value), policy: policy.value, cancelWindowHours: Number(cutoff.value),
-      } })).artist;
+      } })).artist);
       await refreshMeta();
       renderDeposits();
       toast("Deposit settings saved");
@@ -700,9 +711,9 @@ function renderPage() {
       card("Page colour", "The accent colour on your booking page.", swatches),
       card("Portfolio", "Pieces shown at the top of your booking page.", galleryBox, galleryInput)),
     saveBar("Save page", async () => {
-      me = (await api("/api/me", { method: "PATCH", body: {
+      setMe((await api("/api/me", { method: "PATCH", body: {
         displayName: displayName.value, handle: handle.value, bio: bio.value, location: location_.value, instagram: instagram.value, theme,
-      } })).artist;
+      } })).artist);
       await refreshMeta();
       toast("Page saved");
     }),
@@ -723,7 +734,7 @@ function renderSettings() {
 
   const regionBtn = h("button.btn.primary", { type: "button", style: { marginTop: "18px" } }, "Save");
   regionBtn.addEventListener("click", () => busy(regionBtn, async () => {
-    me = (await api("/api/me", { method: "PATCH", body: { timezone: tz.value, currency: currency.value } })).artist;
+    setMe((await api("/api/me", { method: "PATCH", body: { timezone: tz.value, currency: currency.value } })).artist);
     await refreshMeta();
     toast("Saved");
   }));
@@ -749,7 +760,7 @@ function renderSettings() {
           h("button.link-btn", { type: "button", onclick: async () => {
             if (!(await confirmDialog("Make a new calendar link?", "The old link stops working. You'll need to add the new one to your calendar again.", { confirm: "Make new link" }))) return;
             await busy(null, async () => {
-              me = (await api("/api/me/calendar-token", { method: "POST", body: {} })).artist;
+              setMe((await api("/api/me/calendar-token", { method: "POST", body: {} })).artist);
               renderSettings();
               toast("New calendar link ready");
             });

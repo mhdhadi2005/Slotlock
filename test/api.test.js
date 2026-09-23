@@ -420,3 +420,22 @@ test("confirming a lapsed hold can't double-book a slot someone else took", asyn
   assert.equal(r.status, 409);
   assert.equal((await client("GET", `/api/public/bookings/${tokenFrom(first.body.redirectUrl)}`)).body.booking.status, "awaiting_deposit");
 });
+
+test("links use Railway's public domain when BASE_URL isn't set", async () => {
+  const { artist } = await setupArtist(ctx, "domain-artist");
+  delete process.env.BASE_URL;
+  process.env.RAILWAY_PUBLIC_DOMAIN = "slotlock-test.up.railway.app";
+  try {
+    const me = (await artist("GET", "/api/me")).body.artist;
+    assert.equal(me.bookingUrl, "https://slotlock-test.up.railway.app/domain-artist");
+    assert.match(me.calendarUrl, /^https:\/\/slotlock-test\.up\.railway\.app\/cal\//);
+    const page = await ctx.client()("GET", "/domain-artist");
+    assert.match(page.text, /og:url" content="https:\/\/slotlock-test\.up\.railway\.app\/domain-artist"/);
+
+    process.env.BASE_URL = "https://book.example.com/";
+    assert.equal((await artist("GET", "/api/me")).body.artist.bookingUrl, "https://book.example.com/domain-artist");
+  } finally {
+    delete process.env.RAILWAY_PUBLIC_DOMAIN;
+    delete process.env.BASE_URL;
+  }
+});

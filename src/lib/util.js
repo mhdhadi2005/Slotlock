@@ -18,7 +18,15 @@ const THEMES = {
   bone: "#efe6d6",
 };
 
-const baseUrl = () => (process.env.BASE_URL || `http://localhost:${process.env.PORT || 3002}`).replace(/\/$/, "");
+// The site's public address, for links in emails, the calendar feed and the
+// artist's "your booking link" box. BASE_URL wins. On Railway, the domain it
+// generated (RAILWAY_PUBLIC_DOMAIN) works with no setup. Otherwise localhost,
+// which is only right for local development.
+function baseUrl() {
+  if (process.env.BASE_URL) return process.env.BASE_URL.trim().replace(/\/$/, "");
+  if (process.env.RAILWAY_PUBLIC_DOMAIN) return `https://${process.env.RAILWAY_PUBLIC_DOMAIN.trim()}`;
+  return `http://localhost:${process.env.PORT || 3002}`;
+}
 
 function money(cents, currency) {
   try {

@@ -118,6 +118,10 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3002;
 if (require.main === module) {
+  if (process.env.NODE_ENV === "production" && baseUrl().includes("localhost")) {
+    console.warn(`WARNING: BASE_URL is not set, so links in emails and the dashboard point at ${baseUrl()}. ` +
+      "Set BASE_URL to the site's public address, e.g. https://yourapp.up.railway.app");
+  }
   app.listen(PORT, () => console.log(`Slotlock listening on :${PORT}`));
   startScheduler();
 }
