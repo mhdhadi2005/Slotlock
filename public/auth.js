@@ -105,14 +105,21 @@ function forgot() {
   document.title = "Reset password · Slotlock";
   const email = h("input", { type: "email", autocomplete: "email", required: true });
   const done = h("div.notice.ok.hidden", icon("mail", 18), h("span", "If there's an account for that email, a reset link is on its way. It works for one hour."));
+  // Without an email service the link can't be sent, so don't promise it.
+  // (The server writes it to its log, where the site owner can find it.)
+  const noEmail = h("div.notice.warn.hidden", { style: { marginBottom: "18px" } }, icon("alert", 18),
+    h("span", "Email isn't switched on for this site yet, so reset links can't be emailed. Contact the Slotlock team and they'll reset it for you."));
+  getConfig().then((c) => { if (!c.emailEnabled) noEmail.classList.remove("hidden"); }).catch(() => {});
   fill(card,
     logo(),
     h("h1", "Forgot your password?"),
     h("p.sub", "Enter your email and we'll send you a link to choose a new one."),
+    noEmail,
     done,
     form(async () => {
       await api("/api/auth/forgot", { method: "POST", body: { email: email.value } });
-      done.classList.remove("hidden");
+      if (noEmail.classList.contains("hidden")) done.classList.remove("hidden");
+      else toast("Request received. It can't be emailed until email is switched on.", "info");
     },
       field("Email", email),
       h("button.btn.primary.lg.block", { type: "submit" }, "Send reset link"),

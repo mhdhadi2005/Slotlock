@@ -124,7 +124,9 @@ router.post("/api/auth/forgot", limiter, async (req, res) => {
     db.prepare("INSERT INTO password_resets (token_hash, artist_id, expires_at) VALUES (?, ?, ?)")
       .run(auth.sha256(token), artist.id, new Date(Date.now() + 3600000).toISOString());
     const link = `${baseUrl()}/reset/${token}`;
-    if (!emailEnabled() && process.env.NODE_ENV !== "test") console.log(`[password reset] ${artist.email}: ${link}`);
+    if (!emailEnabled() && process.env.NODE_ENV !== "test") {
+      console.log(`[password reset] Email is off (no RESEND_API_KEY). Reset link for ${artist.email}, valid 1 hour: ${link}`);
+    }
     await sendEmail({
       to: artist.email,
       subject: "Reset your Slotlock password",
