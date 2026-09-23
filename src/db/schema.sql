@@ -29,6 +29,18 @@ CREATE TABLE IF NOT EXISTS artists (
   avatar_image_id        INTEGER,
   calendar_token         TEXT,
   is_demo                INTEGER NOT NULL DEFAULT 0,
+  -- Closed books: no new bookings or requests, and the page collects a waitlist.
+  books_open             INTEGER NOT NULL DEFAULT 1,
+  books_closed_message   TEXT NOT NULL DEFAULT '',
+  waitlist_notified_at   TEXT,
+  -- Consent form clients sign before the appointment. Statements are a JSON
+  -- array of strings the client must agree to.
+  consent_enabled        INTEGER NOT NULL DEFAULT 0,
+  consent_intro          TEXT NOT NULL DEFAULT '',
+  consent_statements     TEXT NOT NULL DEFAULT '[]',
+  aftercare_enabled      INTEGER NOT NULL DEFAULT 0,
+  aftercare_text         TEXT NOT NULL DEFAULT '',
+  review_url             TEXT NOT NULL DEFAULT '',
   stripe_customer_id     TEXT,
   stripe_subscription_id TEXT,
   subscription_status    TEXT,
@@ -57,6 +69,9 @@ CREATE TABLE IF NOT EXISTS services (
   duration_min  INTEGER NOT NULL,
   price_cents   INTEGER,              -- NULL = "price varies / quoted"
   deposit_cents INTEGER NOT NULL DEFAULT 0,
+  -- book: clients pick a time straight away. consult: they send their idea
+  -- first and the artist replies with a quote.
+  mode          TEXT NOT NULL DEFAULT 'book',
   active        INTEGER NOT NULL DEFAULT 1,
   sort_order    INTEGER NOT NULL DEFAULT 0
 );
@@ -106,7 +121,77 @@ CREATE TABLE IF NOT EXISTS bookings (
   cancelled_by        TEXT,
   cancel_reason       TEXT NOT NULL DEFAULT '',
   reminder_sent_at    TEXT,
+  aftercare_sent_at   TEXT,
+  -- Set when the booking came from an approved consultation request.
+  request_id          INTEGER,
   created_at          TEXT NOT NULL
+);
+
+-- Consultation requests: the client's idea, then the artist's quote. A quoted
+-- request turns into a normal booking when the client picks a time.
+CREATE TABLE IF NOT EXISTS requests (
+  id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+  artist_id           INTEGER NOT NULL REFERENCES artists(id) ON DELETE CASCADE,
+  service_id          INTEGER NOT NULL REFERENCES services(id),
+  public_token        TEXT NOT NULL UNIQUE,
+  service_name        TEXT NOT NULL,
+  -- new | quoted | declined | booked | withdrawn
+  status              TEXT NOT NULL DEFAULT 'new',
+  client_name         TEXT NOT NULL,
+  client_email        TEXT NOT NULL,
+  client_phone        TEXT NOT NULL DEFAULT '',
+  client_instagram    TEXT NOT NULL DEFAULT '',
+  idea                TEXT NOT NULL,
+  placement           TEXT NOT NULL DEFAULT '',
+  size                TEXT NOT NULL DEFAULT '',
+  style               TEXT NOT NULL DEFAULT '',
+  quote_price_cents   INTEGER,
+  quote_deposit_cents INTEGER,
+  quote_duration_min  INTEGER,
+  quote_message       TEXT NOT NULL DEFAULT '',
+  quoted_at           TEXT,
+  decline_reason      TEXT NOT NULL DEFAULT '',
+  booking_id          INTEGER,
+  currency            TEXT NOT NULL,
+  created_at          TEXT NOT NULL
+);
+
+-- Reference photos clients attach to a request. Served by an unguessable key,
+-- never by id: they can be photos of someone's body.
+CREATE TABLE IF NOT EXISTS request_photos (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  request_id INTEGER NOT NULL REFERENCES requests(id) ON DELETE CASCADE,
+  key        TEXT NOT NULL UNIQUE,
+  mime       TEXT NOT NULL,
+  data       BLOB NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS waitlist (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  artist_id   INTEGER NOT NULL REFERENCES artists(id) ON DELETE CASCADE,
+  email       TEXT NOT NULL,
+  name        TEXT NOT NULL DEFAULT '',
+  -- For the "leave the waitlist" link in emails.
+  token       TEXT NOT NULL UNIQUE,
+  notified_at TEXT,
+  created_at  TEXT NOT NULL,
+  UNIQUE (artist_id, email)
+);
+
+-- A signed consent form. form_text is the exact wording the client agreed to,
+-- so later edits to the artist's template don't change old records.
+CREATE TABLE IF NOT EXISTS consents (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  booking_id     INTEGER NOT NULL UNIQUE REFERENCES bookings(id) ON DELETE CASCADE,
+  legal_name     TEXT NOT NULL,
+  date_of_birth  TEXT NOT NULL,
+  medical_notes  TEXT NOT NULL DEFAULT '',
+  form_text      TEXT NOT NULL,
+  signature_mime TEXT NOT NULL,
+  signature      BLOB NOT NULL,
+  signed_at      TEXT NOT NULL,
+  ip             TEXT NOT NULL DEFAULT '',
+  user_agent     TEXT NOT NULL DEFAULT ''
 );
 
 -- Profile photos and portfolio pieces. Small (resized in the browser before
@@ -124,3 +209,5 @@ CREATE TABLE IF NOT EXISTS images (
 CREATE INDEX IF NOT EXISTS idx_bookings_artist_start ON bookings(artist_id, starts_at);
 CREATE INDEX IF NOT EXISTS idx_bookings_status_start ON bookings(status, starts_at);
 CREATE INDEX IF NOT EXISTS idx_images_artist ON images(artist_id, kind);
+CREATE INDEX IF NOT EXISTS idx_requests_artist ON requests(artist_id, status);
+CREATE INDEX IF NOT EXISTS idx_request_photos ON request_photos(request_id);

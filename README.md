@@ -45,6 +45,9 @@ printed to the console instead of sent.
 | Profile photos and portfolio (resized in the browser, stored in SQLite) | `src/routes/images.js` |
 | Private calendar feed for Google / Apple Calendar | `src/routes/calendar.js`, `src/lib/ics.js` |
 | Emails (Resend), hold expiry, day-before reminders | `src/lib/email.js`, `src/jobs/scheduler.js` |
+| Consultation requests: idea + reference photos → quote → booking | `src/lib/requests.js`, `public/book.js` (`/request/:token`) |
+| Books open/closed, waitlist and the "books are open" email | `src/routes/artist.js`, `src/routes/public.js`, `public/leave.js` |
+| Consent forms (signed on the client's phone) and aftercare emails | `src/lib/forms.js`, `public/booking.js`, `src/jobs/scheduler.js` |
 | Optional artist subscription billing (Stripe) | `src/routes/billing.js`, `src/lib/stripe.js` |
 | The example page at `/demo`, with generated flash artwork | `src/seed-demo.js` |
 | Landing, auth, dashboard, booking and status pages | `public/` |
@@ -65,6 +68,23 @@ printed to the console instead of sent.
 6. Cancel before the artist's cutoff and the deposit is marked **refund owed**.
    The artist sends it back themselves, then marks it refunded. Cancel later and
    they keep it.
+
+### Consultations, waitlist, consent
+
+- **Consult-first services.** The client sends their idea, placement, size,
+  style and up to 4 reference photos (served only by unguessable `/rp/` keys).
+  The artist quotes a price, deposit and session length, or declines. The
+  client books the quote from `/request/:token`, which becomes a normal deposit
+  booking linked to the request. If that booking lapses, the quote still stands.
+- **Books closed.** No new bookings or requests. The page shows the artist's
+  message and a waitlist form. Opening books can email the whole list (at most
+  every 12 hours), with a leave link in each email that asks before removing.
+- **Consent forms.** Clients tick each statement, give their legal name, date of
+  birth (18+ on the appointment day), medical notes and a drawn signature. The
+  exact wording signed is stored with it; the artist gets a printable record at
+  `/app/consent/:bookingId`. Links go out in confirmation and reminder emails.
+- **Aftercare.** Shown on the booking page after the appointment and emailed 3
+  hours after it ends, with an optional review link.
 
 ## Deploy (Railway)
 
@@ -115,7 +135,7 @@ someone free, set their `subscription_status` to `comped`.
 ## Known limits / next up
 
 - One working window per weekday (no split shifts yet).
-- Clients add reference links, not uploads.
+- Reference photo uploads are for consultation requests only; instant bookings take a link.
 - No SMS reminders yet (Twilio would be the obvious add, and a good upsell).
 - Artists can't add bookings by hand yet (for ones made over DM).
 - SQLite on one instance. Fine for hundreds of artists; the double-booking guard

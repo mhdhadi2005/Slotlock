@@ -796,3 +796,52 @@ dialog.lightbox img { width: 100%; height: auto; max-height: calc(100dvh - 48px)
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
+
+/* ---- Books closed, waitlist -------------------------------------------- */
+.attention.closed { border-color: var(--border-strong); background: var(--surface-2); }
+.attention.closed .a-icon { background: var(--surface-3); color: var(--text); }
+.attention.request { border-color: rgba(247, 182, 74, 0.35); background: var(--warn-soft); }
+.attention.request .a-icon { background: var(--warn); color: #1f1405; }
+.closed-card { margin-top: 28px; padding: 30px 24px; text-align: center; }
+.closed-card form { text-align: left; }
+.books-card.open { border-color: color-mix(in srgb, var(--ok) 35%, transparent); }
+.books-state { display: flex; align-items: center; gap: 10px; font: 700 1.25rem/1.2 var(--display); letter-spacing: -0.02em; }
+.books-dot { width: 11px; height: 11px; border-radius: 50%; background: var(--muted); box-shadow: 0 0 0 4px var(--surface-3); }
+.books-card.open .books-dot { background: var(--ok); box-shadow: 0 0 0 4px var(--ok-soft); }
+.wl-list { display: flex; flex-direction: column; }
+.wl-row { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--border); }
+.wl-row:last-child { border-bottom: 0; }
+.wl-row b { display: block; font-weight: 600; word-break: break-all; }
+
+/* ---- Consultation requests ------------------------------------------------ */
+.ref-photos { display: flex; flex-wrap: wrap; gap: 10px; }
+.ref-photos.view { margin-top: 14px; }
+.ref-photo { position: relative; width: 84px; height: 84px; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: var(--surface-2); padding: 0; cursor: pointer; }
+.ref-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ref-photo > button { position: absolute; top: 4px; right: 4px; width: 26px; height: 26px; border-radius: 50%; border: 0; display: grid; place-items: center; background: rgba(0, 0, 0, 0.7); color: #fff; cursor: pointer; }
+.ref-add { width: 84px; height: 84px; border-radius: 12px; border: 1.5px dashed var(--border-strong); background: transparent; color: var(--muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font: 600 0.78rem var(--font); cursor: pointer; }
+.ref-add:hover { color: var(--text); border-color: var(--muted); }
+.req-summary .pre { margin: 12px 0 0; color: var(--text-2); }
+.quote-msg { display: flex; gap: 12px; align-items: flex-start; padding: 14px; border-radius: var(--radius); background: var(--surface-2); border: 1px solid var(--border); }
+.quote-msg .avatar { width: 38px; height: 38px; flex: none; font-size: 0.8rem; }
+.quote-msg p { margin: 0; color: var(--text); }
+.bk.req { grid-template-columns: 1fr; }
+
+/* ---- Consent form ----------------------------------------------------------- */
+.consent-card.done { padding: 16px 18px; }
+.status-icon.sm { width: 40px; height: 40px; border-radius: 12px; margin: 0; flex: none; }
+.consent-list { display: flex; flex-direction: column; gap: 10px; margin: 16px 0 20px; }
+.consent-item { padding: 12px 14px; border-radius: 12px; background: var(--bg-raised); border: 1px solid var(--border); font-size: 0.92rem; }
+.consent-item input { margin-top: 2px; flex: none; width: 18px; height: 18px; accent-color: var(--accent); }
+.sig-wrap { display: flex; flex-direction: column; gap: 6px; }
+.sig-pad { width: 100%; height: 170px; border-radius: 12px; background: #fff; touch-action: none; cursor: crosshair; display: block; }
+.bk-consent { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; font-size: 0.86rem; color: var(--muted); }
+.bk-consent.ok { color: var(--ok); }
+.bk-consent .link { margin-left: 4px; }
+.stmt-list { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.stmt-row { display: grid; grid-template-columns: 26px 1fr auto; gap: 10px; align-items: start; width: 100%; }
+.stmt-row textarea { min-height: 0; }
+.stmt-n { width: 26px; height: 26px; margin-top: 8px; border-radius: 50%; background: var(--surface-3); color: var(--text-2); display: grid; place-items: center; font-size: 0.78rem; font-weight: 700; }
+.row.side-by-side { flex-wrap: nowrap; align-items: flex-start; gap: 16px; }
+.row.side-by-side > .switch { flex: none; margin-top: 4px; }
+.row.side-by-side > div { flex: 1; min-width: 0; }

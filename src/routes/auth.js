@@ -4,6 +4,7 @@ const auth = require("../lib/auth");
 const { randomToken } = require("../lib/ids");
 const { sendEmail, emailEnabled } = require("../lib/email");
 const { parseMethods } = require("../lib/payments");
+const { parseStatements } = require("../lib/forms");
 const { isValidTimezone } = require("../lib/time");
 const { billingState, depositsReady, baseUrl, rateLimit, str, isEmail } = require("../lib/util");
 
@@ -17,6 +18,7 @@ const RESERVED = new Set([
   "bookings", "book", "demo", "webhooks", "health", "static", "assets", "public", "fonts", "img",
   "cal", "pricing", "about", "terms", "privacy", "help", "support", "blog", "settings",
   "dashboard", "slotlock", "www", "mail", "stripe", "billing", "favicon", "og",
+  "request", "requests", "rp", "waitlist", "consent", "forms",
 ]);
 
 function validHandle(h) {
@@ -54,6 +56,15 @@ function serializeArtist(a) {
     calendarUrl: `${baseUrl()}/cal/${a.calendar_token}.ics`,
     emailEnabled: emailEnabled(),
     billing: billingState(a),
+    booksOpen: !!a.books_open,
+    booksClosedMessage: a.books_closed_message,
+    waitlistNotifiedAt: a.waitlist_notified_at,
+    consentEnabled: !!a.consent_enabled,
+    consentIntro: a.consent_intro,
+    consentStatements: parseStatements(a.consent_statements),
+    aftercareEnabled: !!a.aftercare_enabled,
+    aftercareText: a.aftercare_text,
+    reviewUrl: a.review_url,
   };
 }
 

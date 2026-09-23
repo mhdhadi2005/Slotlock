@@ -45,6 +45,14 @@ test("upgrades a first-release database in place", async () => {
     assert.equal(real.hold_hours, 24);
     assert.equal(real.theme, "vermilion");
     assert.ok(real.calendar_token);
+    // Newer features default to off / open, so nothing changes for existing artists.
+    assert.equal(real.books_open, 1);
+    assert.equal(real.consent_enabled, 0);
+    assert.equal(real.aftercare_enabled, 0);
+    assert.equal(db.prepare("SELECT mode FROM services WHERE id = 1").get().mode, "book");
+    for (const table of ["requests", "request_photos", "waitlist", "consents"]) {
+      assert.ok(db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?").get(table), `${table} table created`);
+    }
 
     const demo = db.prepare("SELECT * FROM artists WHERE handle = 'demo'").get();
     assert.equal(demo.is_demo, 1);

@@ -18,6 +18,7 @@ const imageRoutes = require("./routes/images");
 const calendarRoutes = require("./routes/calendar");
 const { startScheduler } = require("./jobs/scheduler");
 const { seedDemo } = require("./seed-demo");
+const forms = require("./lib/forms");
 
 // The example page the landing page links to. Rebuilt on every boot so it
 // always works; set DISABLE_DEMO=1 to skip it.
@@ -48,6 +49,9 @@ app.use((req, res, next) => {
 app.use(webhookRouter);
 // Image uploads arrive as data URLs, so they get a bigger limit than the rest.
 app.use("/api/images", express.json({ limit: "4mb" }));
+// Up to four reference photos with a consultation request, and a drawn signature.
+app.use("/api/public/artists/:handle/requests", express.json({ limit: "8mb" }));
+app.use("/api/public/bookings/:token/consent", express.json({ limit: "1mb" }));
 app.use(express.json({ limit: "100kb" }));
 app.use(auth.attachArtist);
 
@@ -71,6 +75,10 @@ app.get("/api/config", (req, res) => {
     maxPaymentMethods: MAX_METHODS,
     currencies: CURRENCIES,
     themes: THEMES,
+    formTemplates: {
+      consentIntro: forms.CONSENT_INTRO, consentStatements: forms.CONSENT_STATEMENTS,
+      aftercareText: forms.AFTERCARE_TEXT, maxStatements: forms.MAX_STATEMENTS,
+    },
   });
 });
 
@@ -90,10 +98,19 @@ app.get("/", (req, res) => res.type("html").send(landingTemplate.replaceAll("{{b
 app.get(["/signup", "/login", "/forgot", "/reset/:token"], page("auth.html"));
 app.get("/app", page("app.html"));
 app.get("/booking/:token", page("booking.html"));
+app.get("/waitlist/leave/:token", page("leave.html"));
 
 // Artist pages get real <title> and Open Graph tags, so a link pasted into an
 // Instagram DM or WhatsApp previews as "Book with Rosa Vega Tattoo".
 const bookTemplate = fs.readFileSync(path.join(PUBLIC, "book.html"), "utf8");
+const fillBook = (vals) => bookTemplate.replace(/\{\{(\w+)\}\}/g, (m, key) => (key in vals ? escapeHtml(vals[key]) : m));
+// A consultation request's page: the same booking page, in request mode.
+app.get("/request/:token", (req, res) => {
+  res.type("html").send(fillBook({
+    title: "Your tattoo request", description: "Check on your request and book your quote.",
+    image: `${baseUrl()}/og.png`, url: `${baseUrl()}/request/${req.params.token}`,
+  }).replace("<head>", '<head>\n  <meta name="robots" content="noindex">'));
+});
 app.get("/:handle", (req, res, next) => {
   const a = artistByHandle(req.params.handle);
   if (!a) return next();
@@ -103,7 +120,7 @@ app.get("/:handle", (req, res, next) => {
     image: a.avatar_image_id ? `${baseUrl()}/img/${a.avatar_image_id}` : `${baseUrl()}/og.png`,
     url: `${baseUrl()}/${a.handle}`,
   };
-  res.type("html").send(bookTemplate.replace(/\{\{(\w+)\}\}/g, (m, key) => (key in fill ? escapeHtml(fill[key]) : m)));
+  res.type("html").send(fillBook(fill));
 });
 
 app.use((req, res) => res.status(404).sendFile(path.join(PUBLIC, "404.html")));

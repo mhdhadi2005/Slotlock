@@ -104,6 +104,8 @@ function render() {
       h("a.btn.primary", { href: b.googleCalendarUrl, target: "_blank", rel: "noopener" }, icon("calendar", 16), "Google Calendar"),
       h("a.btn", { href: `${base}/ics` }, icon("calendar", 16), "Apple / Outlook")) : null,
     a.isDemo && b.status === "confirmed" ? h("a.btn.light", { href: "/signup", style: { marginTop: "12px" } }, "Create my free page", icon("arrow", 16)) : null,
+    b.consent ? consentCard() : null,
+    b.aftercare ? aftercareCard() : null,
     detailsCard(),
     b.cancellable ? cancelCard() : null,
     ["expired", "cancelled"].includes(b.status) ? h("a.btn.primary", { href: `/${a.handle}`, style: { marginTop: "20px" } }, "Pick a new time") : null,
@@ -171,6 +173,112 @@ async function reportDeposit() {
     render();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
+}
+
+// ---- Consent form ------------------------------------------------------------
+
+function consentCard() {
+  const b = booking, c = b.consent, a = b.artist;
+  if (c.signed) {
+    return h("section.card.consent-card.done", { style: { marginTop: "26px" } },
+      h("div.row", h("div.status-icon.ok.sm", icon("check", 18)),
+        h("div", h("b", "Consent form signed"), h("div.small.muted", `Signed by ${c.legalName}, ${fmt(c.signedAt, a.timezone, { month: "short", day: "numeric", year: "numeric" })}`))));
+  }
+  const btn = h("button.btn.primary", { type: "button", onclick: openConsent }, icon("edit", 16), "Sign consent form");
+  return h("section.card.consent-card", { style: { marginTop: "26px" } },
+    h("div.card-head", h("div", h("h2.card-title", "Sign your consent form"),
+      h("p.card-sub", `${a.displayName} needs this before your appointment. It takes about a minute, and saves time on the day.`))),
+    btn);
+}
+
+// A signature drawn with a finger or mouse, on a white "paper" canvas.
+function signaturePad() {
+  const canvas = h("canvas.sig-pad", { "aria-label": "Draw your signature" });
+  const ctx = canvas.getContext("2d");
+  let inked = false, drawing = false, last = null;
+  const size = () => {
+    const ratio = Math.max(1, window.devicePixelRatio || 1);
+    const w = canvas.clientWidth || 480, hgt = 170;
+    canvas.width = Math.round(w * ratio); canvas.height = Math.round(hgt * ratio);
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, w, hgt);
+    ctx.lineWidth = 2.4; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.strokeStyle = "#141414";
+    inked = false;
+  };
+  const point = (e) => { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+  canvas.addEventListener("pointerdown", (e) => { drawing = true; last = point(e); canvas.setPointerCapture(e.pointerId); e.preventDefault(); });
+  canvas.addEventListener("pointermove", (e) => {
+    if (!drawing) return;
+    const p = point(e);
+    ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(p.x, p.y); ctx.stroke();
+    last = p; inked = true;
+  });
+  const stop = () => { drawing = false; };
+  canvas.addEventListener("pointerup", stop);
+  canvas.addEventListener("pointercancel", stop);
+  const clear = h("button.link-btn.small", { type: "button", onclick: size }, "Clear");
+  return {
+    el: h("div.sig-wrap", canvas, h("div.row.between", h("span.small.muted", "Sign above with your finger or mouse"), clear)),
+    init: size,
+    get inked() { return inked; },
+    toDataURL: () => canvas.toDataURL("image/png"),
+  };
+}
+
+async function openConsent() {
+  const b = booking, form = b.consent.form, a = b.artist;
+  const boxes = form.statements.map((text) => ({ text, input: h("input", { type: "checkbox" }) }));
+  const legalName = h("input", { autocomplete: "name", maxLength: 120, value: b.clientName });
+  const dob = h("input", { type: "date", max: new Date().toISOString().slice(0, 10), min: "1900-01-01" });
+  const medical = h("textarea", { rows: 3, maxLength: 2000, placeholder: "Allergies, medical conditions, medications, pregnancy… or “none”" });
+  const pad = signaturePad();
+  const error = h("div.form-error", { role: "alert" });
+  const label = (text, el) => { el.id = "c-" + Math.random().toString(36).slice(2); return h("div.field", h("label", { for: el.id }, text), el); };
+
+  const done = modal({
+    title: `${a.displayName}: consent form`,
+    wide: true,
+    body: [
+      h("p.pre.text-2", form.intro),
+      h("div.consent-list", boxes.map((x) => h("label.check.consent-item", x.input, h("span", x.text)))),
+      h("div.grid-2", label("Full legal name", legalName), label("Date of birth", dob)),
+      label("Anything your artist should know? (optional)", medical),
+      h("div.field", h("span.label", "Signature"), pad.el),
+      error,
+    ],
+    actions: [
+      { label: "Not now", kind: "ghost", value: false },
+      {
+        label: "Sign", kind: "primary", value: true,
+        onClick: async () => {
+          error.textContent = "";
+          if (boxes.some((x) => !x.input.checked)) { error.textContent = "Please read and tick every statement."; return false; }
+          if (!pad.inked) { error.textContent = "Please sign in the box."; return false; }
+          try {
+            booking = (await api(`${base}/consent`, { method: "POST", body: {
+              legalName: legalName.value, dateOfBirth: dob.value, medicalNotes: medical.value, agreed: true, signature: pad.toDataURL(),
+            } })).booking;
+          } catch (err) {
+            error.textContent = err.message;
+            return false;
+          }
+        },
+      },
+    ],
+  });
+  // The canvas needs its real on-screen width, which it only has once shown.
+  requestAnimationFrame(() => pad.init());
+  if (await done) { render(); toast("Consent form signed"); }
+}
+
+// ---- Aftercare ------------------------------------------------------------------
+
+function aftercareCard() {
+  const { text, reviewUrl } = booking.aftercare;
+  return h("section.card", { style: { marginTop: "26px" } },
+    h("div.card-head", h("div", h("h2.card-title", "Aftercare"), h("p.card-sub", `From ${booking.artist.displayName}`))),
+    h("p.pre.text-2", text),
+    reviewUrl ? h("a.btn.primary", { href: reviewUrl, target: "_blank", rel: "noopener noreferrer", style: { marginTop: "16px" } }, icon("sparkle", 16), "Leave a review") : null);
 }
 
 function detailsCard() {

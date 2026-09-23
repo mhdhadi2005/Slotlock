@@ -1,13 +1,19 @@
 // An artist's public booking page: pick a service, a time, then send a request.
-const handle = decodeURIComponent(location.pathname.split("/")[1] || "");
+// Consultation services send the client's idea first instead; the same page at
+// /request/:token then shows the artist's quote and lets the client book it.
+const REQUEST_TOKEN = location.pathname.startsWith("/request/") ? decodeURIComponent(location.pathname.split("/")[2] || "") : null;
+let handle = REQUEST_TOKEN ? "" : decodeURIComponent(location.pathname.split("/")[1] || "");
 const bookingEl = document.getElementById("booking");
-const base = `/api/public/artists/${encodeURIComponent(handle)}`;
+let base = `/api/public/artists/${encodeURIComponent(handle)}`;
+const requestBase = REQUEST_TOKEN ? `/api/public/requests/${encodeURIComponent(REQUEST_TOKEN)}` : null;
 const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 const state = {
   artist: null, services: [], service: null,
   days: [], from: null, today: null, date: null, slot: null, loadingDays: false, stripScroll: 0,
   form: { name: "", email: "", phone: "", instagram: "", notes: "", referenceUrl: "", agreed: false },
+  idea: { idea: "", placement: "", size: "", style: "", photos: [] },
+  request: null, joined: false,
 };
 
 const listJoin = (items) => (items.length < 2 ? items.join("") : `${items.slice(0, -1).join(", ")} or ${items[items.length - 1]}`);
@@ -15,6 +21,7 @@ const addDays = (d, n) => { const t = new Date(d + "T12:00:00Z"); t.setUTCDate(t
 const dayLabel = (d, opts) => new Date(d + "T12:00:00Z").toLocaleDateString(undefined, { timeZone: "UTC", ...opts });
 
 async function init() {
+  if (REQUEST_TOKEN) return initRequest();
   let data;
   try {
     data = await api(base);
@@ -69,7 +76,9 @@ function renderSaved() {
 }
 
 function renderBooking() {
+  if (REQUEST_TOKEN) return renderRequest();
   const a = state.artist;
+  if (a.acceptingBookings && !a.booksOpen) return fill(bookingEl, closedCard());
   if (!a.acceptingBookings) {
     return fill(bookingEl, h("div.card", { style: { marginTop: "28px" } }, h("div.notice", icon("info", 18),
       h("span", `${a.displayName} isn't taking online bookings right now. Message them directly to book.`))));
@@ -81,11 +90,14 @@ function renderBooking() {
   const strip = bookingEl.querySelector(".day-strip");
   if (strip) state.stripScroll = strip.scrollLeft;
 
+  const consult = state.service?.mode === "consult";
   const step = state.slot ? 3 : state.service ? 2 : 1;
+  const labels = consult ? ["Service", "Your idea"] : ["Service", "Time", "Your details"];
   fill(bookingEl, h("section.book-card",
-    h("div.book-card-head", h("div.book-steps", ["Service", "Time", "Your details"].map((label, i) => h("div" + (i < step ? ".on" : ""), label)))),
+    h("div.book-card-head", h("div.book-steps", labels.map((label, i) => h("div" + (i < step ? ".on" : ""), label)))),
     serviceSection(),
-    state.service ? timeSection() : null,
+    consult ? ideaSection() : null,
+    state.service && !consult ? timeSection() : null,
     state.slot ? detailsSection() : null));
 
   const newStrip = bookingEl.querySelector(".day-strip");
@@ -98,6 +110,9 @@ function scrollTo(id) {
 
 function priceBlock(s) {
   const cur = state.artist.currency;
+  if (s.mode === "consult") {
+    return h("div.svc-price", s.priceCents === null ? "Quoted" : `From ${money(s.priceCents, cur)}`, h("small", "Consult first"));
+  }
   return h("div.svc-price", s.priceCents === null ? "Quoted" : money(s.priceCents, cur),
     h("small", s.depositCents ? `${money(s.depositCents, cur)} deposit` : "No deposit"));
 }
@@ -115,6 +130,7 @@ function serviceSection() {
       type: "button", disabled: !s.bookable,
       onclick: () => {
         Object.assign(state, { service: s, slot: null, date: null, days: [], from: null });
+        if (s.mode === "consult") { renderBooking(); scrollTo("step-idea"); return; }
         loadDays(null);
         scrollTo("step-time");
       },
@@ -123,17 +139,18 @@ function serviceSection() {
       priceBlock(s),
       s.description ? h("div.desc", s.description) : null,
       h("div.tags",
-        h("span.badge", icon("clock", 13), duration(s.durationMin)),
+        s.mode === "consult" ? h("span.badge.accent", icon("message", 13), "Send your idea, get a quote") : h("span.badge", icon("clock", 13), duration(s.durationMin)),
         s.bookable ? null : h("span.badge.warn", "Message to book"))))));
 }
 
 async function loadDays(from) {
   state.loadingDays = true;
   renderBooking();
-  const q = new URLSearchParams({ service: state.service.id, days: 14 });
+  const q = new URLSearchParams({ days: 14 });
+  if (!REQUEST_TOKEN) q.set("service", state.service.id);
   if (from) q.set("from", from);
   try {
-    const data = await api(`${base}/availability?${q}`);
+    const data = await api(`${REQUEST_TOKEN ? requestBase : base}/availability?${q}`);
     state.days = data.days;
     state.today = data.today;
     state.from = from;
@@ -199,6 +216,7 @@ function timeSection() {
 }
 
 function detailsSection() {
+  if (REQUEST_TOKEN) return confirmQuoteSection();
   const a = state.artist, s = state.service, f = state.form;
   const cur = a.currency;
   const input = (key, attrs) => {
@@ -256,6 +274,221 @@ function detailsSection() {
   });
 
   return h("div.book-section", { id: "step-details" }, h("div.book-section-title", h("span.n", "3"), "Your details"), form);
+}
+
+// ---- Books closed: the waitlist ------------------------------------------------
+
+function closedCard() {
+  const a = state.artist;
+  const head = [h("div.status-icon.off", { style: { margin: "0 auto 14px" } }, icon("lock", 26)),
+    h("h2.card-title", { style: { textAlign: "center", fontSize: "1.35rem" } }, "Books are closed"),
+    h("p.muted.center", { style: { margin: "8px 0 0" } }, a.booksClosedMessage || `${a.displayName} isn't taking new bookings right now.`)];
+  if (state.joined) {
+    return h("section.card.closed-card", head, h("div.notice.ok", { style: { marginTop: "20px" } }, icon("check", 18),
+      h("span", `You're on the list. ${firstWord(a.displayName)} will email you when books open.`)));
+  }
+  const email = h("input", { type: "email", autocomplete: "email", required: true, placeholder: "you@email.com", "aria-label": "Email" });
+  const name = h("input", { autocomplete: "given-name", placeholder: "First name (optional)", "aria-label": "First name" });
+  const error = h("div.form-error", { role: "alert" });
+  const btn = h("button.btn.primary.lg.block", { type: "submit" }, icon("bell", 18), "Tell me when books open");
+  const form = h("form", { novalidate: true, style: { marginTop: "22px" } }, h("div.stack-sm", name, email), error, btn,
+    h("p.fine.center", { style: { marginTop: "10px" } }, "Just one email when books open. Leave any time."));
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    error.textContent = "";
+    btn.classList.add("loading");
+    try {
+      await api(`${base}/waitlist`, { method: "POST", body: { email: email.value, name: name.value } });
+      state.joined = true;
+      renderBooking();
+    } catch (err) {
+      error.textContent = err.message;
+      btn.classList.remove("loading");
+    }
+  });
+  return h("section.card.closed-card", head, form);
+}
+
+const firstWord = (s) => String(s).trim().split(/\s+/)[0];
+
+// ---- Consultation: the client's idea ---------------------------------------------
+
+const MAX_PHOTOS = 4;
+
+function ideaSection() {
+  const a = state.artist, f = state.form, d = state.idea;
+  const bind = (obj, key, el) => { el.value = obj[key]; el.addEventListener("input", () => { obj[key] = el.value; }); return el; };
+  const fieldOf = (label, el, hint) => { el.id ||= "i-" + label.toLowerCase().replace(/\W+/g, "-"); return h("div.field", h("label", { for: el.id }, label), el, hint ? h("div.hint", hint) : null); };
+  const style = h("select", h("option", { value: "" }, "Choose…"), h("option", { value: "color" }, "Colour"), h("option", { value: "black_grey" }, "Black & grey"), h("option", { value: "unsure" }, "Not sure yet"));
+  bind(d, "style", style);
+  style.addEventListener("change", () => { d.style = style.value; });
+
+  const photos = h("div.ref-photos");
+  const picker = h("input.hidden", { type: "file", accept: "image/*", multiple: true });
+  const drawPhotos = () => fill(photos,
+    d.photos.map((src, i) => h("div.ref-photo", h("img", { src, alt: `Reference ${i + 1}` }),
+      h("button", { type: "button", "aria-label": "Remove photo", onclick: () => { d.photos.splice(i, 1); drawPhotos(); } }, icon("x", 14)))),
+    d.photos.length < MAX_PHOTOS ? h("button.ref-add", { type: "button", onclick: () => picker.click() }, icon("image", 20), h("span", "Add photo")) : null);
+  picker.addEventListener("change", async () => {
+    const files = [...picker.files].slice(0, MAX_PHOTOS - d.photos.length);
+    picker.value = "";
+    for (const file of files) {
+      try { d.photos.push(await resizeImage(file, { max: 1280, quality: 0.8 })); } catch { toast("Couldn't read that photo. Try a JPG or PNG.", "error"); }
+    }
+    drawPhotos();
+  });
+  drawPhotos();
+
+  const error = h("div.form-error", { role: "alert" });
+  const submit = h("button.btn.primary.lg.block", { type: "submit" }, "Send my idea", icon("send", 18));
+  const form = h("form", { novalidate: true },
+    fieldOf("Describe your idea", bind(d, "idea", h("textarea", { rows: 4, maxLength: 3000, required: true, placeholder: "What you'd like, the vibe, anything it means to you…" }))),
+    h("div.grid-2",
+      fieldOf("Placement", bind(d, "placement", h("input", { maxLength: 120, placeholder: "e.g. inner forearm" }))),
+      fieldOf("Rough size", bind(d, "size", h("input", { maxLength: 120, placeholder: "e.g. palm size, 4 inches" })))),
+    fieldOf("Colour or black & grey?", style),
+    h("div.field", h("span.label", "Reference photos (optional)"), photos, picker,
+      h("div.hint", `Up to ${MAX_PHOTOS}. Designs you like, or the spot you want it.`)),
+    h("div.divider"),
+    fieldOf("Your name", bind(f, "name", h("input", { autocomplete: "name", required: true }))),
+    fieldOf("Email", bind(f, "email", h("input", { type: "email", autocomplete: "email", required: true })), `${firstWord(a.displayName)} replies with a quote here.`),
+    h("div.grid-2",
+      fieldOf("Phone (optional)", bind(f, "phone", h("input", { type: "tel", autocomplete: "tel" }))),
+      fieldOf("Instagram (optional)", bind(f, "instagram", h("input", { placeholder: "@yourhandle", autocapitalize: "none" })))),
+    error, submit,
+    h("p.fine", `No payment yet. ${a.displayName} reviews your idea and replies with a price and a deposit to book. Then you pick a time.`));
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    error.textContent = "";
+    submit.classList.add("loading");
+    try {
+      const { redirectUrl } = await api(`${base}/requests`, { method: "POST", body: {
+        serviceId: state.service.id, name: f.name, email: f.email, phone: f.phone, instagram: f.instagram,
+        idea: d.idea, placement: d.placement, size: d.size, style: d.style, photos: d.photos,
+      } });
+      location.href = redirectUrl;
+    } catch (err) {
+      error.textContent = err.message;
+      submit.classList.remove("loading");
+    }
+  });
+
+  return h("div.book-section", { id: "step-idea" }, h("div.book-section-title", h("span.n", "2"), "Tell ", firstWord(a.displayName), " about it"), form);
+}
+
+// ---- /request/:token: status, quote, then pick a time ------------------------------
+
+async function initRequest() {
+  try {
+    state.request = (await api(requestBase)).request;
+  } catch {
+    fill(document.getElementById("head"), h("h1.bp-name", { style: { marginTop: "90px" } }, "Request not found"), h("p.muted", "Check the link in your email."));
+    return;
+  }
+  const r = state.request;
+  state.artist = r.artist;
+  handle = r.artist.handle;
+  base = `/api/public/artists/${encodeURIComponent(handle)}`;
+  document.title = `Your request · ${r.artist.displayName}`;
+  setAccent(r.artist.accent);
+  renderHead();
+  if (r.canBook && r.quote) {
+    state.service = { name: r.serviceName, durationMin: r.quote.durationMin, depositCents: r.quote.depositCents, priceCents: r.quote.priceCents };
+    loadDays(null);
+  } else {
+    renderRequest();
+  }
+}
+
+function requestSummary(r) {
+  return h("div.req-summary",
+    h("p.pre", r.idea),
+    h("div.row.tight", { style: { flexWrap: "wrap", marginTop: "10px" } },
+      r.placement ? h("span.chip", icon("pin", 13), r.placement) : null,
+      r.size ? h("span.chip", r.size) : null,
+      r.styleLabel ? h("span.chip", r.styleLabel) : null),
+    r.photos.length ? h("div.ref-photos.view", r.photos.map((src, i) => h("button.ref-photo", { type: "button", "aria-label": `View reference ${i + 1}`, onclick: () => lightbox(src, "Reference photo") }, h("img", { src, alt: "" })))) : null);
+}
+
+function renderRequest() {
+  const r = state.request, a = state.artist, first = firstWord(a.displayName);
+  const cur = r.currency;
+  let top;
+  if (r.canBook && r.quote) {
+    const q = r.quote;
+    const expired = r.booking && ["expired", "cancelled"].includes(r.booking.status);
+    top = h("div.book-section",
+      h("div.book-section-title", h("span.n", "1"), `${first}'s quote`),
+      expired ? h("div.notice.warn", { style: { marginBottom: "14px" } }, icon("hourglass", 18), h("span", "Your last booking for this lapsed, but the quote still stands. Pick a new time below.")) : null,
+      q.message ? h("div.quote-msg", avatarEl(a.avatarUrl, a.displayName), h("p.pre", q.message)) : null,
+      h("div.summary", { style: { marginTop: "14px" } },
+        h("div.summary-line", h("span", "Tattoo"), h("b", r.serviceName)),
+        q.priceCents !== null ? h("div.summary-line", h("span", "Price"), h("b", money(q.priceCents, cur))) : null,
+        h("div.summary-line", h("span", "Session"), h("span", duration(q.durationMin))),
+        h("div.summary-line", h("span", "Deposit to book"), h("b", q.depositCents ? money(q.depositCents, cur) : "None"))),
+      h("details", { style: { marginTop: "12px" } }, h("summary.small.muted", { style: { cursor: "pointer" } }, "Your request"), requestSummary(r)));
+    return fill(bookingEl, h("section.book-card",
+      h("div.book-card-head", h("div.book-steps", ["Quote", "Time", "Confirm"].map((label, i) => h("div" + (i < (state.slot ? 3 : 2) ? ".on" : ""), label)))),
+      top, timeSection(), state.slot ? detailsSection() : null));
+  }
+
+  let hero;
+  if (r.status === "new") {
+    hero = [h("div.status-icon.wait", icon("send", 26)), h("h1", "Request sent"),
+      h("p", `${a.displayName} will look at your idea and reply with a quote${a.isDemo ? "" : " by email"}. You can check back here any time.`)];
+  } else if (r.status === "declined") {
+    hero = [h("div.status-icon.off", icon("x", 26)), h("h1", `${first} can't take this one`), h("p", r.declineReason ? `“${r.declineReason}”` : "Thanks for thinking of them.")];
+  } else if (r.status === "withdrawn") {
+    hero = [h("div.status-icon.off", icon("x", 26)), h("h1", "Request withdrawn"), h("p", "You withdrew this request.")];
+  } else {
+    hero = [h("div.status-icon.ok", icon("calcheck", 26)), h("h1", "Booked from this request"),
+      h("p", r.booking ? `Your appointment: ${r.booking.when}.` : "")];
+  }
+  const withdraw = r.status === "new"
+    ? h("button.btn.ghost.sm", { type: "button", onclick: async () => {
+      if (!(await confirmDialog("Withdraw your request?", `${first} won't reply to it.`, { confirm: "Withdraw", danger: true }))) return;
+      await busy(null, async () => { state.request = (await api(`${requestBase}/withdraw`, { method: "POST", body: {} })).request; renderRequest(); });
+    } }, "Withdraw request") : null;
+
+  fill(bookingEl,
+    h("div.status-hero", hero),
+    r.booking && r.status === "booked" ? h("a.btn.primary", { href: `/booking/${r.booking.token}`, style: { marginTop: "4px" } }, "See your booking", icon("arrow", 16)) : null,
+    ["declined", "withdrawn"].includes(r.status) ? h("a.btn", { href: `/${a.handle}` }, `Back to ${first}'s page`) : null,
+    h("section.card", { style: { marginTop: "22px" } }, h("div.card-head", h("div", h("h2.card-title", "Your request"), h("p.card-sub", r.serviceName))), requestSummary(r),
+      withdraw ? h("div", { style: { marginTop: "16px" } }, withdraw) : null),
+    r.status === "new" ? h("p.fine.center", { style: { marginTop: "22px" } }, "Bookmark this page to check on your request. ",
+      h("button.link-btn", { type: "button", onclick: () => copyText(location.href, "Link copied") }, "Copy link")) : null);
+}
+
+function confirmQuoteSection() {
+  const a = state.artist, s = state.service, f = state.form;
+  const agree = h("input", { type: "checkbox", checked: f.agreed });
+  agree.addEventListener("change", () => { f.agreed = agree.checked; });
+  const error = h("div.form-error", { role: "alert" });
+  const submit = h("button.btn.primary.lg.block", { type: "submit" }, s.depositCents ? "Book this time" : "Confirm booking", icon("arrow", 18));
+  const form = h("form", { novalidate: true },
+    h("div.summary",
+      h("div.summary-line", h("span", "When"), h("b", when(state.slot, a.timezone))),
+      h("div.summary-line", h("span", "Session"), h("span", duration(s.durationMin))),
+      s.depositCents ? h("div.summary-line", h("span", "Deposit"), h("b", money(s.depositCents, a.currency))) : null),
+    a.policy ? h("div.field", h("span.label", "Booking policy"), h("div.policy-box", a.policy), h("label.check", agree, "I've read and agree to the booking policy")) : null,
+    error, submit,
+    s.depositCents ? h("p.fine", `Next, you'll send the ${money(s.depositCents, a.currency)} deposit straight to ${a.displayName}. Your time is held for up to ${a.holdHours} hours while you do.`) : null);
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    error.textContent = "";
+    submit.classList.add("loading");
+    try {
+      const { redirectUrl } = await api(`${requestBase}/book`, { method: "POST", body: { start: state.slot, agreedToPolicy: f.agreed } });
+      location.href = redirectUrl;
+    } catch (err) {
+      error.textContent = err.message;
+      submit.classList.remove("loading");
+      if (err.status === 409) { state.slot = null; loadDays(state.from); toast(err.message, "error"); }
+    }
+  });
+  return h("div.book-section", { id: "step-details" }, h("div.book-section-title", h("span.n", "3"), "Confirm"), form);
 }
 
 init();

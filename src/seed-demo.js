@@ -116,7 +116,7 @@ function seedDemo() {
   db.exec("BEGIN");
   try {
     if (existing) {
-      for (const table of ["bookings", "images", "services", "availability", "blocked_dates", "sessions", "password_resets"]) {
+      for (const table of ["requests", "waitlist", "bookings", "images", "services", "availability", "blocked_dates", "sessions", "password_resets"]) {
         db.prepare(`DELETE FROM ${table} WHERE artist_id = ?`).run(existing.id);
       }
       db.prepare("DELETE FROM artists WHERE id = ?").run(existing.id);
@@ -125,8 +125,8 @@ function seedDemo() {
     const { lastInsertRowid: id } = db.prepare(`
       INSERT INTO artists (email, password_hash, handle, display_name, bio, location, instagram, timezone,
         policy, payment_methods, payment_note, hold_hours, theme, calendar_token, is_demo,
-        subscription_status, trial_ends_at, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 24, 'vermilion', ?, 1, 'comped', ?, ?)
+        consent_enabled, aftercare_enabled, subscription_status, trial_ends_at, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 24, 'vermilion', ?, 1, 1, 1, 'comped', ?, ?)
     `).run(
       DEMO_EMAIL, hashPassword(randomToken()), HANDLE, "Rosa Vega Tattoo",
       "Fine line, botanical and blackwork. Custom pieces and flash.\nBooks open for October and November.",
@@ -145,12 +145,12 @@ function seedDemo() {
       randomToken(24), new Date(now.getTime() + 3650 * 86400000).toISOString(), now.toISOString(),
     );
 
-    const svc = db.prepare(`INSERT INTO services (artist_id, name, description, duration_min, price_cents, deposit_cents, sort_order)
-      VALUES (?, ?, ?, ?, ?, ?, ?)`);
-    svc.run(id, "Flash piece", "Pick any design from my flash sheets. Up to palm size.", 60, 15000, 5000, 1);
-    svc.run(id, "Small custom", "A custom design up to about 4 inches. Add your references when you book.", 120, 30000, 7500, 2);
-    svc.run(id, "Half-day session", "Larger custom work, or continuing a piece we've started.", 240, 60000, 10000, 3);
-    svc.run(id, "Consultation", "15 minutes to plan a bigger project together. Free.", 30, null, 0, 4);
+    const svc = db.prepare(`INSERT INTO services (artist_id, name, description, duration_min, price_cents, deposit_cents, mode, sort_order)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
+    svc.run(id, "Flash piece", "Pick any design from my flash sheets. Up to palm size.", 60, 15000, 5000, "book", 1);
+    svc.run(id, "Small custom", "A custom design up to about 4 inches. Add your references when you book.", 120, 30000, 7500, "book", 2);
+    svc.run(id, "Custom project", "Something bigger or personal? Send me your idea and references and I'll reply with a quote.", 180, null, 10000, "consult", 3);
+    svc.run(id, "Half-day session", "Larger custom work, or continuing a piece we've started.", 240, 60000, 10000, "book", 4);
 
     const hours = db.prepare("INSERT INTO availability (artist_id, weekday, start_min, end_min) VALUES (?, ?, ?, ?)");
     for (const wd of [2, 3, 4, 5, 6]) hours.run(id, wd, 11 * 60, 19 * 60);

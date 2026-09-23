@@ -44,6 +44,18 @@ const ADDED_COLUMNS = [
   ["bookings", "deposit_method", "TEXT NOT NULL DEFAULT ''"],
   ["bookings", "refund_status", "TEXT NOT NULL DEFAULT 'none'"],
   ["bookings", "cancel_reason", "TEXT NOT NULL DEFAULT ''"],
+  ["artists", "books_open", "INTEGER NOT NULL DEFAULT 1"],
+  ["artists", "books_closed_message", "TEXT NOT NULL DEFAULT ''"],
+  ["artists", "waitlist_notified_at", "TEXT"],
+  ["artists", "consent_enabled", "INTEGER NOT NULL DEFAULT 0"],
+  ["artists", "consent_intro", "TEXT NOT NULL DEFAULT ''"],
+  ["artists", "consent_statements", "TEXT NOT NULL DEFAULT '[]'"],
+  ["artists", "aftercare_enabled", "INTEGER NOT NULL DEFAULT 0"],
+  ["artists", "aftercare_text", "TEXT NOT NULL DEFAULT ''"],
+  ["artists", "review_url", "TEXT NOT NULL DEFAULT ''"],
+  ["services", "mode", "TEXT NOT NULL DEFAULT 'book'"],
+  ["bookings", "aftercare_sent_at", "TEXT"],
+  ["bookings", "request_id", "INTEGER"],
 ];
 
 const columnsOf = (table) => new Set(db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name));

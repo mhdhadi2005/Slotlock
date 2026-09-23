@@ -2,6 +2,7 @@ const express = require("express");
 const { db } = require("../db");
 const { requireAuth } = require("../lib/auth");
 const { rateLimit } = require("../lib/util");
+const { decodeImage } = require("../lib/images");
 
 const router = express.Router();
 const uploadLimiter = rateLimit({ windowMs: 10 * 60 * 1000, max: 60 });
@@ -9,25 +10,12 @@ const uploadLimiter = rateLimit({ windowMs: 10 * 60 * 1000, max: 60 });
 const MAX_BYTES = 2 * 1024 * 1024;
 const MAX_PORTFOLIO = 12;
 
-// Trust the bytes, not the label: only real JPEG, PNG and WebP files get in.
-function sniff(buf) {
-  if (buf.length > 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return "image/jpeg";
-  if (buf.length > 8 && buf.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return "image/png";
-  if (buf.length > 12 && buf.toString("ascii", 0, 4) === "RIFF" && buf.toString("ascii", 8, 12) === "WEBP") return "image/webp";
-  return null;
-}
-
 // The browser resizes before uploading, so these are small. Sent as a data
 // URL in JSON (server.js gives this route a bigger body limit).
 router.post("/api/images", requireAuth, uploadLimiter, (req, res) => {
   const kind = req.body.kind;
   if (!["avatar", "portfolio"].includes(kind)) return res.status(400).json({ error: "Unknown image type." });
-  const match = /^data:image\/[a-z]+;base64,([A-Za-z0-9+/=]+)$/.exec(typeof req.body.data === "string" ? req.body.data : "");
-  if (!match) return res.status(400).json({ error: "Upload a JPG, PNG or WebP image." });
-  const buf = Buffer.from(match[1], "base64");
-  if (buf.length > MAX_BYTES) return res.status(413).json({ error: "That image is too big (2 MB max)." });
-  const mime = sniff(buf);
-  if (!mime) return res.status(400).json({ error: "Upload a JPG, PNG or WebP image." });
+  const { mime, buf } = decodeImage(req.body.data, { maxBytes: MAX_BYTES });
 
   const a = req.artist;
   if (kind === "portfolio" &&

@@ -10,15 +10,18 @@ const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", 
 const NAV = [
   { id: "home", label: "Home", icon: "home" },
   { id: "bookings", label: "Bookings", icon: "calendar" },
+  { id: "requests", label: "Requests", icon: "message" },
   { id: "services", label: "Services", icon: "layers" },
   { id: "availability", label: "Availability", icon: "clock" },
   { id: "deposits", label: "Deposits", icon: "wallet" },
+  { id: "waitlist", label: "Books & waitlist", icon: "bell" },
+  { id: "forms", label: "Consent & aftercare", icon: "shield" },
   { id: "page", label: "My page", icon: "palette" },
   { id: "settings", label: "Settings", icon: "sliders" },
   { id: "billing", label: "Plan", icon: "card" },
 ];
 
-const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+const plural = (n, word, many) => `${n} ${n === 1 ? word : many || word + "s"}`;
 const firstName = (name) => String(name).trim().split(/\s+/)[0];
 const currentRoute = () => (ROUTES[location.hash.slice(1)] ? location.hash.slice(1) : "home");
 
@@ -40,14 +43,16 @@ async function refreshMeta() {
   setMe(meRes.artist);
   stats = statsRes;
   renderShell();
-  document.title = (stats.needsAction ? `(${stats.needsAction}) ` : "") + "Slotlock";
+  const pending = stats.needsAction + stats.newRequests;
+  document.title = (pending ? `(${pending}) ` : "") + "Slotlock";
 }
 
 function navLinks() {
   const active = currentRoute();
   return NAV.map((n) => h("a.side-link" + (n.id === active ? ".active" : ""), { href: "#" + n.id, dataset: { route: n.id } },
     icon(n.icon, 18), h("span", n.label),
-    n.id === "bookings" && stats.needsAction ? h("span.count", stats.needsAction) : null));
+    n.id === "bookings" && stats.needsAction ? h("span.count", stats.needsAction) : null,
+    n.id === "requests" && stats.newRequests ? h("span.count", stats.newRequests) : null));
 }
 
 function renderShell() {
@@ -135,6 +140,19 @@ async function renderHome() {
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
   const attention = [];
+  if (!me.booksOpen) {
+    attention.push(h("a.attention.closed", { href: "#waitlist" },
+      h("div.a-icon", icon("lock", 20)),
+      h("div", h("b", "Your books are closed"),
+        h("span", stats.waitlist ? `${plural(stats.waitlist, "person is", "people are")} on your waitlist. Open your books to let them know.` : "Your page is collecting a waitlist.")),
+      h("span.go", icon("right", 20))));
+  }
+  if (stats.newRequests) {
+    attention.push(h("a.attention.request", { href: "#requests" },
+      h("div.a-icon", icon("message", 20)),
+      h("div", h("b", `${plural(stats.newRequests, "consultation request")} to answer`), h("span", "Send a quote or decline. Quoted clients book and pay the deposit themselves.")),
+      h("span.go", icon("right", 20))));
+  }
   if (stats.awaitingDeposit) {
     const reported = stats.reportedDeposits;
     attention.push(h("a.attention.deposit", { href: "#bookings" },
@@ -319,8 +337,20 @@ function bookingCard(b) {
         ig ? h("a", { href: `https://instagram.com/${ig}`, target: "_blank", rel: "noopener noreferrer" }, icon("instagram", 14), h("span", "@" + ig)) : null,
         b.referenceUrl ? h("a", { href: b.referenceUrl, target: "_blank", rel: "noopener noreferrer" }, icon("image", 14), h("span", "Reference")) : null),
       b.depositCents ? h("div.bk-meta", h("span", `Deposit ${amount}`), h("span", "Ref ", h("span.mono", b.refCode))) : null,
+      consentRow(b),
       actions.length ? h("div.bk-actions", actions) : null),
   );
+}
+
+// Consent status, when the artist uses consent forms (or this client signed one).
+function consentRow(b) {
+  const live = ["awaiting_deposit", "confirmed"].includes(b.status);
+  if (b.consentSigned) {
+    return h("div.bk-consent.ok", icon("check", 15), h("span", "Consent form signed"),
+      h("a.link.small", { href: `/app/consent/${b.id}`, target: "_blank", rel: "noopener" }, "View & print"));
+  }
+  if (me.consentEnabled && live) return h("div.bk-consent", icon("edit", 15), h("span", "Consent form not signed yet. They can sign from their booking page."));
+  return null;
 }
 
 async function afterChange(message) {
@@ -415,6 +445,7 @@ function serviceRow(s) {
       h("div.svc-name", s.name),
       s.description ? h("div.svc-desc", s.description) : null,
       h("div.svc-meta",
+        s.mode === "consult" ? h("span.badge.info", icon("message", 13), "Consult first") : null,
         h("span.badge", icon("clock", 13), duration(s.durationMin)),
         h("span.badge", s.priceCents === null ? "Price quoted" : money(s.priceCents, me.currency)),
         s.depositCents ? h("span.badge.accent", `${money(s.depositCents, me.currency)} deposit`) : h("span.badge", "No deposit"))),
@@ -434,6 +465,15 @@ async function serviceDialog(s = {}) {
   const deposit = h("input", { value: fromCents(s.depositCents ?? 5000), inputMode: "decimal", placeholder: "0" });
   const moneyBox = (input) => h("div.money-input", h("span", sym), input);
   const error = h("div.form-error", { role: "alert" });
+  const mode = selectOf([["book", "Pick a time, send deposit"], ["consult", "Send idea first, you quote"]], s.mode || "book");
+  const modeHint = h("div.hint");
+  const syncMode = () => {
+    modeHint.textContent = mode.value === "consult"
+      ? "Clients describe their idea and add photos; you reply with a quote, then they book a time and send the deposit. Length, price and deposit below are your starting quote."
+      : "Clients pick an opening straight away and send the deposit. Best for flash and set-price pieces.";
+  };
+  mode.addEventListener("change", syncMode);
+  syncMode();
 
   const actions = [];
   if (s.id) {
@@ -453,7 +493,7 @@ async function serviceDialog(s = {}) {
       error.textContent = "";
       const body = {
         name: name.value, description: desc.value, durationMin: Number(dur.value),
-        priceCents: toCents(price.value), depositCents: toCents(deposit.value) ?? 0,
+        priceCents: toCents(price.value), depositCents: toCents(deposit.value) ?? 0, mode: mode.value,
       };
       try {
         await api(s.id ? `/api/services/${s.id}` : "/api/services", { method: s.id ? "PATCH" : "POST", body });
@@ -471,6 +511,7 @@ async function serviceDialog(s = {}) {
     body: [
       field("Name", name),
       field("Description", desc, "Optional. Shown under the name on your page."),
+      field("How clients book", mode, modeHint),
       h("div.grid-3.compact", field("Length", dur), field("Price", moneyBox(price)), field("Deposit", moneyBox(deposit), "0 = no deposit")),
       error,
     ],
@@ -812,11 +853,247 @@ function renderBilling() {
   );
 }
 
+// ---- Consultation requests ---------------------------------------------------
+
+let requestTab = "open";
+
+async function renderRequests() {
+  const tabs = [["open", "Open", stats.newRequests], ["closed", "Answered"]];
+  const list = h("div", loading());
+  fill(view,
+    pageHead("Requests", "Consultation requests for services set to “consult first”. Send a quote and the client books a time and pays the deposit."),
+    h("div.seg", { role: "tablist" }, tabs.map(([id, label, count]) => h("button" + (id === requestTab ? ".active" : ""),
+      { type: "button", role: "tab", "aria-selected": String(id === requestTab), onclick: () => { requestTab = id; renderRequests(); } },
+      label, count ? h("span.count", count) : null))),
+    h("div", { style: { marginTop: "22px" } }, list));
+  const { requests } = await api(`/api/requests?scope=${requestTab}`);
+  if (!requests.length) {
+    const { services } = await api("/api/services");
+    const hasConsult = services.some((s) => s.mode === "consult" && s.active);
+    return fill(list, requestTab === "open"
+      ? emptyState("message", "No open requests", hasConsult
+        ? "When a client sends their idea, it lands here with their photos."
+        : "Set a service to “consult first” and clients send you their idea and reference photos before booking.",
+        hasConsult ? null : h("a.btn.primary", { href: "#services" }, "Go to services"))
+      : emptyState("check", "Nothing answered yet", "Requests you've quoted, declined or that got booked show up here."));
+  }
+  fill(list, requests.map(requestCard));
+}
+
+function requestBadge(r) {
+  if (r.status === "new") return h("span.badge.accent", "New");
+  if (r.status === "quoted") return h("span.badge.warn", "Quoted, waiting on client");
+  if (r.status === "booked") return h("span.badge.ok", icon("check", 13), "Booked");
+  if (r.status === "declined") return h("span.badge", "Declined");
+  return h("span.badge", "Withdrawn");
+}
+
+function requestCard(r) {
+  const ig = String(r.clientInstagram || "").replace(/^@/, "").replace(/[^A-Za-z0-9._]/g, "");
+  const actions = [];
+  if (["new", "quoted"].includes(r.status)) {
+    actions.push(h("button.btn.primary.sm", { type: "button", onclick: () => quoteDialog(r) }, icon("send", 15), r.status === "quoted" ? "Edit quote" : "Send quote"));
+    actions.push(h("button.btn.ghost.sm", { type: "button", onclick: () => declineRequest(r) }, "Decline"));
+  }
+  const q = r.quote;
+  return h("article.card.bk.req",
+    h("div",
+      h("div.bk-head",
+        h("div", h("div.bk-name", r.clientName), h("div.bk-service", `${r.serviceName} · ${relTime(r.createdAt)}`)),
+        requestBadge(r)),
+      h("div.bk-notes.pre", r.idea),
+      r.placement || r.size || r.styleLabel ? h("div.row.tight", { style: { flexWrap: "wrap", marginTop: "10px" } },
+        r.placement ? h("span.chip", icon("pin", 13), r.placement) : null,
+        r.size ? h("span.chip", r.size) : null,
+        r.styleLabel ? h("span.chip", r.styleLabel) : null) : null,
+      r.photos.length ? h("div.ref-photos.view", r.photos.map((src, i) => h("button.ref-photo", { type: "button", "aria-label": `View reference ${i + 1}`, onclick: () => lightbox(src, "Reference photo") }, h("img", { src, alt: "" })))) : null,
+      q ? h("div.bk-alert.waiting", icon("send", 17), h("span",
+        `Quoted ${q.priceCents !== null ? money(q.priceCents, r.currency) + ", " : ""}${duration(q.durationMin)}, ${q.depositCents ? money(q.depositCents, r.currency) + " deposit" : "no deposit"}.` +
+        (r.booking ? ` Booked for ${when(r.booking.startsAt, me.timezone)}${r.booking.status === "awaiting_deposit" ? " (deposit pending)" : ["expired", "cancelled"].includes(r.booking.status) ? ` (${r.booking.status}; they can pick a new time)` : ""}.` : ""))) : null,
+      r.declineReason ? h("div.bk-notes", `You said: “${r.declineReason}”`) : null,
+      h("div.bk-contacts",
+        h("a", { href: `mailto:${r.clientEmail}` }, icon("mail", 14), h("span", r.clientEmail)),
+        r.clientPhone ? h("a", { href: `tel:${r.clientPhone.replace(/[^\d+]/g, "")}` }, icon("phone", 14), h("span", r.clientPhone)) : null,
+        ig ? h("a", { href: `https://instagram.com/${ig}`, target: "_blank", rel: "noopener noreferrer" }, icon("instagram", 14), h("span", "@" + ig)) : null),
+      actions.length ? h("div.bk-actions", actions) : null));
+}
+
+async function quoteDialog(r) {
+  const { services } = await api("/api/services");
+  const svc = services.find((s) => s.id === r.serviceId) || {};
+  const q = r.quote || { priceCents: svc.priceCents ?? null, depositCents: svc.depositCents ?? 0, durationMin: svc.durationMin || 120, message: "" };
+  const sym = currencySymbol(me.currency);
+  const moneyBox = (input) => h("div.money-input", h("span", sym), input);
+  const price = h("input", { value: fromCents(q.priceCents), inputMode: "decimal", placeholder: "Optional" });
+  const deposit = h("input", { value: fromCents(q.depositCents), inputMode: "decimal", placeholder: "0" });
+  const lengths = [30, 45, 60, 90, 120, 150, 180, 240, 300, 360, 420, 480, 600, 720];
+  const dur = selectOf(lengths.map((m) => [m, duration(m)]), q.durationMin);
+  const message = h("textarea", { rows: 4, maxLength: 1000, placeholder: "e.g. Love this! I'd do it about 4 inches, fine line with light shading." }, q.message);
+  const error = h("div.form-error", { role: "alert" });
+  const sent = await modal({
+    title: `Quote for ${firstName(r.clientName)}`,
+    lead: "They'll get an email with this, then pick a time from your openings that fit the session length, and send the deposit.",
+    wide: true,
+    body: [
+      h("div.grid-3.compact", field("Price", moneyBox(price), "Leave blank to discuss"), field("Deposit to book", moneyBox(deposit)), field("Session length", dur)),
+      field("Message", message),
+      !me.depositsReady ? h("div.notice.warn", icon("alert", 18), h("span", "To ask for a deposit, first add how clients pay you on the Deposits page.")) : null,
+      error,
+    ],
+    actions: [
+      { label: "Cancel", kind: "ghost", value: false },
+      { label: r.quote ? "Update quote" : "Send quote", kind: "primary", value: true, onClick: async () => {
+        error.textContent = "";
+        try {
+          await api(`/api/requests/${r.id}/quote`, { method: "POST", body: {
+            priceCents: toCents(price.value), depositCents: toCents(deposit.value) ?? 0, durationMin: Number(dur.value), message: message.value,
+          } });
+        } catch (err) { error.textContent = err.message; return false; }
+      } },
+    ],
+  });
+  if (sent) await afterChange(r.quote ? "Quote updated" : "Quote sent");
+}
+
+async function declineRequest(r) {
+  const reason = h("textarea", { rows: 3, maxLength: 500, placeholder: "e.g. Thanks! This isn't my style, but I'd recommend @someone." });
+  const done = await modal({
+    title: `Decline ${firstName(r.clientName)}'s request?`,
+    lead: "They'll get a short email. Your message is included if you write one.",
+    body: field("Message (optional)", reason),
+    actions: [
+      { label: "Keep it", kind: "ghost", value: false },
+      { label: "Decline", kind: "danger", value: true, onClick: async () => { await api(`/api/requests/${r.id}/decline`, { method: "POST", body: { reason: reason.value } }); } },
+    ],
+  });
+  if (done) await afterChange("Request declined");
+}
+
+// ---- Books & waitlist --------------------------------------------------------
+
+async function renderWaitlist() {
+  const { entries } = await api("/api/waitlist");
+  const open = me.booksOpen;
+  const message = h("textarea", { rows: 2, maxLength: 400, placeholder: "e.g. Books open again in November. Join the list to hear first." }, me.booksClosedMessage);
+
+  const setBooks = async (next) => {
+    await busy(null, async () => {
+      setMe((await api("/api/me", { method: "PATCH", body: { booksOpen: next, booksClosedMessage: message.value } })).artist);
+      await refreshMeta();
+      toast(next ? "Books are open" : "Books are closed");
+      if (next && entries.length && me.emailEnabled) await notifyWaitlist(entries.length, true);
+      renderWaitlist();
+    });
+  };
+
+  const statusCard = h("section.card.books-card" + (open ? ".open" : ".closed"),
+    h("div.row.between", { style: { alignItems: "flex-start", gap: "16px" } },
+      h("div",
+        h("div.books-state", h("span.books-dot"), open ? "Books are open" : "Books are closed"),
+        h("p.muted", { style: { marginTop: "6px" } }, open
+          ? "Clients can book and send requests. Close your books when you're full; your page then collects a waitlist."
+          : "Nobody can book or send requests. Your page shows your message and a “tell me when books open” form.")),
+      h("button.btn" + (open ? "" : ".primary"), { type: "button", onclick: () => setBooks(!open) }, icon(open ? "lock" : "zap", 16), open ? "Close books" : "Open books")),
+    h("div.field", { style: { marginTop: "18px" } }, h("label", "Message when books are closed"), message,
+      h("button.btn.sm", { type: "button", style: { marginTop: "10px" }, onclick: (e) => busy(e.currentTarget, async () => {
+        setMe((await api("/api/me", { method: "PATCH", body: { booksClosedMessage: message.value } })).artist);
+        toast("Message saved");
+      }) }, "Save message")));
+
+  const emails = entries.map((w) => w.email);
+  const notifyBtn = h("button.btn.primary", { type: "button", disabled: !entries.length, onclick: () => notifyWaitlist(entries.length, false) }, icon("send", 16), `Email everyone (${entries.length})`);
+  const listCard = card(`Waitlist (${entries.length})`, "People who asked to hear when your books open.",
+    entries.length ? h("div.wl-list", entries.map((w) => h("div.wl-row",
+      h("div.grow", h("b", w.email), h("span.small.muted", `${w.name ? w.name + " · " : ""}joined ${relTime(w.createdAt)}${w.notifiedAt ? " · emailed " + relTime(w.notifiedAt) : ""}`)),
+      h("button.btn.ghost.icon-only.sm", { type: "button", "aria-label": `Remove ${w.email}`, onclick: async () => {
+        if (!(await confirmDialog(`Remove ${w.email}?`, "They won't be emailed when your books open.", { confirm: "Remove", danger: true }))) return;
+        await busy(null, async () => { await api(`/api/waitlist/${w.id}`, { method: "DELETE" }); await refreshMeta(); renderWaitlist(); });
+      } }, icon("trash", 16)))))
+      : h("p.muted", open ? "Close your books and your page starts collecting a waitlist." : "Nobody yet. Share your link: people can join from your page."),
+    entries.length ? h("div.row.tight", { style: { marginTop: "16px", flexWrap: "wrap" } },
+      me.emailEnabled ? notifyBtn : null,
+      h("button.btn", { type: "button", onclick: () => copyText(emails.join(", "), `${plural(emails.length, "email")} copied`) }, icon("copy", 16), "Copy all emails")) : null,
+    entries.length && !me.emailEnabled ? h("p.hint", { style: { marginTop: "10px" } }, "Email isn't switched on for this site yet, so copy the addresses and send them a message yourself (use BCC).") : null);
+
+  fill(view, pageHead("Books & waitlist", "Open and close your books, and tell your waitlist the moment they open."), h("div.stack", statusCard, listCard));
+}
+
+async function notifyWaitlist(count, justOpened) {
+  const note = h("textarea", { rows: 3, maxLength: 1000, placeholder: "Optional: e.g. Flash day on the 13th! Custom spots for Nov–Dec." });
+  const sent = await modal({
+    title: justOpened ? `Tell your waitlist? (${count})` : `Email your waitlist (${count})`,
+    lead: `Everyone on your list gets an email saying your books are open, with your booking link.`,
+    body: field("Add a note (optional)", note),
+    actions: [
+      { label: justOpened ? "Not now" : "Cancel", kind: "ghost", value: false },
+      { label: `Send to ${count}`, kind: "primary", value: true, onClick: async () => {
+        const r = await api("/api/waitlist/notify", { method: "POST", body: { message: note.value } });
+        setMe(r.artist);
+        toast(`Emailed ${plural(r.sent, "person", "people")}`);
+      } },
+    ],
+  });
+  if (sent && !justOpened) renderWaitlist();
+}
+
+// ---- Consent & aftercare --------------------------------------------------------
+
+function renderForms() {
+  const t = config.formTemplates;
+  let consentOn = me.consentEnabled, aftercareOn = me.aftercareEnabled;
+  const intro = h("textarea", { rows: 3, maxLength: 4000 }, me.consentIntro || t.consentIntro);
+  const statements = (me.consentStatements.length ? me.consentStatements : t.consentStatements).slice();
+  const list = h("div.stmt-list");
+  const draw = () => fill(list,
+    statements.map((text, i) => {
+      const input = h("textarea", { rows: 3, maxLength: 400, "aria-label": `Statement ${i + 1}` }, text);
+      input.addEventListener("input", () => { statements[i] = input.value; });
+      return h("div.stmt-row", h("span.stmt-n", i + 1), input,
+        h("button.btn.ghost.icon-only.sm", { type: "button", "aria-label": "Remove statement", onclick: () => { statements.splice(i, 1); draw(); } }, icon("trash", 16)));
+    }),
+    statements.length < t.maxStatements ? h("button.btn.sm", { type: "button", onclick: () => { statements.push(""); draw(); list.querySelector(".stmt-row:last-of-type textarea")?.focus(); } }, icon("plus", 15), "Add statement") : null);
+  draw();
+  const aftercare = h("textarea", { rows: 10, maxLength: 4000 }, me.aftercareText || t.aftercareText);
+  const review = h("input", { type: "url", value: me.reviewUrl, maxLength: 500, placeholder: "https://g.page/r/… (optional)" });
+
+  const consentBody = h("div", { style: { marginTop: "16px" } },
+    field("Intro", intro),
+    h("div.field", h("span.label", "Clients tick each of these"), list),
+    h("p.hint", "Clients also give their full legal name, date of birth (they must be 18+ on the day), any medical notes, and sign with their finger. You get a printable record for each booking."));
+  const aftercareBody = h("div", { style: { marginTop: "16px" } },
+    field("Aftercare instructions", aftercare, "Emailed 3 hours after the appointment ends, and shown on their booking page."),
+    field("Review link", review, "Optional. Adds a “Leave a review” button (Google, Yelp…)."));
+  const cTog = toggle(consentOn, (v) => { consentOn = v; consentBody.classList.toggle("hidden", !v); }, "Use a consent form");
+  const aTog = toggle(aftercareOn, (v) => { aftercareOn = v; aftercareBody.classList.toggle("hidden", !v); }, "Send aftercare");
+  consentBody.classList.toggle("hidden", !consentOn);
+  aftercareBody.classList.toggle("hidden", !aftercareOn);
+
+  fill(view,
+    pageHead("Consent & aftercare", "Paperless consent forms before the appointment, and aftercare instructions after."),
+    h("div.stack",
+      h("section.card",
+        h("div.row.between.side-by-side", h("div", h("h2.card-title", "Consent form"), h("p.card-sub", "Clients sign it on their phone from their booking page.")), cTog.el),
+        consentBody),
+      h("section.card",
+        h("div.row.between.side-by-side", h("div", h("h2.card-title", "Aftercare"), h("p.card-sub", "Instructions sent automatically after each appointment.")), aTog.el),
+        aftercareBody),
+      !me.emailEnabled ? h("div.notice.info", icon("info", 18), h("span", "Email isn't switched on for this site yet: clients still see the consent form and aftercare on their booking page, but no emails go out.")) : null),
+    saveBar("Save", async () => {
+      setMe((await api("/api/me", { method: "PATCH", body: {
+        consentEnabled: consentOn, consentIntro: intro.value, consentStatements: statements.filter((x) => x.trim()),
+        aftercareEnabled: aftercareOn, aftercareText: aftercare.value, reviewUrl: review.value.trim(),
+      } })).artist);
+      await refreshMeta();
+      toast("Saved");
+    }),
+  );
+}
+
 // ---- Router ----------------------------------------------------------------
 
 const ROUTES = {
-  home: renderHome, bookings: renderBookings, services: renderServices, availability: renderAvailability,
-  deposits: renderDeposits, page: renderPage, settings: renderSettings, billing: renderBilling,
+  home: renderHome, bookings: renderBookings, requests: renderRequests, services: renderServices, availability: renderAvailability,
+  deposits: renderDeposits, waitlist: renderWaitlist, forms: renderForms, page: renderPage, settings: renderSettings, billing: renderBilling,
 };
 
 async function route() {
