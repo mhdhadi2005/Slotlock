@@ -37,6 +37,10 @@ characters and props from `kit.js`, and `bubbles()` / `showBubbles()` from `ui.j
   quotes, client books the quote), books open/closed with a waitlist and a
   "books are open" email, digital consent forms signed on the client's phone,
   and automatic aftercare instructions after the appointment.
+  New audience: beauty pros (nails, lashes & brows, hair). Their pages come in
+  pink (Blush) or nude (Latte), with add-ons (e.g. "+ nail art") and a
+  patch-test rule. Point beauty episodes at slotlock.app/beauty and use a
+  softer palette (pink #e0457f, blush backgrounds) where it fits.
 
 ## Cast
 
@@ -61,6 +65,10 @@ Add every new episode here so ideas never repeat.
 | 2026-09-23 | flood | DM bubbles bury the artist; Lockie bursts out with one link | One link. Zero chaos. |
 
 ## Idea backlog
+
+- Beauty: "Can you squeeze me in?" at 7pm; Lockie turns the calendar pink and shows the next real opening
+- Beauty: the lash client who skipped the patch test; Lockie holds up "48 HOURS" and hands over a patch test booking
+- Beauty: nail art add-ons stacking up like a tower of polish bottles, the time bar growing with each one
 
 - The waitlist stampede: artist opens books, Lockie rings a bell and the waitlist rushes in (orderly, with deposits)
 - Consult-first: a client sends a blurry "like this but different" photo; Lockie hands over the idea form and a quote comes back
