@@ -7,7 +7,10 @@ export { THREE };
 export const W = 1080, H = 1920;
 
 // ---- Renderer, camera, lights ------------------------------------------------
-export function setup({ camPos = [0, 2.3, 15], look = [0, 1.55, 0], fov = 30 } = {}) {
+// Palettes: the default orange, or `blush` (pink rim light and floor glow) for beauty episodes.
+const PALETTES = { orange: { rim: 0xff8a5c, floor: "255,120,80" }, blush: { rim: 0xff8fb8, floor: "255,120,170" } };
+export function setup({ camPos = [0, 2.3, 15], look = [0, 1.55, 0], fov = 30, palette = "orange" } = {}) {
+  const pal = PALETTES[palette];
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
   renderer.setPixelRatio(1);
   renderer.setSize(W, H);
@@ -21,10 +24,10 @@ export function setup({ camPos = [0, 2.3, 15], look = [0, 1.55, 0], fov = 30 } =
   const key = new THREE.DirectionalLight(0xffffff, 2.1);
   key.position.set(4, 9, 7);
   scene.add(key);
-  const rim = new THREE.DirectionalLight(0xff8a5c, 1.6);
+  const rim = new THREE.DirectionalLight(pal.rim, 1.6);
   rim.position.set(-6, 5, -5);
   scene.add(rim);
-  scene.add(spotFloor());
+  scene.add(spotFloor(pal.floor));
   const look3 = new THREE.Vector3(...look);
   return {
     renderer, scene, camera,
@@ -45,9 +48,9 @@ function radialTexture(stops) {
   g.fillStyle = gr; g.fillRect(0, 0, 256, 256);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
 }
-function spotFloor() {
+function spotFloor(rgb) {
   const m = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), new THREE.MeshBasicMaterial({
-    map: radialTexture([[0, "rgba(255,120,80,0.34)"], [0.45, "rgba(255,92,57,0.12)"], [1, "rgba(255,92,57,0)"]]), transparent: true, depthWrite: false,
+    map: radialTexture([[0, `rgba(${rgb},0.34)`], [0.45, `rgba(${rgb},0.12)`], [1, `rgba(${rgb},0)`]]), transparent: true, depthWrite: false,
   }));
   m.rotation.x = -Math.PI / 2; m.position.y = 0.001;
   return m;
@@ -131,11 +134,23 @@ export function blinkAt(t, offset = 0) {
   return k > 0.95 ? Math.sin((k - 0.95) / 0.05 * Math.PI) : 0;
 }
 
+// Cucumber slices for spa day: two discs that sit over the eyes.
+function cukes(dx, r) {
+  const g = new THREE.Group(); g.visible = false;
+  for (const s of [-1, 1]) {
+    const c = mesh(new THREE.CylinderGeometry(r, r, r * 0.3, 24), toon(0x6fae4f), 0.012); c.rotation.x = Math.PI / 2; c.position.x = s * dx; g.add(c);
+    const f = new THREE.Mesh(new THREE.CircleGeometry(r * 0.82, 24), toon(0xdff3b8)); f.position.set(s * dx, 0, r * 0.16); g.add(f);
+    for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2; const seed = new THREE.Mesh(new THREE.CircleGeometry(r * 0.09, 8), flat(0xa8cf7a)); seed.position.set(s * dx + Math.cos(a) * r * 0.38, Math.sin(a) * r * 0.38, r * 0.17); g.add(seed); }
+  }
+  return g;
+}
+
 // ---- Lockie, the padlock mascot ------------------------------------------------
-export function makeLockie() {
+// Pink Lockie for beauty episodes: makeLockie({ color: 0xff7aa8, feet: 0xe0457f, key: 0x7a1d45 }).
+export function makeLockie({ color = 0xff5c39, feet = 0xe0482a, key = 0x5a1a0a } = {}) {
   const root = new THREE.Group(), body = new THREE.Group(); root.add(body);
   root.add(blobShadow(1.8, 1.0));
-  const box = mesh(new RoundedBoxGeometry(1.34, 1.12, 0.84, 6, 0.3), toon(0xff5c39), 0.035);
+  const box = mesh(new RoundedBoxGeometry(1.34, 1.12, 0.84, 6, 0.3), toon(color), 0.035);
   box.position.y = 0.76; body.add(box);
   const shackle = new THREE.Group(); body.add(shackle);
   const metal = toon(0xd9d2c8);
@@ -146,15 +161,16 @@ export function makeLockie() {
   const m = mouth(0.1); m.position.set(0, -0.19, 0.02); face.add(m);
   face.add(cheeks(0.46, -0.12, 0.005, 0.1));
   const kh = new THREE.Group(); kh.position.set(0, 0.36, 0.425); body.add(kh);
-  kh.add(new THREE.Mesh(new THREE.CircleGeometry(0.065, 20), flat(0x5a1a0a)));
-  const slot = new THREE.Mesh(new THREE.PlaneGeometry(0.05, 0.12), flat(0x5a1a0a)); slot.position.y = -0.07; kh.add(slot);
-  const arms = [-1, 1].map((s) => { const a = arm(0.3, 0.085, 0xff5c39, s); a.position.set(s * 0.66, 0.92, 0); body.add(a); return a; });
-  for (const s of [-1, 1]) { const f = mesh(S(0.17), toon(0xe0482a), 0.025); f.scale.set(1.15, 0.6, 1.3); f.position.set(s * 0.3, 0.1, 0.05); root.add(f); }
+  kh.add(new THREE.Mesh(new THREE.CircleGeometry(0.065, 20), flat(key)));
+  const slot = new THREE.Mesh(new THREE.PlaneGeometry(0.05, 0.12), flat(key)); slot.position.y = -0.07; kh.add(slot);
+  const arms = [-1, 1].map((s) => { const a = arm(0.3, 0.085, color, s); a.position.set(s * 0.66, 0.92, 0); body.add(a); return a; });
+  for (const s of [-1, 1]) { const f = mesh(S(0.17), toon(feet), 0.025); f.scale.set(1.15, 0.6, 1.3); f.position.set(s * 0.3, 0.1, 0.05); root.add(f); }
+  const cuke = cukes(0.26, 0.15); cuke.position.set(0, 0.08, 0.12); face.add(cuke);
   // Sunglasses for the bouncer.
   const shades = new THREE.Group(); shades.position.set(0, 0.09, 0.08); face.add(shades); shades.visible = false;
   for (const s of [-1, 1]) { const l = mesh(new RoundedBoxGeometry(0.34, 0.2, 0.06, 3, 0.05), flat(0x111111), 0.015); l.position.x = s * 0.26; shades.add(l); }
   const br = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.035, 0.04), flat(0x111111)); shades.add(br);
-  const c = { root, body, shackle, eyes, mouth: m, arms, shades, face };
+  const c = { root, body, shackle, eyes, mouth: m, arms, shades, face, cukes: cuke };
   c.pose = (p = {}) => {
     const s = p.squash ?? 0;
     body.scale.set(1 + s * 0.18, 1 - s * 0.2, 1 + s * 0.18);
@@ -163,6 +179,7 @@ export function makeLockie() {
     shackle.rotation.y = (p.open ?? 0) * 0.5;
     arms[0].rotation.z = -(p.armL ?? 0.25); arms[1].rotation.z = (p.armR ?? 0.25);
     arms[0].rotation.x = p.armLx ?? 0; arms[1].rotation.x = p.armRx ?? 0;
+    cuke.visible = !!p.cukes;
     applyFace(c, p);
   };
   c.pose();
@@ -246,6 +263,72 @@ export function makeArtist() {
   };
   c.pose();
   return c;
+}
+
+// ---- The nail tech -----------------------------------------------------------------
+// Hair in a bun, pink smock. Spa extras: `mask` (0-1, mint sheet mask) and `cukes`.
+export function makeTech({ skin = 0xc68a64, hair = 0x3a2219, smock = 0xff9ec0 } = {}) {
+  const root = new THREE.Group(), body = new THREE.Group(); root.add(body);
+  root.add(blobShadow(1.4, 0.8));
+  const torso = mesh(new THREE.CapsuleGeometry(0.46, 0.5, 8, 20), toon(smock), 0.03); torso.position.y = 0.72; body.add(torso);
+  const collar = mesh(new THREE.TorusGeometry(0.3, 0.05, 8, 30), toon(0xffffff), 0.015); collar.rotation.x = Math.PI / 2; collar.position.y = 1.16; body.add(collar);
+  const pocket = mesh(new RoundedBoxGeometry(0.26, 0.2, 0.04, 2, 0.03), toon(0xffc4d8), 0.012); pocket.position.set(0.18, 0.74, 0.45); body.add(pocket);
+  const head = new THREE.Group(); head.position.y = 1.62; body.add(head);
+  const skull = mesh(S(0.5, 32, 24), toon(skin), 0.03); head.add(skull);
+  const hairMat = toon(hair);
+  const cap = mesh(new THREE.SphereGeometry(0.525, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.46), hairMat, 0.03); cap.position.y = 0.03; cap.rotation.x = -0.28; head.add(cap);
+  const bun = mesh(S(0.24), hairMat, 0.028); bun.position.set(0, 0.58, -0.14); head.add(bun);
+  const tie = mesh(new THREE.TorusGeometry(0.15, 0.045, 8, 24), toon(0xe0457f), 0.015); tie.position.set(0, 0.42, -0.1); tie.rotation.x = Math.PI / 2 - 0.3; head.add(tie);
+  // Sheet mask over the front of the face.
+  const maskMat = toon(0xbfeccf, { transparent: true });
+  const mask = new THREE.Mesh(new THREE.SphereGeometry(0.515, 32, 16, Math.PI / 2 - 0.95, 1.9, 0.95, 1.3), maskMat); mask.visible = false; head.add(mask);
+  const face = new THREE.Group(); face.position.set(0, -0.06, 0.45); head.add(face);
+  const eyes = [-1, 1].map((s) => { const e = eye(0.12); e.position.set(s * 0.17, 0.02, 0); face.add(e); return e; });
+  const m = mouth(0.08); m.position.set(0, -0.19, 0.03); face.add(m);
+  face.add(cheeks(0.3, -0.1, -0.02, 0.07));
+  const cuke = cukes(0.17, 0.12); cuke.position.set(0, 0.02, 0.09); face.add(cuke);
+  const sweat = new THREE.Group(); sweat.position.set(0.4, 0.3, 0.3); head.add(sweat); sweat.visible = false;
+  sweat.add(mesh(S(0.06), toon(0x7cc7ff), 0.012));
+  const tip = mesh(new THREE.ConeGeometry(0.058, 0.1, 12), toon(0x7cc7ff), 0.012); tip.position.y = 0.07; sweat.children[0].add(tip);
+  const arms = [-1, 1].map((s) => { const a = arm(0.42, 0.1, skin, s); a.position.set(s * 0.52, 1.02, 0); body.add(a); return a; });
+  const c = { root, body, head, eyes, mouth: m, arms, face };
+  c.pose = (p = {}) => {
+    const s = p.squash ?? 0;
+    body.scale.set(1 + s * 0.15, 1 - s * 0.18, 1 + s * 0.15);
+    head.rotation.z = p.headTilt ?? 0;
+    head.rotation.x = p.headNod ?? 0;
+    head.position.y = 1.62 - (p.slump ?? 0) * 0.12;
+    arms[0].rotation.z = -(p.armL ?? 0.15); arms[1].rotation.z = (p.armR ?? 0.15);
+    arms[0].rotation.x = p.armLx ?? 0; arms[1].rotation.x = p.armRx ?? 0;
+    const mk = p.mask ?? 0;
+    mask.visible = mk > 0; maskMat.opacity = Math.min(1, mk * 1.5); mask.scale.setScalar(0.9 + 0.1 * mk);
+    face.position.z = 0.45 + mk * 0.06;
+    cuke.visible = !!p.cukes;
+    sweat.visible = !!p.sweat;
+    applyFace(c, p);
+  };
+  c.pose();
+  return c;
+}
+
+// A manicure table: wrist cushion, polish bottles and a UV lamp. Top surface at y = 0.95.
+export function makeNailTable() {
+  const g = new THREE.Group();
+  const top = mesh(new RoundedBoxGeometry(2.3, 0.12, 0.95, 3, 0.05), toon(0xfff3f7), 0.025); top.position.y = 0.89; g.add(top);
+  const chrome = toon(0xe8c9d4);
+  for (const x of [-1, 1]) for (const z of [-1, 1]) { const l = mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.84, 10), chrome, 0.015); l.position.set(x * 1.02, 0.42, z * 0.36); g.add(l); }
+  const cushion = mesh(new THREE.CapsuleGeometry(0.1, 0.32, 6, 12), toon(0xffb3cd), 0.02); cushion.rotation.z = Math.PI / 2; cushion.position.set(-0.5, 1.03, 0.2); g.add(cushion);
+  const polish = [0xe0457f, 0xc2185b, 0xd7a6ff, 0xf3c6b0, 0xff8fb1];
+  polish.forEach((col, i) => {
+    const b = new THREE.Group(); b.position.set(-1.02 + (i % 3) * 0.15, 0.95, -0.28 + Math.floor(i / 3) * 0.16); g.add(b);
+    const bottle = mesh(new THREE.CylinderGeometry(0.065, 0.075, 0.17, 16), toon(col), 0.015); bottle.position.y = 0.085; b.add(bottle);
+    const capM = mesh(new THREE.CylinderGeometry(0.03, 0.035, 0.14, 12), toon(0x2a1a22), 0.012); capM.position.y = 0.24; b.add(capM);
+  });
+  const lamp = new THREE.Group(); lamp.position.set(0.12, 0.95, -0.18); g.add(lamp);
+  const dome = mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.46, 24, 1, true, 0, Math.PI), toon(0xffffff, { side: THREE.DoubleSide }), 0.02); dome.rotation.z = Math.PI / 2; lamp.add(dome);
+  const glowM = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.12), flat(0xc9a3ff)); glowM.position.set(0, 0.07, -0.05); lamp.add(glowM);
+  g.userData = { lamp: glowM };
+  return g;
 }
 
 // ---- Gumdrop clients -----------------------------------------------------------

@@ -25,6 +25,8 @@ characters and props from `kit.js`, and `bubbles()` / `showBubbles()` from `ui.j
   in the orange gradient via `<em>`), Slotlock logo at the bottom, and the standard
   outro (logo, two-line punchline, "Booking + deposits for tattoo artists. Free for
   founding artists.", `DM "BOOK"` button) for the last ~3.3 s.
+- **Beauty palette:** `setup({ palette: "blush" })`, `<html data-look="blush">` and the blush
+  `<style>` block at the top of `episodes/squeeze.html` (pink background, Fraunces captions, pink outro).
 - **Camera:** `setup({ camPos: [0, 2.6, 13], look: [0, 1.95, 0] })`. At z=0 you can
   see about x = ±1.95, so keep characters within ±1.5.
 - **Structure:** a hook in the first 2 s → the relatable pain → Lockie fixes it → payoff
@@ -50,8 +52,10 @@ characters and props from `kit.js`, and `bubbles()` / `showBubbles()` from `ui.j
 | The Ghost | `makeGhost()` | The no-deposit client. Overpromises, vanishes (`opacity`), sweats (`sweat`). |
 | The Artist | `makeArtist()` | Tattoo artist in a green beanie with a machine. Long-suffering, easily delighted. |
 | Clients | `makeBlob(color)` | Gumdrop clients. The good ones pay; the bad ones say "I'll pay later". |
+| Pink Lockie | `makeLockie({ color: 0xff7aa8, feet: 0xe0457f, key: 0x7a1d45 })` | Beauty episodes. Same Lockie, blush edition. Has `cukes` for spa day. |
+| The Nail Tech | `makeTech()` | Hair bun, pink smock. Frazzled by squeeze-in DMs; `sweat`, spa extras `mask` (0-1) and `cukes`. |
 
-Props: `makeChair`, `makeClock`, `makeSign(lines)`, `makeCoin`, `makeTumbleweed`,
+Props: `makeNailTable` (polish, UV lamp, wrist cushion), `makeChair`, `makeClock`, `makeSign(lines)`, `makeCoin`, `makeTumbleweed`,
 `makeConfetti`, `makePoof`.
 
 ## Episode log
@@ -63,10 +67,10 @@ Add every new episode here so ideas never repeat.
 | 2026-09-23 | ghosted | No-deposit client vanishes at 2pm; Lockie's "DEPOSIT FIRST" sign scares the ghost off | Ghost-proof your books. |
 | 2026-09-23 | bouncer | Lockie bounces "I'll pay later" at the calendar's velvet rope | Hire the bouncer. |
 | 2026-09-23 | flood | DM bubbles bury the artist; Lockie bursts out with one link | One link. Zero chaos. |
+| 2026-09-24 | squeeze | Nail tech at 7pm buried in "can u squeeze me in??"; pink Lockie shows the next real opening, client books, tech goes spa mode | Squeeze-ins? Not anymore. |
 
 ## Idea backlog
 
-- Beauty: "Can you squeeze me in?" at 7pm; Lockie turns the calendar pink and shows the next real opening
 - Beauty: the lash client who skipped the patch test; Lockie holds up "48 HOURS" and hands over a patch test booking
 - Beauty: nail art add-ons stacking up like a tower of polish bottles, the time bar growing with each one
 
