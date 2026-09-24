@@ -1,4 +1,4 @@
-// Consultation requests: the client describes the tattoo, the artist replies
+// Consultation requests: the client describes what they want, the artist replies
 // with a quote (price, deposit, session length), and the client turns the quote
 // into a normal deposit booking by picking a time.
 const { db } = require("../db");
@@ -78,7 +78,7 @@ async function createRequest(a, service, fields) {
 
   await bookings.mail(a, {
     to: r.client_email,
-    subject: `Your tattoo request was sent to ${a.display_name}`,
+    subject: `Your request was sent to ${a.display_name}`,
     text:
       `Hi ${r.client_name},\n\n${a.display_name} has your request for ${r.service_name} and will reply with a quote.\n\n` +
       `${summary(r)}\n\nYou'll get an email when they reply. Check on it any time:\n${requestLink(r)}\n`,
@@ -122,7 +122,7 @@ async function declineRequest(r, reason) {
   db.prepare("UPDATE requests SET status = 'declined', decline_reason = ? WHERE id = ?").run(reason, r.id);
   await bookings.mail(a, {
     to: r.client_email,
-    subject: `About your tattoo request with ${a.display_name}`,
+    subject: `About your request with ${a.display_name}`,
     text:
       `Hi ${r.client_name},\n\n${a.display_name} can't take on your ${r.service_name} request this time.\n` +
       (reason ? `\n"${reason}"\n` : "") + `\nThanks for thinking of them.\n`,

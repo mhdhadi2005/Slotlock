@@ -5,6 +5,7 @@ const { randomToken } = require("../lib/ids");
 const { sendEmail, emailEnabled } = require("../lib/email");
 const { parseMethods } = require("../lib/payments");
 const { parseStatements } = require("../lib/forms");
+const { BUSINESS } = require("../lib/business");
 const { isValidTimezone } = require("../lib/time");
 const { billingState, depositsReady, baseUrl, rateLimit, str, isEmail } = require("../lib/util");
 
@@ -18,7 +19,7 @@ const RESERVED = new Set([
   "bookings", "book", "demo", "webhooks", "health", "static", "assets", "public", "fonts", "img",
   "cal", "pricing", "about", "terms", "privacy", "help", "support", "blog", "settings",
   "dashboard", "slotlock", "www", "mail", "stripe", "billing", "favicon", "og",
-  "request", "requests", "rp", "waitlist", "consent", "forms",
+  "request", "requests", "rp", "waitlist", "consent", "forms", "beauty", "demo-beauty", "nails", "lashes",
 ]);
 
 function validHandle(h) {
@@ -65,6 +66,8 @@ function serializeArtist(a) {
     aftercareEnabled: !!a.aftercare_enabled,
     aftercareText: a.aftercare_text,
     reviewUrl: a.review_url,
+    look: a.look,
+    businessType: a.business_type,
   };
 }
 
@@ -74,6 +77,7 @@ router.post("/api/auth/signup", limiter, (req, res) => {
   const handle = str(req.body.handle, 30).toLowerCase();
   const displayName = str(req.body.displayName, 80);
   const timezone = str(req.body.timezone, 64);
+  const businessType = BUSINESS[req.body.businessType] ? req.body.businessType : "tattoo";
 
   if (!isEmail(email)) return res.status(400).json({ error: "Enter a valid email." });
   if (password.length < 8) return res.status(400).json({ error: "Password must be at least 8 characters." });
@@ -93,9 +97,9 @@ router.post("/api/auth/signup", limiter, (req, res) => {
   const now = new Date();
   const trialDays = Number(process.env.TRIAL_DAYS || 14);
   const { lastInsertRowid } = db.prepare(`
-    INSERT INTO artists (email, password_hash, handle, display_name, timezone, calendar_token, trial_ends_at, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(email, auth.hashPassword(password), handle, displayName, timezone, randomToken(24),
+    INSERT INTO artists (email, password_hash, handle, display_name, timezone, business_type, look, calendar_token, trial_ends_at, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(email, auth.hashPassword(password), handle, displayName, timezone, businessType, BUSINESS[businessType].look, randomToken(24),
     new Date(now.getTime() + trialDays * 86400000).toISOString(), now.toISOString());
 
   // Sensible starting hours (Tue–Sat, 11am–7pm) so the page works immediately.

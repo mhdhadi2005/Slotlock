@@ -14,7 +14,15 @@ const state = {
   form: { name: "", email: "", phone: "", instagram: "", notes: "", referenceUrl: "", agreed: false },
   idea: { idea: "", placement: "", size: "", style: "", photos: [] },
   request: null, joined: false,
+  addons: new Set(), patchOk: false,
 };
+
+// The picked add-ons: extra minutes (which change what fits) and extra price.
+function extras() {
+  const list = state.service?.addons || [];
+  const chosen = [...state.addons].sort((x, y) => x - y).map((i) => list[i]).filter(Boolean);
+  return { chosen, minutes: chosen.reduce((n, x) => n + x.durationMin, 0), cents: chosen.reduce((n, x) => n + x.priceCents, 0) };
+}
 
 const listJoin = (items) => (items.length < 2 ? items.join("") : `${items.slice(0, -1).join(", ")} or ${items[items.length - 1]}`);
 const addDays = (d, n) => { const t = new Date(d + "T12:00:00Z"); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); };
@@ -31,6 +39,7 @@ async function init() {
   }
   state.artist = data.artist;
   state.services = data.services;
+  setLook(data.artist.look);
   setAccent(data.artist.accent);
   renderHead();
   renderSaved();
@@ -120,10 +129,26 @@ function priceBlock(s) {
 function serviceSection() {
   const title = (extra) => h("div.book-section-title", h("span.n", "1"), "Choose a service", extra || null);
   if (state.service) {
-    const s = state.service;
+    const s = state.service, x = extras();
+    const addons = s.addons?.length && s.mode !== "consult" ? h("div.addon-list", { style: { marginTop: "12px" } },
+      h("span.label", "Add-ons"),
+      s.addons.map((ad, i) => {
+        const on = state.addons.has(i);
+        const box = h("input", { type: "checkbox", checked: on });
+        box.addEventListener("change", () => {
+          if (box.checked) state.addons.add(i); else state.addons.delete(i);
+          // A longer appointment may not fit the same times, so pick again.
+          state.slot = null;
+          loadDays(state.from);
+        });
+        return h("label.addon" + (on ? ".on" : ""), box,
+          h("span", h("b", ad.name), ad.durationMin ? h("small", `+${duration(ad.durationMin)}`) : null),
+          h("span.addon-price", ad.priceCents ? `+${money(ad.priceCents, state.artist.currency)}` : "Free"));
+      })) : null;
     return h("div.book-section",
-      title(h("button.btn.ghost.sm", { type: "button", onclick: () => { Object.assign(state, { service: null, slot: null, date: null, days: [], from: null }); renderBooking(); } }, "Change")),
-      h("div.picked", h("div.grow", h("b", s.name), h("span", duration(s.durationMin))), priceBlock(s)));
+      title(h("button.btn.ghost.sm", { type: "button", onclick: () => { Object.assign(state, { service: null, slot: null, date: null, days: [], from: null, addons: new Set(), patchOk: false }); renderBooking(); } }, "Change")),
+      h("div.picked", h("div.grow", h("b", s.name), h("span", duration(s.durationMin + x.minutes))), priceBlock(s)),
+      addons);
   }
   return h("div.book-section", title(),
     h("div.services", state.services.map((s) => h("button.service-card", {
@@ -140,6 +165,8 @@ function serviceSection() {
       s.description ? h("div.desc", s.description) : null,
       h("div.tags",
         s.mode === "consult" ? h("span.badge.accent", icon("message", 13), "Send your idea, get a quote") : h("span.badge", icon("clock", 13), duration(s.durationMin)),
+        s.addons?.length && s.mode !== "consult" ? h("span.badge", icon("plus", 13), "Add-ons") : null,
+        s.patchTestHours ? h("span.badge.warn", `Patch test ${s.patchTestHours}h before`) : null,
         s.bookable ? null : h("span.badge.warn", "Message to book"))))));
 }
 
@@ -148,6 +175,7 @@ async function loadDays(from) {
   renderBooking();
   const q = new URLSearchParams({ days: 14 });
   if (!REQUEST_TOKEN) q.set("service", state.service.id);
+  if (!REQUEST_TOKEN && state.addons.size) q.set("addons", [...state.addons].join(","));
   if (from) q.set("from", from);
   try {
     const data = await api(`${REQUEST_TOKEN ? requestBase : base}/availability?${q}`);
@@ -231,18 +259,25 @@ function detailsSection() {
   const submit = h("button.btn.primary.lg.block", { type: "submit" },
     s.depositCents ? `Request booking` : "Confirm booking", icon("arrow", 18));
 
+  const x = extras();
+  const patch = h("input", { type: "checkbox", checked: state.patchOk });
+  patch.addEventListener("change", () => { state.patchOk = patch.checked; });
   const form = h("form", { novalidate: true },
     h("div.summary",
       h("div.summary-line", h("span", "Service"), h("b", s.name)),
+      x.chosen.length ? h("div.summary-line", h("span", "Add-ons"), h("span", { style: { textAlign: "right" } }, x.chosen.map((ad) => ad.name).join(", "))) : null,
       h("div.summary-line", h("span", "When"), h("b", when(state.slot, a.timezone))),
-      h("div.summary-line", h("span", "Length"), h("span", duration(s.durationMin))),
+      h("div.summary-line", h("span", "Length"), h("span", duration(s.durationMin + x.minutes))),
+      s.priceCents !== null && x.cents ? h("div.summary-line", h("span", "Price"), h("span", money(s.priceCents + x.cents, cur))) : null,
       s.depositCents ? h("div.summary-line", h("span", "Deposit"), h("b", money(s.depositCents, cur))) : null),
+    s.patchTestHours ? h("div.field", h("span.label", "Patch test"),
+      h("label.check.patch-box", patch, h("span", `I've had a patch test with ${a.displayName.split(" ")[0]} in the last 6 months, or I'll have one at least ${s.patchTestHours} hours before this appointment.`))) : null,
     fieldOf("Your name", input("name", { autocomplete: "name", required: true })),
     fieldOf("Email", input("email", { type: "email", autocomplete: "email", required: true }), "Your booking details go here."),
     h("div.grid-2",
       fieldOf("Phone (optional)", input("phone", { type: "tel", autocomplete: "tel" })),
       fieldOf("Instagram (optional)", input("instagram", { placeholder: "@yourhandle", autocapitalize: "none" }))),
-    fieldOf(`Tell ${a.displayName.split(" ")[0]} about it (optional)`, input("notes", { multiline: true, rows: 3, maxLength: 2000, placeholder: "Your idea, placement, size, colour or black & grey…" })),
+    fieldOf(`Tell ${a.displayName.split(" ")[0]} about it (optional)`, input("notes", { multiline: true, rows: 3, maxLength: 2000, placeholder: a.words?.notesPlaceholder || "Anything they should know…" })),
     fieldOf("Reference link (optional)", input("referenceUrl", { type: "url", placeholder: "https://… Pinterest, Google Drive, an Instagram post" })),
     a.policy ? h("div.field", h("span.label", "Booking policy"), h("div.policy-box", a.policy),
       h("label.check", agree, "I've read and agree to the booking policy")) : null,
@@ -260,6 +295,7 @@ function detailsSection() {
       const { redirectUrl } = await api(`${base}/bookings`, { method: "POST", body: {
         serviceId: s.id, start: state.slot, name: f.name, email: f.email, phone: f.phone, instagram: f.instagram,
         notes: f.notes, referenceUrl: f.referenceUrl, agreedToPolicy: f.agreed,
+        addons: [...state.addons], patchTestOk: state.patchOk,
       } });
       const token = redirectUrl.split("/").pop();
       const saved = store.get("slotlock:bookings", []).filter((b) => Date.parse(b.startsAt) > Date.now()).slice(-20);
@@ -317,6 +353,7 @@ const MAX_PHOTOS = 4;
 
 function ideaSection() {
   const a = state.artist, f = state.form, d = state.idea;
+  const w = a.words?.idea || { title: "Describe your idea", placeholder: "", place: ["Placement", ""], size: ["Rough size", ""], style: true };
   const bind = (obj, key, el) => { el.value = obj[key]; el.addEventListener("input", () => { obj[key] = el.value; }); return el; };
   const fieldOf = (label, el, hint) => { el.id ||= "i-" + label.toLowerCase().replace(/\W+/g, "-"); return h("div.field", h("label", { for: el.id }, label), el, hint ? h("div.hint", hint) : null); };
   const style = h("select", h("option", { value: "" }, "Choose…"), h("option", { value: "color" }, "Colour"), h("option", { value: "black_grey" }, "Black & grey"), h("option", { value: "unsure" }, "Not sure yet"));
@@ -342,11 +379,11 @@ function ideaSection() {
   const error = h("div.form-error", { role: "alert" });
   const submit = h("button.btn.primary.lg.block", { type: "submit" }, "Send my idea", icon("send", 18));
   const form = h("form", { novalidate: true },
-    fieldOf("Describe your idea", bind(d, "idea", h("textarea", { rows: 4, maxLength: 3000, required: true, placeholder: "What you'd like, the vibe, anything it means to you…" }))),
+    fieldOf(w.title, bind(d, "idea", h("textarea", { id: "i-idea", rows: 4, maxLength: 3000, required: true, placeholder: w.placeholder }))),
     h("div.grid-2",
-      fieldOf("Placement", bind(d, "placement", h("input", { maxLength: 120, placeholder: "e.g. inner forearm" }))),
-      fieldOf("Rough size", bind(d, "size", h("input", { maxLength: 120, placeholder: "e.g. palm size, 4 inches" })))),
-    fieldOf("Colour or black & grey?", style),
+      fieldOf(w.place[0], bind(d, "placement", h("input", { id: "i-placement", maxLength: 120, placeholder: w.place[1] }))),
+      fieldOf(w.size[0], bind(d, "size", h("input", { id: "i-size", maxLength: 120, placeholder: w.size[1] })))),
+    w.style ? fieldOf("Colour or black & grey?", style) : null,
     h("div.field", h("span.label", "Reference photos (optional)"), photos, picker,
       h("div.hint", `Up to ${MAX_PHOTOS}. Designs you like, or the spot you want it.`)),
     h("div.divider"),
@@ -388,6 +425,7 @@ async function initRequest() {
   }
   const r = state.request;
   state.artist = r.artist;
+  setLook(r.artist.look);
   handle = r.artist.handle;
   base = `/api/public/artists/${encodeURIComponent(handle)}`;
   document.title = `Your request · ${r.artist.displayName}`;
@@ -423,7 +461,7 @@ function renderRequest() {
       expired ? h("div.notice.warn", { style: { marginBottom: "14px" } }, icon("hourglass", 18), h("span", "Your last booking for this lapsed, but the quote still stands. Pick a new time below.")) : null,
       q.message ? h("div.quote-msg", avatarEl(a.avatarUrl, a.displayName), h("p.pre", q.message)) : null,
       h("div.summary", { style: { marginTop: "14px" } },
-        h("div.summary-line", h("span", "Tattoo"), h("b", r.serviceName)),
+        h("div.summary-line", h("span", "Service"), h("b", r.serviceName)),
         q.priceCents !== null ? h("div.summary-line", h("span", "Price"), h("b", money(q.priceCents, cur))) : null,
         h("div.summary-line", h("span", "Session"), h("span", duration(q.durationMin))),
         h("div.summary-line", h("span", "Deposit to book"), h("b", q.depositCents ? money(q.depositCents, cur) : "None"))),

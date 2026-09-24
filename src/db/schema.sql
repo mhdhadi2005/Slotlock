@@ -26,6 +26,10 @@ CREATE TABLE IF NOT EXISTS artists (
   payment_methods        TEXT NOT NULL DEFAULT '[]',
   payment_note           TEXT NOT NULL DEFAULT '',
   theme                  TEXT NOT NULL DEFAULT 'vermilion',
+  -- ink (dark) | blush | latte. The booking page and dashboard follow it.
+  look                   TEXT NOT NULL DEFAULT 'ink',
+  -- tattoo | nails | lashes | hair | barber: wording and starting templates.
+  business_type          TEXT NOT NULL DEFAULT 'tattoo',
   avatar_image_id        INTEGER,
   calendar_token         TEXT,
   is_demo                INTEGER NOT NULL DEFAULT 0,
@@ -72,6 +76,10 @@ CREATE TABLE IF NOT EXISTS services (
   -- book: clients pick a time straight away. consult: they send their idea
   -- first and the artist replies with a quote.
   mode          TEXT NOT NULL DEFAULT 'book',
+  -- JSON array of {name, priceCents, durationMin} extras clients can add.
+  addons        TEXT NOT NULL DEFAULT '[]',
+  -- Hours ahead a patch test is needed (0 = none). Acts as minimum notice.
+  patch_test_hours INTEGER NOT NULL DEFAULT 0,
   active        INTEGER NOT NULL DEFAULT 1,
   sort_order    INTEGER NOT NULL DEFAULT 0
 );
@@ -122,6 +130,9 @@ CREATE TABLE IF NOT EXISTS bookings (
   cancel_reason       TEXT NOT NULL DEFAULT '',
   reminder_sent_at    TEXT,
   aftercare_sent_at   TEXT,
+  -- The add-ons the client picked, as they were priced when booked.
+  addons              TEXT NOT NULL DEFAULT '[]',
+  addons_cents        INTEGER NOT NULL DEFAULT 0,
   -- Set when the booking came from an approved consultation request.
   request_id          INTEGER,
   created_at          TEXT NOT NULL

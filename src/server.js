@@ -2,7 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
-const { initSchema } = require("./db");
+const { initSchema, db } = require("./db");
 
 initSchema();
 
@@ -18,14 +18,24 @@ const imageRoutes = require("./routes/images");
 const calendarRoutes = require("./routes/calendar");
 const { startScheduler } = require("./jobs/scheduler");
 const { seedDemo } = require("./seed-demo");
+const { seedBeautyDemo } = require("./seed-beauty-demo");
 const forms = require("./lib/forms");
+const { publicBusiness, LOOKS } = require("./lib/business");
 
 // The example page the landing page links to. Rebuilt on every boot so it
 // always works; set DISABLE_DEMO=1 to skip it.
-if (process.env.DISABLE_DEMO !== "1") seedDemo();
+if (process.env.DISABLE_DEMO !== "1") { seedDemo(); seedBeautyDemo(); }
 
 const PUBLIC = path.join(__dirname, "..", "public");
 const page = (file) => (req, res) => res.sendFile(path.join(PUBLIC, file));
+
+// Pages render in their artist's look (Ink, Blush or Latte) from the first
+// paint, so a pink page never flashes dark while it loads.
+const LOOK_VALUES = new Set(["blush", "latte"]);
+const withLook = (html, look) => (LOOK_VALUES.has(look) ? html.replace('<html lang="en">', `<html lang="en" data-look="${look}">`) : html);
+const lookOfBookingToken = (t) => db.prepare("SELECT a.look FROM bookings b JOIN artists a ON a.id = b.artist_id WHERE b.public_token = ?").get(String(t))?.look;
+const lookOfRequestToken = (t) => db.prepare("SELECT a.look FROM requests r JOIN artists a ON a.id = r.artist_id WHERE r.public_token = ?").get(String(t))?.look;
+const template = (file) => fs.readFileSync(path.join(PUBLIC, file), "utf8");
 
 const app = express();
 app.set("trust proxy", 1);
@@ -79,6 +89,8 @@ app.get("/api/config", (req, res) => {
       consentIntro: forms.CONSENT_INTRO, consentStatements: forms.CONSENT_STATEMENTS,
       aftercareText: forms.AFTERCARE_TEXT, maxStatements: forms.MAX_STATEMENTS,
     },
+    business: publicBusiness(),
+    looks: LOOKS,
   });
 });
 
@@ -95,9 +107,13 @@ app.use("/api", (req, res) => res.status(404).json({ error: "Not found." }));
 app.use(express.static(PUBLIC, { index: false, extensions: [], maxAge: "1h" }));
 const landingTemplate = fs.readFileSync(path.join(PUBLIC, "index.html"), "utf8");
 app.get("/", (req, res) => res.type("html").send(landingTemplate.replaceAll("{{base}}", escapeHtml(baseUrl()))));
+const beautyTemplate = fs.readFileSync(path.join(PUBLIC, "beauty.html"), "utf8");
+app.get("/beauty", (req, res) => res.type("html").send(beautyTemplate.replaceAll("{{base}}", escapeHtml(baseUrl()))));
 app.get(["/signup", "/login", "/forgot", "/reset/:token"], page("auth.html"));
-app.get("/app", page("app.html"));
-app.get("/booking/:token", page("booking.html"));
+const appTemplate = template("app.html");
+const bookingTemplate = template("booking.html");
+app.get("/app", (req, res) => res.type("html").send(withLook(appTemplate, req.artist?.look)));
+app.get("/booking/:token", (req, res) => res.type("html").send(withLook(bookingTemplate, lookOfBookingToken(req.params.token))));
 app.get("/waitlist/leave/:token", page("leave.html"));
 
 // Artist pages get real <title> and Open Graph tags, so a link pasted into an
@@ -106,10 +122,10 @@ const bookTemplate = fs.readFileSync(path.join(PUBLIC, "book.html"), "utf8");
 const fillBook = (vals) => bookTemplate.replace(/\{\{(\w+)\}\}/g, (m, key) => (key in vals ? escapeHtml(vals[key]) : m));
 // A consultation request's page: the same booking page, in request mode.
 app.get("/request/:token", (req, res) => {
-  res.type("html").send(fillBook({
-    title: "Your tattoo request", description: "Check on your request and book your quote.",
+  res.type("html").send(withLook(fillBook({
+    title: "Your request", description: "Check on your request and book your quote.",
     image: `${baseUrl()}/og.png`, url: `${baseUrl()}/request/${req.params.token}`,
-  }).replace("<head>", '<head>\n  <meta name="robots" content="noindex">'));
+  }).replace("<head>", '<head>\n  <meta name="robots" content="noindex">'), lookOfRequestToken(req.params.token)));
 });
 app.get("/:handle", (req, res, next) => {
   const a = artistByHandle(req.params.handle);
@@ -120,7 +136,7 @@ app.get("/:handle", (req, res, next) => {
     image: a.avatar_image_id ? `${baseUrl()}/img/${a.avatar_image_id}` : `${baseUrl()}/og.png`,
     url: `${baseUrl()}/${a.handle}`,
   };
-  res.type("html").send(fillBook(fill));
+  res.type("html").send(withLook(fillBook(fill), a.look));
 });
 
 app.use((req, res) => res.status(404).sendFile(path.join(PUBLIC, "404.html")));

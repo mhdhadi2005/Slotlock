@@ -35,6 +35,7 @@ function setMe(artist) {
     for (const key of ["bookingUrl", "calendarUrl"]) artist[key] = artist[key].replace(local, location.origin);
   }
   me = artist;
+  setLook(me.look);
   return me;
 }
 
@@ -329,6 +330,7 @@ function bookingCard(b) {
         h("div", h("div.bk-name", b.clientName), h("div.bk-service", `${b.serviceName} · ${duration(minutes)}`)),
         h("div.row.tight", statusBadge(b), refundBadge(b))),
       alert,
+      b.addons?.length ? h("div.row.tight", { style: { flexWrap: "wrap", marginTop: "10px" } }, b.addons.map((x) => h("span.chip", icon("plus", 13), x.name))) : null,
       b.cancelReason ? h("div.bk-notes", `“${b.cancelReason}”`) : null,
       b.notes ? h("div.bk-notes", b.notes) : null,
       h("div.bk-contacts",
@@ -423,8 +425,14 @@ async function renderServices() {
     needsPayment ? h("div.notice.warn", { style: { marginBottom: "16px" } }, icon("alert", 18),
       h("span", "Clients can't book services with a deposit until you add how they pay you. ", h("a.link", { href: "#deposits" }, "Add a payment method"))) : null,
     services.length ? h("div", services.map(serviceRow))
-      : emptyState("layers", "No services yet", "Add the things clients book you for: flash, small custom, half-day sessions…",
-        h("button.btn.primary", { type: "button", onclick: () => serviceDialog() }, icon("plus", 17), "Add your first service")),
+      : emptyState("layers", "No services yet", `Start with a few typical ${config.business[me.businessType].label.toLowerCase()} services (edit them after), or add your own.`,
+        h("div.row", { style: { justifyContent: "center" } },
+          h("button.btn.primary", { type: "button", onclick: (e) => busy(e.currentTarget, async () => {
+            const r = await api("/api/services/starters", { method: "POST", body: { businessType: me.businessType } });
+            toast(`Added ${plural(r.added, "service")}. Tweak prices to suit you.`);
+            await refreshMeta(); await route();
+          }) }, icon("sparkle", 17), "Add starter services"),
+          h("button.btn", { type: "button", onclick: () => serviceDialog() }, icon("plus", 17), "Add my own"))),
   );
 }
 
@@ -447,6 +455,8 @@ function serviceRow(s) {
       h("div.svc-meta",
         s.mode === "consult" ? h("span.badge.info", icon("message", 13), "Consult first") : null,
         h("span.badge", icon("clock", 13), duration(s.durationMin)),
+        s.addons?.length ? h("span.badge", icon("plus", 13), plural(s.addons.length, "add-on")) : null,
+        s.patchTestHours ? h("span.badge.warn", `Patch test ${s.patchTestHours}h`) : null,
         h("span.badge", s.priceCents === null ? "Price quoted" : money(s.priceCents, me.currency)),
         s.depositCents ? h("span.badge.accent", `${money(s.depositCents, me.currency)} deposit`) : h("span.badge", "No deposit"))),
     h("div.svc-actions",
@@ -475,6 +485,25 @@ async function serviceDialog(s = {}) {
   mode.addEventListener("change", syncMode);
   syncMode();
 
+  // Add-ons: name, extra price, extra time.
+  const addons = (s.addons || []).map((x) => ({ ...x }));
+  const addonBox = h("div.addon-editor");
+  const drawAddons = () => fill(addonBox,
+    addons.map((x, i) => {
+      const nm = h("input", { value: x.name, maxLength: 60, placeholder: "e.g. Nail art", "aria-label": "Add-on name" });
+      nm.addEventListener("input", () => { x.name = nm.value; });
+      const pr = h("input", { value: fromCents(x.priceCents), inputMode: "decimal", placeholder: "0", "aria-label": "Extra price" });
+      pr.addEventListener("input", () => { x.priceCents = toCents(pr.value) ?? 0; });
+      const mins = selectOf([0, 5, 10, 15, 20, 30, 45, 60, 90, 120].map((m) => [m, m ? `+${duration(m)}` : "No extra time"]), x.durationMin || 0);
+      mins.classList.add("addon-min");
+      mins.addEventListener("change", () => { x.durationMin = Number(mins.value); });
+      return h("div.addon-row", nm, h("div.money-input", h("span", sym), pr), mins,
+        h("button.btn.ghost.icon-only.sm", { type: "button", "aria-label": "Remove add-on", onclick: () => { addons.splice(i, 1); drawAddons(); } }, icon("trash", 16)));
+    }),
+    addons.length < 8 ? h("button.btn.sm", { type: "button", style: { alignSelf: "flex-start" }, onclick: () => { addons.push({ name: "", priceCents: 0, durationMin: 0 }); drawAddons(); addonBox.querySelector(".addon-row:last-of-type input")?.focus(); } }, icon("plus", 15), "Add an add-on") : null);
+  drawAddons();
+  const patch = selectOf([[0, "No patch test needed"], [24, "Patch test 24h before"], [48, "Patch test 48h before"], [72, "Patch test 72h before"]], s.patchTestHours || 0);
+
   const actions = [];
   if (s.id) {
     actions.push({
@@ -494,6 +523,7 @@ async function serviceDialog(s = {}) {
       const body = {
         name: name.value, description: desc.value, durationMin: Number(dur.value),
         priceCents: toCents(price.value), depositCents: toCents(deposit.value) ?? 0, mode: mode.value,
+        addons: addons.filter((x) => x.name.trim()), patchTestHours: Number(patch.value),
       };
       try {
         await api(s.id ? `/api/services/${s.id}` : "/api/services", { method: s.id ? "PATCH" : "POST", body });
@@ -513,6 +543,8 @@ async function serviceDialog(s = {}) {
       field("Description", desc, "Optional. Shown under the name on your page."),
       field("How clients book", mode, modeHint),
       h("div.grid-3.compact", field("Length", dur), field("Price", moneyBox(price)), field("Deposit", moneyBox(deposit), "0 = no deposit")),
+      h("div.field", h("span.label", "Add-ons (optional)"), addonBox, h("div.hint", "Extras clients can tick, like nail art or removal. Extra time makes the appointment longer.")),
+      field("Patch test", patch, "Clients confirm they've had one, and can't book sooner than this. Offer a free “Patch test” service too."),
       error,
     ],
     actions,
@@ -730,7 +762,7 @@ function renderPage() {
   const displayName = h("input", { value: me.displayName, maxLength: 80 });
   const handle = h("input", { value: me.handle, maxLength: 30, autocapitalize: "none", spellcheck: "false" });
   handle.addEventListener("input", () => { handle.value = handle.value.toLowerCase().replace(/[^a-z0-9-]/g, ""); });
-  const bio = h("textarea", { maxLength: 600, rows: 4, placeholder: "Your style, what you love to tattoo, what you don't take on." }, me.bio);
+  const bio = h("textarea", { maxLength: 600, rows: 4, placeholder: me.businessType === "tattoo" ? "Your style, what you love to tattoo, what you don't take on." : "What you specialise in, your vibe, anything clients should know." }, me.bio);
   const location_ = h("input", { value: me.location, maxLength: 160, placeholder: "Studio name, street, city" });
   const instagram = h("input", { value: me.instagram, maxLength: 60, placeholder: "yourhandle", autocapitalize: "none", spellcheck: "false" });
 
@@ -749,7 +781,8 @@ function renderPage() {
         h("div.grid-2", field("Name or studio", displayName), field("Booking link", h("div.affix", h("span", `${window.location.host}/`), handle), "Changing this breaks the old link.")),
         field("Bio", bio),
         h("div.grid-2", field("Studio address", location_, "Shown on your page and in confirmations."), field("Instagram", h("div.affix", h("span", "@"), instagram)))),
-      card("Page colour", "The accent colour on your booking page.", swatches),
+      me.look === "ink" ? card("Page colour", "The accent colour on your booking page.", swatches)
+        : card("Page colour", null, h("p.muted", `Your ${LOOK_PREVIEWS[me.look].name} look sets the colours. Switch to Ink in `, h("a.link", { href: "#settings" }, "Settings"), " to pick an accent colour.")),
       card("Portfolio", "Pieces shown at the top of your booking page.", galleryBox, galleryInput)),
     saveBar("Save page", async () => {
       setMe((await api("/api/me", { method: "PATCH", body: {
@@ -789,6 +822,7 @@ function renderSettings() {
   fill(view,
     pageHead("Settings", null),
     h("div.stack",
+      lookCard(),
       card("Sync bookings to your calendar", "Confirmed bookings (and pending ones, marked as such) appear on your phone automatically.",
         h("div.linkbox", calInput, h("button.btn", { type: "button", onclick: () => copyText(me.calendarUrl, "Calendar link copied") }, icon("copy", 16), "Copy")),
         h("div.row.tight", { style: { marginTop: "12px" } },
@@ -815,6 +849,47 @@ function renderSettings() {
           h("div", h("div.label", "Email"), h("div", me.email)),
           h("button.btn", { type: "button", onclick: logout }, icon("logout", 16), "Log out")))),
   );
+}
+
+// The one-tap switch: what kind of business, and how everything looks.
+const LOOK_PREVIEWS = {
+  ink: { name: "Ink", bg: "#0b0a09", bar: "#2a2623", accent: "#ff5c39", ink: "#f6f2eb", sans: true, sub: "Dark and bold" },
+  blush: { name: "Blush", bg: "#fff5f7", bar: "#f8e1e9", accent: "#e0457f", ink: "#3d1f2c", sub: "Soft pink" },
+  latte: { name: "Latte", bg: "#f7f1ea", bar: "#ebdfd1", accent: "#a8714d", ink: "#34261c", sub: "Nude & beige" },
+};
+
+function lookCard() {
+  const types = Object.entries(config.business);
+  const save = async (body, message) => {
+    setMe((await api("/api/me", { method: "PATCH", body })).artist);
+    await refreshMeta();
+    toast(message);
+    renderSettings();
+  };
+  const typeBtns = types.map(([key, b]) => h("button.look-type" + (key === me.businessType ? ".on" : ""), {
+    type: "button", "aria-pressed": String(key === me.businessType),
+    onclick: () => busy(null, async () => {
+      if (key === me.businessType) return;
+      const body = { businessType: key };
+      // Switch the look along with the type, unless they've picked their own.
+      if (me.look === config.business[me.businessType].look) body.look = b.look;
+      await save(body, `Set up for ${b.label.toLowerCase()}`);
+    }),
+  }, b.label));
+  const looks = Object.entries(LOOK_PREVIEWS).map(([key, l]) => h("button.look" + (key === me.look ? ".on" : ""), {
+    type: "button", "aria-pressed": String(key === me.look), "aria-label": `${l.name} look`,
+    onclick: () => busy(null, async () => { if (key !== me.look) await save({ look: key }, `${l.name} look on`); }),
+  },
+    key === me.look ? h("span.ck", "✓") : null,
+    h("div.pv", { style: { background: l.bg } },
+      h("span.t" + (l.sans ? ".sans" : ""), { style: { color: l.ink } }, firstName(me.displayName)),
+      h("i", { style: { background: l.bar, width: "80%" } }), h("i", { style: { background: l.bar, width: "55%" } }),
+      h("div.b", { style: { background: l.accent } })),
+    h("div.nm", l.name)));
+  return card("Business type & look", "Changes the look of your booking page and dashboard, the wording clients see, and your starting consent form and aftercare.",
+    h("span.label", "What you do"), h("div.look-types", typeBtns),
+    h("span.label", "Look"), h("div.looks", looks),
+    h("p.hint", { style: { marginTop: "14px" } }, `Previewing? `, h("a.link", { href: me.bookingUrl, target: "_blank", rel: "noopener" }, "Open your page"), " after switching."));
 }
 
 // ---- Plan ------------------------------------------------------------------
@@ -1039,7 +1114,7 @@ async function notifyWaitlist(count, justOpened) {
 // ---- Consent & aftercare --------------------------------------------------------
 
 function renderForms() {
-  const t = config.formTemplates;
+  const t = { ...config.formTemplates, ...(() => { const b = config.business[me.businessType]; return { consentIntro: b.consent.intro, consentStatements: b.consent.statements, aftercareText: b.aftercare }; })() };
   let consentOn = me.consentEnabled, aftercareOn = me.aftercareEnabled;
   const intro = h("textarea", { rows: 3, maxLength: 4000 }, me.consentIntro || t.consentIntro);
   const statements = (me.consentStatements.length ? me.consentStatements : t.consentStatements).slice();

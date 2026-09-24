@@ -7,6 +7,10 @@ This license is copied below, and is also available with a FAQ at:
 http://scripts.sil.org/OFL
 
 
+Fraunces — SIL Open Font License 1.1
+
+Copyright 2020 The Fraunces Project Authors (github.com/undercasetype/Fraunces)
+
 -----------------------------------------------------------
 SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
 -----------------------------------------------------------

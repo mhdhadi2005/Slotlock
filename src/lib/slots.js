@@ -65,7 +65,8 @@ function slotsForService(artist, service, fromDate, days, now = Date.now()) {
   return generateSlots({
     timezone: artist.timezone,
     stepMin: artist.slot_step_min,
-    minNoticeHours: artist.min_notice_hours,
+    // A service that needs a patch test can't be booked sooner than that.
+    minNoticeHours: Math.max(artist.min_notice_hours, service.patch_test_hours || 0),
     maxDaysAhead: artist.max_days_ahead,
     durationMin: service.duration_min,
     rules, blocked, busy, fromDate, days, now,
