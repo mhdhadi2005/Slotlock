@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const fs = require("fs");
+const crypto = require("crypto");
 const path = require("path");
 const { initSchema, db } = require("./db");
 
@@ -27,7 +28,19 @@ const { publicBusiness, LOOKS } = require("./lib/business");
 if (process.env.DISABLE_DEMO !== "1") { seedDemo(); seedBeautyDemo(); }
 
 const PUBLIC = path.join(__dirname, "..", "public");
-const page = (file) => (req, res) => res.sendFile(path.join(PUBLIC, file));
+
+// Script and stylesheet URLs carry a version that changes whenever those files
+// do, so a browser never runs yesterday's cached common.js with today's pages.
+const ASSET_VERSION = (() => {
+  const hash = crypto.createHash("sha1");
+  for (const f of fs.readdirSync(PUBLIC).filter((name) => /\.(js|css)$/.test(name)).sort()) hash.update(fs.readFileSync(path.join(PUBLIC, f)));
+  return hash.digest("hex").slice(0, 10);
+})();
+const versioned = (html) => html.replace(/(src|href)="\/([\w-]+\.(?:js|css))"/g, `$1="/$2?v=${ASSET_VERSION}"`);
+const page = (file) => {
+  const html = versioned(fs.readFileSync(path.join(PUBLIC, file), "utf8"));
+  return (req, res) => res.type("html").send(html);
+};
 
 // Pages render in their artist's look (Ink, Blush or Latte) from the first
 // paint, so a pink page never flashes dark while it loads.
@@ -35,7 +48,7 @@ const LOOK_VALUES = new Set(["blush", "latte"]);
 const withLook = (html, look) => (LOOK_VALUES.has(look) ? html.replace('<html lang="en">', `<html lang="en" data-look="${look}">`) : html);
 const lookOfBookingToken = (t) => db.prepare("SELECT a.look FROM bookings b JOIN artists a ON a.id = b.artist_id WHERE b.public_token = ?").get(String(t))?.look;
 const lookOfRequestToken = (t) => db.prepare("SELECT a.look FROM requests r JOIN artists a ON a.id = r.artist_id WHERE r.public_token = ?").get(String(t))?.look;
-const template = (file) => fs.readFileSync(path.join(PUBLIC, file), "utf8");
+const template = (file) => versioned(fs.readFileSync(path.join(PUBLIC, file), "utf8"));
 
 const app = express();
 app.set("trust proxy", 1);
@@ -105,9 +118,9 @@ app.get("/health", (req, res) => res.json({ ok: true }));
 app.use("/api", (req, res) => res.status(404).json({ error: "Not found." }));
 
 app.use(express.static(PUBLIC, { index: false, extensions: [], maxAge: "1h" }));
-const landingTemplate = fs.readFileSync(path.join(PUBLIC, "index.html"), "utf8");
+const landingTemplate = template("index.html");
 app.get("/", (req, res) => res.type("html").send(landingTemplate.replaceAll("{{base}}", escapeHtml(baseUrl()))));
-const beautyTemplate = fs.readFileSync(path.join(PUBLIC, "beauty.html"), "utf8");
+const beautyTemplate = template("beauty.html");
 app.get("/beauty", (req, res) => res.type("html").send(beautyTemplate.replaceAll("{{base}}", escapeHtml(baseUrl()))));
 app.get(["/signup", "/login", "/forgot", "/reset/:token"], page("auth.html"));
 const appTemplate = template("app.html");
@@ -118,7 +131,7 @@ app.get("/waitlist/leave/:token", page("leave.html"));
 
 // Artist pages get real <title> and Open Graph tags, so a link pasted into an
 // Instagram DM or WhatsApp previews as "Book with Rosa Vega Tattoo".
-const bookTemplate = fs.readFileSync(path.join(PUBLIC, "book.html"), "utf8");
+const bookTemplate = template("book.html");
 const fillBook = (vals) => bookTemplate.replace(/\{\{(\w+)\}\}/g, (m, key) => (key in vals ? escapeHtml(vals[key]) : m));
 // A consultation request's page: the same booking page, in request mode.
 app.get("/request/:token", (req, res) => {
@@ -139,7 +152,8 @@ app.get("/:handle", (req, res, next) => {
   res.type("html").send(withLook(fillBook(fill), a.look));
 });
 
-app.use((req, res) => res.status(404).sendFile(path.join(PUBLIC, "404.html")));
+const notFoundPage = template("404.html");
+app.use((req, res) => res.status(404).type("html").send(notFoundPage));
 
 app.use((err, req, res, next) => {
   const status = err.status || err.statusCode || 500;
