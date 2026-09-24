@@ -76,5 +76,5 @@ function requireAuth(req, res, next) {
 
 module.exports = {
   hashPassword, verifyPassword, randomToken, sha256, createSession, destroySession, destroyOtherSessions,
-  setSessionCookie, clearSessionCookie, attachArtist, requireAuth,
+  setSessionCookie, clearSessionCookie, attachArtist, requireAuth, parseCookies,
 };

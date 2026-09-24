@@ -333,10 +333,8 @@ function setLook(look) {
 }
 const currentLook = () => document.documentElement.dataset.look || "ink";
 
-// Three swatches that switch the look in one tap. onPick decides what a tap
-// does: the public pages remember it in this browser, the dashboard saves it
-// to the account.
-const LOOK_NAMES = { ink: "Ink", blush: "Blush", latte: "Latte" };
+// Three swatches that switch the look in one tap (the dashboard sidebar).
+const LOOK_NAMES = { ink: "Ink", blush: "Pink", latte: "Nude" };
 function lookSwatches(onPick, { label = true } = {}) {
   const el = h("div.look-toggle", { role: "group", "aria-label": "Page look" },
     label ? h("span.lt-label", "Look") : null,
@@ -348,17 +346,6 @@ function lookSwatches(onPick, { label = true } = {}) {
   el.sync();
   return el;
 }
-
-document.addEventListener("DOMContentLoaded", () => {
-  for (const slot of document.querySelectorAll("[data-look-toggle]")) {
-    const t = lookSwatches((key) => {
-      setLook(key);
-      try { localStorage.setItem("sl-look", key); } catch {}
-      t.sync();
-    });
-    slot.replaceWith(t);
-  }
-});
 
 // The logo: a padlock whose body is a calendar with one booked slot (the
 // icon), and "slotlock" with a keyhole and a booking dot for its o's.

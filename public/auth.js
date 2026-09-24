@@ -47,7 +47,9 @@ function signup() {
   document.title = "Create your page · Slotlock";
   const name = h("input", { autocomplete: "name", required: true, placeholder: "Rosa Vega Tattoo" });
   // A link from the beauty landing page can preselect the type (/signup?type=nails).
-  let type = TYPES.some(([k]) => k === new URLSearchParams(location.search).get("type")) ? new URLSearchParams(location.search).get("type") : "tattoo";
+  // In salon mode (the server paints the page pink) it starts on nails.
+  const asked = new URLSearchParams(location.search).get("type");
+  let type = TYPES.some(([k]) => k === asked) ? asked : document.documentElement.dataset.look === "blush" ? "nails" : "tattoo";
   const typeRow = h("div.look-types", { role: "radiogroup", "aria-label": "What you do" });
   const drawTypes = () => {
     fill(typeRow, TYPES.map(([key, label]) => h("button.look-type" + (key === type ? ".on" : ""), {
@@ -56,8 +58,8 @@ function signup() {
     }, label)));
     name.placeholder = TYPES.find(([k]) => k === type)[2];
     handle.placeholder = slug(name.placeholder);
-    // Preview the matching look: nails in Blush, lashes and hair in Latte.
-    setLook({ nails: "blush", lashes: "latte", hair: "latte" }[type] || "ink");
+    // Preview the matching look: salon types in pink.
+    setLook(["nails", "lashes", "hair"].includes(type) ? "blush" : "ink");
   };
   const handle = h("input", { autocapitalize: "none", spellcheck: "false", required: true, placeholder: "rosavega" });
   const email = h("input", { type: "email", autocomplete: "email", required: true });

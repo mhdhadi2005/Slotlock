@@ -856,8 +856,8 @@ function renderSettings() {
 // The one-tap switch: what kind of business, and how everything looks.
 const LOOK_PREVIEWS = {
   ink: { name: "Ink", bg: "#0b0a09", bar: "#2a2623", accent: "#ff5c39", ink: "#f6f2eb", sans: true, sub: "Dark and bold" },
-  blush: { name: "Blush", bg: "#fff5f7", bar: "#f8e1e9", accent: "#e0457f", ink: "#3d1f2c", sub: "Soft pink" },
-  latte: { name: "Latte", bg: "#f7f1ea", bar: "#ebdfd1", accent: "#a8714d", ink: "#34261c", sub: "Nude & beige" },
+  blush: { name: "Pink", bg: "#fff5f7", bar: "#f8e1e9", accent: "#e0457f", ink: "#3d1f2c", sub: "Soft pink" },
+  latte: { name: "Nude", bg: "#f7f1ea", bar: "#ebdfd1", accent: "#a8714d", ink: "#34261c", sub: "Nude & beige" },
 };
 
 // The quick switch from the header: tap a look, everything changes at once.
@@ -881,7 +881,28 @@ function pickLook(key, name) {
     renderShell();
     toast(`${name} look on`);
     if (currentRoute() === "settings" || currentRoute() === "page") route();
+    await offerSalonType(key);
   });
+}
+
+// A tattoo page in pink still talks about tattoos, so offer to switch the
+// wording, consent form and aftercare to a salon type as well.
+async function offerSalonType(look) {
+  if (look === "ink" || !["tattoo", "barber"].includes(me.businessType)) return;
+  const pick = await modal({
+    title: "Make it a salon page too?",
+    lead: "Your page still talks about tattoos. Pick what you do and the wording, consent form and aftercare change to match. You can change it any time in Settings.",
+    actions: [
+      { label: "Keep tattoo", kind: "ghost", value: null }, { spacer: true },
+      { label: "Lashes & brows", value: "lashes" }, { label: "Hair", value: "hair" }, { label: "Nails", kind: "primary", value: "nails" },
+    ],
+  });
+  if (!pick) return;
+  setMe((await api("/api/me", { method: "PATCH", body: { businessType: pick } })).artist);
+  await refreshMeta();
+  renderShell();
+  toast(`Set up for ${config.business[pick].label.toLowerCase()}`);
+  route();
 }
 
 function openLookPicker() {
@@ -893,6 +914,10 @@ function openLookPicker() {
     toast(`${l.name} look on`);
     draw();
     if (currentRoute() === "settings" || currentRoute() === "page") route();
+    if (key !== "ink" && ["tattoo", "barber"].includes(me.businessType)) {
+      box.closest("dialog")?.querySelector(".modal-foot .btn")?.click();
+      await offerSalonType(key);
+    }
   })));
   draw();
   modal({

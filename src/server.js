@@ -118,16 +118,35 @@ app.get("/health", (req, res) => res.json({ ok: true }));
 app.use("/api", (req, res) => res.status(404).json({ error: "Not found." }));
 
 app.use(express.static(PUBLIC, { index: false, extensions: [], maxAge: "1h" }));
+// Tattoo or Salon: the header switch picks a version of the whole site. Salon
+// mode is remembered in a cookie so the home link, the live example, sign up
+// and log in all stay pink.
+const MODE_COOKIE = "sl_mode";
+const isSalon = (req) => auth.parseCookies(req.headers.cookie)[MODE_COOKIE] === "salon";
+const setMode = (req, res, mode) => res.append("Set-Cookie", `${MODE_COOKIE}=${mode}; Path=/; Max-Age=31536000; SameSite=Lax${req.secure ? "; Secure" : ""}`);
+const siteLook = (req) => (isSalon(req) ? "blush" : null);
+
 const landingTemplate = template("index.html");
-app.get("/", (req, res) => res.type("html").send(landingTemplate.replaceAll("{{base}}", escapeHtml(baseUrl()))));
+app.get("/", (req, res) => {
+  if (req.query.mode === "tattoo") { setMode(req, res, "tattoo"); return res.redirect("/"); }
+  if (isSalon(req)) return res.redirect("/beauty");
+  res.type("html").send(landingTemplate.replaceAll("{{base}}", escapeHtml(baseUrl())));
+});
 const beautyTemplate = template("beauty.html");
-app.get("/beauty", (req, res) => res.type("html").send(beautyTemplate.replaceAll("{{base}}", escapeHtml(baseUrl()))));
-app.get(["/signup", "/login", "/forgot", "/reset/:token"], page("auth.html"));
+app.get("/beauty", (req, res) => {
+  if (!isSalon(req)) setMode(req, res, "salon");
+  res.type("html").send(beautyTemplate.replaceAll("{{base}}", escapeHtml(baseUrl())));
+});
+const authTemplate = template("auth.html");
+app.get(["/signup", "/login", "/forgot", "/reset/:token"], (req, res) => res.type("html").send(withLook(authTemplate, siteLook(req))));
+// In salon mode the live example is the salon one.
+app.get("/demo", (req, res, next) => (isSalon(req) ? res.redirect("/demo-beauty") : next()));
 const appTemplate = template("app.html");
 const bookingTemplate = template("booking.html");
 app.get("/app", (req, res) => res.type("html").send(withLook(appTemplate, req.artist?.look)));
 app.get("/booking/:token", (req, res) => res.type("html").send(withLook(bookingTemplate, lookOfBookingToken(req.params.token))));
-app.get("/waitlist/leave/:token", page("leave.html"));
+const leaveTemplate = template("leave.html");
+app.get("/waitlist/leave/:token", (req, res) => res.type("html").send(withLook(leaveTemplate, siteLook(req))));
 
 // Artist pages get real <title> and Open Graph tags, so a link pasted into an
 // Instagram DM or WhatsApp previews as "Book with Rosa Vega Tattoo".
@@ -153,7 +172,7 @@ app.get("/:handle", (req, res, next) => {
 });
 
 const notFoundPage = template("404.html");
-app.use((req, res) => res.status(404).type("html").send(notFoundPage));
+app.use((req, res) => res.status(404).type("html").send(withLook(notFoundPage, siteLook(req))));
 
 app.use((err, req, res, next) => {
   const status = err.status || err.statusCode || 500;

@@ -113,3 +113,29 @@ test("add-ons make the appointment longer and cost more; patch tests need a conf
   const first = r.body.days.flatMap((d) => d.slots)[0];
   assert.ok(Date.parse(first) >= Date.now() + 47.9 * 3600000, "first opening is at least 48h away");
 });
+
+test("salon mode: the Salon switch keeps the whole public site pink until Tattoo is picked", async () => {
+  const visitor = ctx.client();
+  let r = await visitor("GET", "/");
+  assert.equal(r.status, 200);
+  assert.doesNotMatch(r.text, /data-look/);
+  assert.notEqual((await visitor("GET", "/demo")).headers.get("location"), "/demo-beauty");
+
+  r = await visitor("GET", "/beauty");
+  assert.match(r.headers.get("set-cookie"), /sl_mode=salon/);
+  r = await visitor("GET", "/");
+  assert.equal(r.status, 302);
+  assert.equal(r.headers.get("location"), "/beauty");
+  r = await visitor("GET", "/demo");
+  assert.equal(r.headers.get("location"), "/demo-beauty");
+  assert.match((await visitor("GET", "/login")).text, /<html lang="en" data-look="blush">/);
+  assert.match((await visitor("GET", "/signup")).text, /data-look="blush"/);
+  assert.match((await visitor("GET", "/no-such-page-here")).text, /data-look="blush"/);
+
+  r = await visitor("GET", "/?mode=tattoo");
+  assert.equal(r.headers.get("location"), "/");
+  assert.match(r.headers.get("set-cookie"), /sl_mode=tattoo/);
+  r = await visitor("GET", "/");
+  assert.equal(r.status, 200);
+  assert.doesNotMatch((await visitor("GET", "/login")).text, /data-look/);
+});
