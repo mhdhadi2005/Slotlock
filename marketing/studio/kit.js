@@ -453,3 +453,65 @@ export function makePoof(n = 14, seed = 3) {
   };
   return g;
 }
+
+// ---- More props ------------------------------------------------------------------
+// Magnifying glass; hold it by the handle (origin is the end of the handle).
+export function makeMagnifier() {
+  const g = new THREE.Group();
+  const handle = mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.5, 12), toon(0x6b3f2a), 0.015); handle.position.y = 0.25; g.add(handle);
+  const ring = mesh(new THREE.TorusGeometry(0.28, 0.05, 12, 32), toon(0xd9d2c8), 0.02); ring.position.y = 0.78; g.add(ring);
+  const lens = new THREE.Mesh(new THREE.CircleGeometry(0.27, 32), new THREE.MeshBasicMaterial({ color: 0xbfe6ff, transparent: true, opacity: 0.35, side: THREE.DoubleSide })); lens.position.y = 0.78; g.add(lens);
+  const shine = new THREE.Mesh(new THREE.PlaneGeometry(0.06, 0.2), flat(0xffffff, { transparent: true, opacity: 0.8 })); shine.position.set(-0.1, 0.86, 0.01); shine.rotation.z = -0.5; g.add(shine);
+  return g;
+}
+// Hourglass; userData.at(k) drains the top into the bottom (k from 0 to 1).
+export function makeHourglass() {
+  const g = new THREE.Group(), wood = toon(0x8a5a3a);
+  for (const y of [0, 1.1]) { const p = mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.1, 24), wood, 0.02); p.position.y = y; g.add(p); }
+  for (const s of [-1, 1]) for (const z of [-1, 1]) { const r = mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.1, 8), wood, 0.012); r.position.set(s * 0.34, 0.55, z * 0.12); g.add(r); }
+  const glass = new THREE.MeshBasicMaterial({ color: 0xdff4ff, transparent: true, opacity: 0.28, depthWrite: false });
+  const top = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.04, 0.48, 24), glass); top.position.y = 0.8; g.add(top);
+  const bot = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.3, 0.48, 24), glass); bot.position.y = 0.3; g.add(bot);
+  const sand = toon(0xffc53d);
+  const sTop = new THREE.Mesh(new THREE.ConeGeometry(0.26, 0.4, 24), sand); sTop.rotation.x = Math.PI; g.add(sTop);
+  const sBot = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.36, 24), sand); g.add(sBot);
+  const stream = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.44, 6), sand); stream.position.y = 0.33; g.add(stream);
+  g.userData.at = (k) => {
+    const a = Math.max(0.001, 1 - k), b = Math.max(0.001, k);
+    sTop.scale.set(a, a, a); sTop.position.y = 0.58 + 0.2 * a;
+    sBot.scale.set(1, b, 1); sBot.position.y = 0.06 + 0.18 * b;
+    stream.visible = k > 0.02 && k < 0.98;
+  };
+  g.userData.at(0);
+  return g;
+}
+// Hand bell; origin at the bottom of the handle's grip.
+export function makeBell() {
+  const g = new THREE.Group();
+  const grip = mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.35, 12), toon(0x6b3f2a), 0.015); grip.position.y = 0.17; g.add(grip);
+  const prof = [[0.001, 0], [0.12, 0.02], [0.16, 0.12], [0.2, 0.3], [0.3, 0.46], [0.32, 0.5]].map(([x, y]) => new THREE.Vector2(x, y));
+  const bell = mesh(new THREE.LatheGeometry(prof, 32), toon(0xffc53d, { emissive: 0x3a2600, side: THREE.DoubleSide }), 0.02); bell.rotation.x = Math.PI; bell.position.y = 0.85; g.add(bell);
+  const clapper = mesh(new THREE.SphereGeometry(0.06, 12, 8), toon(0x8a5a00), 0.01); clapper.position.y = 0.33; g.add(clapper);
+  return g;
+}
+// A glass tip jar with a label; coins dropped in stack up (userData.fill(n)).
+export function makeJar(label = "DEPOSITS") {
+  const g = new THREE.Group();
+  const glass = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.3, 0.7, 28, 1, true), new THREE.MeshBasicMaterial({ color: 0xdff4ff, transparent: true, opacity: 0.3, side: THREE.DoubleSide, depthWrite: false }));
+  glass.position.y = 0.35; g.add(glass);
+  const rim = mesh(new THREE.TorusGeometry(0.34, 0.03, 8, 28), toon(0xdff4ff), 0.012); rim.rotation.x = Math.PI / 2; rim.position.y = 0.7; g.add(rim);
+  const base = mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.04, 28), toon(0xdff4ff), 0.012); base.position.y = 0.02; g.add(base);
+  const tag = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.18), new THREE.MeshBasicMaterial({ map: textTexture("", { w: 256, h: 92, font: "900 44px 'Bricolage Grotesque'", color: "#1a0905", bg: "#fff3d6", radius: 14, lines: [label] }) }));
+  tag.position.set(0, 0.4, 0.33); g.add(tag);
+  const coins = [];
+  for (let i = 0; i < 8; i++) { const c = mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.05, 20), toon(0xffc53d, { emissive: 0x5a3a00 }), 0.012); c.position.set(((i * 37) % 7 - 3) * 0.025, 0.07 + i * 0.055, ((i * 53) % 5 - 2) * 0.02); c.visible = false; g.add(c); coins.push(c); }
+  g.userData.fill = (n) => coins.forEach((c, i) => { c.visible = i < n; });
+  return g;
+}
+// A sign with a different message on each side, for flipping.
+export function makeFlipSign(front, back, opts = {}) {
+  const g = new THREE.Group();
+  const a = makeSign(front, opts); g.add(a);
+  const b = makeSign(back, { ...opts, ...(opts.back || {}) }); b.rotation.y = Math.PI; g.add(b);
+  return g;
+}

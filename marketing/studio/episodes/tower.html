@@ -1,0 +1,155 @@
+<!doctype html><html data-look="blush"><head><meta charset="utf-8"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/lib.css"><link rel="stylesheet" href="/ui.css"><script src="/lib.js"></script>
+<script type="importmap">{ "imports": { "three": "/three.js", "three/addons/": "/addons/" } }</script>
+<style>
+  /* Blush palette for beauty episodes. */
+  body { background: #fff5f7; color: #3d1f2c; }
+  .glow { background: radial-gradient(60% 38% at 82% 8%, rgba(255,150,190,.55), transparent 70%), radial-gradient(55% 35% at 0% 100%, rgba(255,200,220,.6), transparent 70%); }
+  #cap { font: italic 700 88px/1.04 "Fraunces", Georgia, serif; letter-spacing: -.03em; color: #3d1f2c; }
+  em { background: linear-gradient(100deg, #f07aa6, #e0457f 62%); -webkit-background-clip: text; background-clip: text; color: transparent; padding-right: .06em; }
+  #foot { color: #a57f8f; }
+  .bub { box-shadow: 0 16px 40px -14px rgba(170,60,105,.5); border: 3px solid #f6cfdc; }
+  .bub::after { border-right: 3px solid #f6cfdc; border-bottom: 3px solid #f6cfdc; }
+  .bub.accent { background: linear-gradient(180deg, #f58ab2, #e0457f); color: #fff; border-color: transparent; } .bub.accent::after { background: #e24f86; border-color: transparent; }
+  .bub.dark { background: #3d1f2c; color: #fff5f7; border-color: #3d1f2c; } .bub.dark::after { background: #3d1f2c; border-color: #3d1f2c; }
+  .sfx { color: #fff; -webkit-text-stroke: 4px #7a1d45; }
+  #outro { background: radial-gradient(60% 40% at 50% 30%, rgba(255,150,190,.55), transparent 70%), #fff5f7; }
+  #outro h2 { font: italic 700 100px/1.02 "Fraunces", Georgia, serif; letter-spacing: -.03em; color: #3d1f2c; }
+  #outro p { color: #6e4b5b; }
+  #outro .cta { background: linear-gradient(180deg, #f58ab2, #e0457f); color: #fff; }
+  #outro .wordmark, #foot .wordmark { color: #3d1f2c; }
+</style>
+</head><body><div id="gl"></div><div id="bubbles"></div>
+<script type="module">
+import { THREE, setup, mesh, toon, flat, textTexture, makeLockie, makeTech, makeNailTable, makeBlob, makeClock, makeConfetti, makePoof, makeSign, blinkAt, rng } from "/kit.js";
+import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+import { bubbles, showBubbles } from "/ui.js";
+base();
+await document.fonts.load("900 40px 'Bricolage Grotesque'"); await document.fonts.load("700 40px 'Inter'");
+await document.fonts.load("italic 700 40px 'Fraunces'");
+const S = setup({ camPos: [0, 2.3, 10.5], look: [0, 1.75, 0], palette: "blush" });
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+
+const T = makeTech({ skin: 0xf1c5a4, hair: 0x6b3a22, smock: 0xff9ec0 }); T.root.position.set(-0.7, 0, -0.35); S.scene.add(T.root);
+const table = makeNailTable(); table.position.set(0, 0, 0.35); S.scene.add(table);
+const client = makeBlob(0xd7a6ff, 0.8); S.scene.add(client.root);
+const next = makeBlob(0x9fd8a8, 0.75); S.scene.add(next.root);
+const L = makeLockie({ color: 0xff7aa8, feet: 0xe0457f, key: 0x7a1d45 }); L.root.scale.setScalar(0.62); S.scene.add(L.root);
+const poof = makePoof(14, 8); S.scene.add(poof);
+const confetti = makeConfetti(90, 12); S.scene.add(confetti);
+const PINKS = [0xe0457f, 0xff8fb1, 0xffffff, 0xd7a6ff, 0xffc4d8, 0xf3c6b0];
+confetti.children.forEach((m, i) => { m.material = flat(PINKS[i % PINKS.length], { side: THREE.DoubleSide }); });
+
+// The wall board: what the appointment has turned into, one state per add-on.
+const STATES = [
+  ["GEL MANI", "1h · $45"], ["+ CHROME", "1h 15m · $55"], ["+ GEMS", "1h 30m · $63"], ["+ FRENCH TIP", "1h 45m · $70"],
+  ["+ 3D FLOWERS", "2h 15m · $85"], ["+ ONE MORE GEM", "2h 20m · $88"], ["+ MATCHING TOES", "3h 20m · $128"],
+  ["GEL + CHROME", "+ GEMS", "1h 30m · $63"],
+];
+const boards = STATES.map((lines, i) => {
+  const s = makeSign(lines, { w: 2.1, h: lines.length > 2 ? 1.1 : 0.85, bg: i === STATES.length - 1 ? "#e0457f" : "#ffffff", color: i === STATES.length - 1 ? "#ffffff" : "#3d1f2c" });
+  s.children[0].visible = false; s.position.set(0.1, 2.75, -1.4); s.scale.setScalar(0.72); S.scene.add(s); return s;
+});
+// The day bar: the appointment's length against the next client's start time.
+const bar = new THREE.Group(); bar.position.set(-1.25, 2.45, -1.4); S.scene.add(bar);
+const frame = mesh(new RoundedBoxGeometry(2.5, 0.2, 0.08, 3, 0.06), toon(0xffffff), 0.02); frame.position.x = 1.25; bar.add(frame);
+const fillGeo = new THREE.BoxGeometry(1, 0.13, 0.06); fillGeo.translate(0.5, 0, 0);
+const fillMat = toon(0xe0457f);
+const fill = new THREE.Mesh(fillGeo, fillMat); fill.position.set(0.04, 0, 0.03); bar.add(fill);
+const marker = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.42, 0.1), flat(0x3d1f2c)); marker.position.set(1.24, 0, 0.05); bar.add(marker);
+const mLabel = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.2), new THREE.MeshBasicMaterial({ map: textTexture("", { w: 310, h: 100, font: "800 52px 'Inter'", color: "#3d1f2c", bg: null, lines: ["NEXT: 2PM"] }), transparent: true }));
+mLabel.position.set(1.24, -0.3, 0.05); bar.add(mLabel);
+const MINS = [60, 75, 90, 105, 135, 140, 200, 90];
+const barLen = (m) => (m / 60) * 0.8; // 1h = 0.8; the next client is at 1h30 (1.2)
+
+// The add-on tower: a bottle drops on for every extra, then it all comes down.
+const ADD = [2.4, 3.1, 3.8, 4.5, 5.2, 5.9];
+const COLS = [0xc9cdd6, 0xfff1a8, 0xffffff, 0xff8fb1, 0xb8e4ff, 0xd7a6ff];
+const r = rng(4);
+const bottles = ADD.map((t0, i) => {
+  const b = new THREE.Group(); S.scene.add(b);
+  const body = mesh(new THREE.CylinderGeometry(0.1, 0.11, 0.2, 16), toon(COLS[i]), 0.015); body.position.y = 0.1; b.add(body);
+  const cap = mesh(new THREE.CylinderGeometry(0.045, 0.05, 0.08, 12), toon(0x3d1f2c), 0.012); cap.position.y = 0.24; b.add(cap);
+  return { b, t0, vx: (r() - 0.5) * 5, vy: 2 + r() * 2.5, spin: (r() - 0.5) * 16 };
+});
+const CRASH = 7.2;
+
+const bub = bubbles([
+  ...[["+ chrome?", 2.3], ["+ gems!! 💎", 3.0], ["+ french tip", 3.7], ["+ 3D flowers 🌸", 4.4], ["+ one more gem", 5.1], ["+ matching toes??", 5.8]]
+    .map(([text, t0], i) => ({ t0, t1: t0 + 0.75, text, cls: i % 2 ? "accent" : "", anchor: () => V(1.15, 1.25, 1.0), align: 0.7, tail: "70%" })),
+  { t0: 6.1, t1: 7.2, text: "my appt was 2pm… 👀", cls: "dark", anchor: () => V(-1.15, 1.05, 1.0), align: 0.2, tail: "20%" },
+  { t0: 7.2, t1: 8.0, sfx: true, text: "CRASH!", anchor: () => V(0.5, 2.0, 0.8), rot: -8 },
+  { t0: 7.85, t1: 8.6, sfx: true, text: "POOF!", anchor: () => V(0.5, 1.9, 0.8), rot: 8 },
+  { t0: 13.0, t1: 14.6, text: "right on time 💕", anchor: () => V(-1.15, 1.05, 1.0), align: 0.2, tail: "20%" },
+]);
+
+window.DUR = 21.2;
+window.render = (t) => {
+  captions(t, [
+    { t0: 0, t1: 2.2, html: "Client: “just a gel mani” 💅" },
+    { t0: 2.2, t1: 7.2, html: "…then the <em>extras</em> start" },
+    { t0: 7.8, t1: 12.4, html: "Add-ons get picked <em>when they book.</em>" },
+    { t0: 12.4, t1: 15.8, html: "Priced. Timed. <em>Before they walk in.</em>" },
+    { t0: 15.8, t1: 18.2, html: "No surprises at the table ✨" },
+  ]);
+  const shake = t > 5.8 && t < 7.4 ? Math.sin(t * 50) * 0.03 : 0;
+  S.aim(V(shake, 2.3 + shake, 10.5), V(0, 1.75, 0));
+
+  // Which board/bar state we're in.
+  let st = 0; ADD.forEach((a, i) => { if (t >= a + 0.25) st = i + 1; });
+  if (t >= 8.6) st = STATES.length - 1;
+  boards.forEach((b, i) => { b.visible = i === st; b.scale.setScalar(0.72 * (i === st ? lerp(1.15, 1, E.out(prog(t, i ? (i < 7 ? ADD[i - 1] + 0.25 : 8.6) : 0, (i ? (i < 7 ? ADD[i - 1] + 0.25 : 8.6) : 0) + 0.25))) : 1)); });
+  const target = barLen(MINS[st]);
+  const prevLen = barLen(MINS[Math.max(0, st - 1)]);
+  const stT = st === 0 ? 0 : st < 7 ? ADD[st - 1] + 0.25 : 8.6;
+  const len = lerp(st === 7 ? barLen(200) : prevLen, target, E.out(prog(t, stT, stT + 0.35)));
+  fill.scale.x = Math.min(len, 2.42);
+  const over = len > 1.22;
+  fillMat.color.setHex(st === 7 ? 0x23996a : over ? 0xd9434b : 0xe0457f);
+
+  // The tower: bottles drop onto the table and wobble more with every one.
+  const wob = prog(t, 3.5, 7.2);
+  bottles.forEach((o, i) => {
+    const d = prog(t, o.t0, o.t0 + 0.3);
+    o.b.visible = t > o.t0 && t < CRASH + 1.4;
+    let x = 0.55 + Math.sin(t * 7 + i * 0.6) * 0.03 * i * wob, y = 0.95 + i * 0.27 + (1 - d * d) * 2.5, rz = Math.sin(t * 7 + i * 0.6) * 0.06 * wob * (i + 1) / 3, z = 0.35;
+    if (t > CRASH) { const k = t - CRASH; x += o.vx * k; y += o.vy * k - 6 * k * k; rz += o.spin * k; z += k * 1.2; }
+    o.b.position.set(x, y, z); o.b.rotation.set(0, 0, rz);
+  });
+
+  // The tech: happy, then watching the time bar with dread, then relaxed.
+  const dread = t > 4.4 && t < 8.6;
+  const cheer = E.back(prog(t, 15.8, 16.1)) * (1 - prog(t, 17.9, 18.2));
+  T.pose({ blink: blinkAt(t, 0.3), lookY: t < 2.2 ? -0.6 : dread ? 0.6 : 0, lookX: t > 2.2 && t < 7.2 ? 0.7 : t > 7.6 && t < 12.4 ? 0.5 : 0,
+    mouth: dread ? "o" : "smile", sweat: t > 4.6 && t < 8.6, slump: dread ? 0.6 : 0, headTilt: dread ? Math.sin(t * 6) * 0.05 : 0,
+    armL: 0.1 + cheer * 2.5, armLx: cheer > 0.1 ? 0 : -0.9, armR: 0.1 + cheer * 2.5, armRx: cheer > 0.1 ? 0 : -0.9 + (t < 2.2 ? Math.sin(t * 9) * 0.1 : 0) });
+
+  // The client in the chair, then the next client waiting.
+  const cin = E.out(prog(t, 0.2, 0.8)), cout = E.inOut(prog(t, 12.6, 13.2));
+  client.root.visible = cout < 1;
+  client.root.position.set(lerp(3, 1.15, cin) + cout * 2.2, Math.abs(Math.sin(t * 11)) * 0.12 * (cin < 1 || cout > 0 ? 1 : 0), 1.0);
+  client.pose({ blink: blinkAt(t, 1.7), lookX: -0.7, mouth: t > 7.2 && t < 8.4 ? "o" : "smile", armL: t > 2.2 && t < 6.6 ? 1.2 + Math.sin(t * 8) * 0.3 : 0.3 });
+  const nin = E.out(prog(t, 5.8, 6.3));
+  next.root.visible = t > 5.8;
+  const nmove = E.inOut(prog(t, 13.0, 13.7));
+  next.root.position.set(lerp(-3, -1.15, nin) + nmove * 2.5, (t > 5.8 && t < 6.3) || (t > 13 && t < 13.7) ? Math.abs(Math.sin(t * 11)) * 0.12 : 0, 1.0);
+  next.pose({ blink: blinkAt(t, 0.5), lookX: 0.7, mouth: t < 12.4 ? "flat" : "smile", squash: t > 6.3 && t < 12.4 ? Math.max(0, Math.sin(t * 10)) * 0.08 : 0 });
+
+  // Pink Lockie drops in where the tower was and points at the board.
+  const drop = prog(t, 7.6, 7.95);
+  L.root.visible = t > 7.6;
+  const landK = t > 7.95 ? Math.exp(-(t - 7.95) * 6) * Math.cos((t - 7.95) * 18) : 0;
+  const point = E.back(prog(t, 8.5, 8.8)) * (1 - prog(t, 11.8, 12.2));
+  const dance = prog(t, 15.8, 16.0) * (1 - prog(t, 18.0, 18.2));
+  L.root.position.set(0.55, 0.95 + (1 - E.out(drop)) * 3.5 + dance * Math.abs(Math.sin(t * 9)) * 0.2, 0.45);
+  L.pose({ squash: landK * 0.7, tilt: dance * Math.sin(t * 9) * 0.15, armR: 0.25 + point * 2.4 + dance * 2, armL: 0.25 + dance * 2,
+    blink: blinkAt(t, 1.2), lookY: point > 0.3 ? 0.8 : 0, lookX: point > 0.3 ? -0.2 : -0.5, open: point > 0.3 ? 0.4 : 0 });
+  poof.position.set(0.55, 1.4, 0.7); poof.userData.at(prog(t, 7.8, 8.6));
+  confetti.position.set(0, 2.2, 0.6); confetti.userData.at(t - 15.8);
+
+  showBubbles(t, bub, S.toScreen);
+  outro(t, 18.2, { h: "Extras?<br>Already booked.", p: "Booking + deposits for nail techs,<br>lash artists & beauty pros." });
+  S.frame();
+};
+render(0);
+window.READY = true;
+</script></body></html>

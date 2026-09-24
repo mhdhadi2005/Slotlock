@@ -55,7 +55,8 @@ characters and props from `kit.js`, and `bubbles()` / `showBubbles()` from `ui.j
 | Pink Lockie | `makeLockie({ color: 0xff7aa8, feet: 0xe0457f, key: 0x7a1d45 })` | Beauty episodes. Same Lockie, blush edition. Has `cukes` for spa day. |
 | The Nail Tech | `makeTech()` | Hair bun, pink smock. Frazzled by squeeze-in DMs; `sweat`, spa extras `mask` (0-1) and `cukes`. |
 
-Props: `makeNailTable` (polish, UV lamp, wrist cushion), `makeChair`, `makeClock`, `makeSign(lines)`, `makeCoin`, `makeTumbleweed`,
+Props: `makeNailTable` (polish, UV lamp, wrist cushion), `makeMagnifier`, `makeHourglass` (`at(k)` drains it),
+`makeBell`, `makeJar(label)` (`fill(n)` stacks coins), `makeFlipSign(front, back)`, `makeChair`, `makeClock`, `makeSign(lines)`, `makeCoin`, `makeTumbleweed`,
 `makeConfetti`, `makePoof`.
 
 ## Episode log
@@ -67,23 +68,22 @@ Add every new episode here so ideas never repeat.
 | 2026-09-23 | ghosted | No-deposit client vanishes at 2pm; Lockie's "DEPOSIT FIRST" sign scares the ghost off | Ghost-proof your books. |
 | 2026-09-23 | bouncer | Lockie bounces "I'll pay later" at the calendar's velvet rope | Hire the bouncer. |
 | 2026-09-23 | flood | DM bubbles bury the artist; Lockie bursts out with one link | One link. Zero chaos. |
+| 2026-09-24 | screenshot | The Ghost "pays" with a fake Venmo screenshot; Lockie's magnifier, the artist's real $0.00, the hold's hourglass runs out | Nice try, ghost. |
+| 2026-09-24 | tower | "Just a gel mani" grows a tower of add-on polish bottles that crashes; pink Lockie shows add-ons are picked, priced and timed at booking | Extras? Already booked. |
+| 2026-09-24 | midnight | Books open at midnight; Lockie rings a bell and the waitlist books in single file, deposits into the artist's jar, while the artist sleeps | Books open. Chaos closed. |
 | 2026-09-24 | squeeze | Nail tech at 7pm buried in "can u squeeze me in??"; pink Lockie shows the next real opening, client books, tech goes spa mode | Squeeze-ins? Not anymore. |
 
 ## Idea backlog
 
 - Beauty: the lash client who skipped the patch test; Lockie holds up "48 HOURS" and hands over a patch test booking
-- Beauty: nail art add-ons stacking up like a tower of polish bottles, the time bar growing with each one
 
-- The waitlist stampede: artist opens books, Lockie rings a bell and the waitlist rushes in (orderly, with deposits)
 - Consult-first: a client sends a blurry "like this but different" photo; Lockie hands over the idea form and a quote comes back
 - Paper consent forms flying everywhere vs. one tap to sign on the phone
 - Aftercare: Lockie as a tiny nurse reminding the client "no pool for 2 weeks"
 
 - "I'm 5 min away" client (a clock shows it's been 45 min)
-- The Ghost tries a fake Venmo screenshot; Lockie squints and waits for it to land
 - Lockie's first day on the job
 - "Can I get a discount if I bring my cousin?"
-- Artist opens books at midnight and Lockie handles the stampede while they sleep
 - Client asks to move the appointment 6 times
 - Ghost family reunion (every no-show from this year)
 - "Is this still available?" asked 40 times
