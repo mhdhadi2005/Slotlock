@@ -68,7 +68,7 @@ function renderShell() {
       h("div.row.tight",
         h("a.btn.sm", { href: me.bookingUrl, target: "_blank", rel: "noopener" }, icon("external", 15), "Open"),
         h("button.btn.sm.ghost", { type: "button", onclick: () => copyText(me.bookingUrl, "Link copied") }, icon("copy", 15), "Copy"))),
-    h("button.btn.sm.block.look-btn", { type: "button", onclick: openLookPicker, style: { marginBottom: "10px" } }, icon("palette", 15), `Look: ${LOOK_PREVIEWS[me.look]?.name || "Ink"}`),
+    h("div.side-look", lookSwatches(pickLook)),
     h("div.side-user",
       avatarEl(me.avatarUrl, me.displayName),
       h("div.who", h("b", me.displayName), h("span", me.email)),
@@ -871,6 +871,17 @@ function lookTiles(onPick) {
       h("i", { style: { background: l.bar, width: "80%" } }), h("i", { style: { background: l.bar, width: "55%" } }),
       h("div.b", { style: { background: l.accent } })),
     h("div.nm", l.name))));
+}
+
+// One tap from the sidebar: save the look to the account and repaint.
+function pickLook(key, name) {
+  if (key === me.look) return;
+  return busy(null, async () => {
+    setMe((await api("/api/me", { method: "PATCH", body: { look: key } })).artist);
+    renderShell();
+    toast(`${name} look on`);
+    if (currentRoute() === "settings" || currentRoute() === "page") route();
+  });
 }
 
 function openLookPicker() {

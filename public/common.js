@@ -331,6 +331,34 @@ function setLook(look) {
   if (look === "blush" || look === "latte") root.dataset.look = look;
   else delete root.dataset.look;
 }
+const currentLook = () => document.documentElement.dataset.look || "ink";
+
+// Three swatches that switch the look in one tap. onPick decides what a tap
+// does: the public pages remember it in this browser, the dashboard saves it
+// to the account.
+const LOOK_NAMES = { ink: "Ink", blush: "Blush", latte: "Latte" };
+function lookSwatches(onPick, { label = true } = {}) {
+  const el = h("div.look-toggle", { role: "group", "aria-label": "Page look" },
+    label ? h("span.lt-label", "Look") : null,
+    Object.entries(LOOK_NAMES).map(([key, name]) => h("button.lt-dot.lt-" + key, {
+      type: "button", title: `${name} look`, "aria-label": `${name} look`, "data-look-key": key,
+      onclick: () => onPick(key, name),
+    })));
+  el.sync = () => { for (const b of el.querySelectorAll(".lt-dot")) b.setAttribute("aria-pressed", String(b.dataset.lookKey === currentLook())); };
+  el.sync();
+  return el;
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  for (const slot of document.querySelectorAll("[data-look-toggle]")) {
+    const t = lookSwatches((key) => {
+      setLook(key);
+      try { localStorage.setItem("sl-look", key); } catch {}
+      t.sync();
+    });
+    slot.replaceWith(t);
+  }
+});
 
 // The logo: a padlock whose body is a calendar with one booked slot (the
 // icon), and "slotlock" with a keyhole and a booking dot for its o's.
