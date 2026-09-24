@@ -68,6 +68,7 @@ function renderShell() {
       h("div.row.tight",
         h("a.btn.sm", { href: me.bookingUrl, target: "_blank", rel: "noopener" }, icon("external", 15), "Open"),
         h("button.btn.sm.ghost", { type: "button", onclick: () => copyText(me.bookingUrl, "Link copied") }, icon("copy", 15), "Copy"))),
+    h("button.btn.sm.block.look-btn", { type: "button", onclick: openLookPicker, style: { marginBottom: "10px" } }, icon("palette", 15), `Look: ${LOOK_PREVIEWS[me.look]?.name || "Ink"}`),
     h("div.side-user",
       avatarEl(me.avatarUrl, me.displayName),
       h("div.who", h("b", me.displayName), h("span", me.email)),
@@ -77,6 +78,7 @@ function renderShell() {
     h("div.top",
       h("a.brand", { href: "#home" }, brandMark(), wordmark()),
       h("div.row.tight",
+        h("button.btn.sm.icon-only", { type: "button", "aria-label": "Change look", title: "Change look", onclick: openLookPicker }, icon("palette", 16)),
         h("a.btn.sm", { href: me.bookingUrl, target: "_blank", rel: "noopener" }, icon("external", 15), "My page"),
         h("button.btn.ghost.sm.icon-only", { type: "button", "aria-label": "Log out", onclick: logout }, icon("logout", 17)))),
     h("nav.mobile-nav", navLinks()),
@@ -858,6 +860,38 @@ const LOOK_PREVIEWS = {
   latte: { name: "Latte", bg: "#f7f1ea", bar: "#ebdfd1", accent: "#a8714d", ink: "#34261c", sub: "Nude & beige" },
 };
 
+// The quick switch from the header: tap a look, everything changes at once.
+function lookTiles(onPick) {
+  return h("div.looks", Object.entries(LOOK_PREVIEWS).map(([key, l]) => h("button.look" + (key === me.look ? ".on" : ""), {
+    type: "button", "aria-pressed": String(key === me.look), "aria-label": `${l.name} look`, onclick: () => onPick(key, l),
+  },
+    key === me.look ? h("span.ck", "✓") : null,
+    h("div.pv", { style: { background: l.bg } },
+      h("span.t" + (l.sans ? ".sans" : ""), { style: { color: l.ink } }, firstName(me.displayName)),
+      h("i", { style: { background: l.bar, width: "80%" } }), h("i", { style: { background: l.bar, width: "55%" } }),
+      h("div.b", { style: { background: l.accent } })),
+    h("div.nm", l.name))));
+}
+
+function openLookPicker() {
+  const box = h("div");
+  const draw = () => fill(box, lookTiles((key, l) => busy(null, async () => {
+    if (key === me.look) return;
+    setMe((await api("/api/me", { method: "PATCH", body: { look: key } })).artist);
+    renderShell();
+    toast(`${l.name} look on`);
+    draw();
+    if (currentRoute() === "settings" || currentRoute() === "page") route();
+  })));
+  draw();
+  modal({
+    title: "Pick your look",
+    lead: "Changes your booking page and this dashboard. Your clients see it straight away.",
+    body: [box, h("p.hint", { style: { marginTop: "12px" } }, "What you do (tattoo, nails, lashes…) is in ", h("a.link", { href: "#settings", onclick: (e) => e.target.closest("dialog").querySelector(".modal-foot .btn").click() }, "Settings"), ".")],
+    actions: [{ label: "Done", kind: "primary", value: true }],
+  });
+}
+
 function lookCard() {
   const types = Object.entries(config.business);
   const save = async (body, message) => {
@@ -876,19 +910,10 @@ function lookCard() {
       await save(body, `Set up for ${b.label.toLowerCase()}`);
     }),
   }, b.label));
-  const looks = Object.entries(LOOK_PREVIEWS).map(([key, l]) => h("button.look" + (key === me.look ? ".on" : ""), {
-    type: "button", "aria-pressed": String(key === me.look), "aria-label": `${l.name} look`,
-    onclick: () => busy(null, async () => { if (key !== me.look) await save({ look: key }, `${l.name} look on`); }),
-  },
-    key === me.look ? h("span.ck", "✓") : null,
-    h("div.pv", { style: { background: l.bg } },
-      h("span.t" + (l.sans ? ".sans" : ""), { style: { color: l.ink } }, firstName(me.displayName)),
-      h("i", { style: { background: l.bar, width: "80%" } }), h("i", { style: { background: l.bar, width: "55%" } }),
-      h("div.b", { style: { background: l.accent } })),
-    h("div.nm", l.name)));
+  const looks = lookTiles((key, l) => busy(null, async () => { if (key !== me.look) await save({ look: key }, `${l.name} look on`); }));
   return card("Business type & look", "Changes the look of your booking page and dashboard, the wording clients see, and your starting consent form and aftercare.",
     h("span.label", "What you do"), h("div.look-types", typeBtns),
-    h("span.label", "Look"), h("div.looks", looks),
+    h("span.label", "Look"), looks,
     h("p.hint", { style: { marginTop: "14px" } }, `Previewing? `, h("a.link", { href: me.bookingUrl, target: "_blank", rel: "noopener" }, "Open your page"), " after switching."));
 }
 
