@@ -959,4 +959,13 @@ dialog.lightbox img { width: 100%; height: auto; max-height: calc(100dvh - 48px)
 .side-look .look-toggle { width: 100%; justify-content: space-between; margin: 0; }
 .nav-links a { white-space: nowrap; }
 @media (max-width: 420px) { .nav-links a:not(.btn) { padding: 8px 6px; } .site-nav .brand .wordmark { font-size: 1.05rem; } }
-@media (max-width: 380px) { .site-nav .brand .wordmark { display: none; } }
+
+
+/* Tattoo | Salon switch in the site header: two versions of the site. */
+.mode-switch { display: inline-flex; padding: 3px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); margin-right: 6px; }
+.nav-links .mode-switch a { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px 6px 9px; border-radius: 999px; font-size: 0.86rem; font-weight: 650; color: var(--muted); text-decoration: none; }
+.nav-links .mode-switch a:hover { background: transparent; color: var(--text); }
+.nav-links .mode-switch a.on { background: var(--accent); color: var(--accent-ink); }
+.ms-dot { width: 12px; height: 12px; border-radius: 50%; flex: none; box-shadow: 0 0 0 1.5px rgba(255,255,255,.75); }
+.ms-ink { background: #0b0a09; } .ms-pink { background: #f07aa6; }
+@media (max-width: 460px) { .site-nav .brand .wordmark { display: none; } .nav-links .mode-switch a { padding: 6px 10px 6px 8px; font-size: 0.8rem; gap: 5px; } .mode-switch { margin-right: 0; } }

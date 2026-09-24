@@ -15,7 +15,6 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="/fonts/bricolage-grotesque-latin-wght.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/style.css">
-  <script src="/look-early.js"></script>
 </head>
 <body>
   <header class="site-nav" id="nav">
@@ -25,7 +24,7 @@
         <a class="hide-sm" href="#how">How it works</a>
         <a class="hide-sm" href="#pricing">Pricing</a>
         <a class="hide-sm" href="/demo">Live example</a>
-        <span data-look-toggle></span>
+        <div class="mode-switch" role="navigation" aria-label="Who it's for"><a href="/" class="on" aria-current="page"><i class="ms-dot ms-ink"></i>Tattoo</a><a href="/beauty"><i class="ms-dot ms-pink"></i>Salon</a></div>
         <a href="/login">Log in</a>
         <a class="btn primary sm" href="/signup">Start free</a>
       </nav>

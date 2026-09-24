@@ -76,7 +76,7 @@ const BUSINESS = {
     ],
   },
   lashes: {
-    label: "Lashes & brows", look: "latte", pro: "lash artist", work: "treatment",
+    label: "Lashes & brows", look: "blush", pro: "lash artist", work: "treatment",
     notesPlaceholder: "The look you want (natural, wispy, dramatic), contact lenses, sensitivities…",
     idea: { title: "What would you like?", placeholder: "The look you're going for, and any inspo…", place: ["Style", "e.g. wispy, natural"], size: ["Length or curl", "e.g. medium, C curl"], style: false },
     consent: {
@@ -108,7 +108,7 @@ const BUSINESS = {
     ],
   },
   hair: {
-    label: "Hair", look: "latte", pro: "stylist", work: "appointment",
+    label: "Hair", look: "blush", pro: "stylist", work: "appointment",
     notesPlaceholder: "Your hair now, the look you want, any colour history…",
     idea: { title: "What would you like?", placeholder: "The look you're going for, your hair history, any inspo…", place: ["Current hair", "e.g. shoulder length, box dye"], size: ["Goal", "e.g. soft balayage"], style: false },
     consent: {
