@@ -856,8 +856,8 @@ function renderSettings() {
 // The one-tap switch: what kind of business, and how everything looks.
 const LOOK_PREVIEWS = {
   ink: { name: "Ink", bg: "#0b0a09", bar: "#2a2623", accent: "#ff5c39", ink: "#f6f2eb", sans: true, sub: "Dark and bold" },
-  blush: { name: "Pink", bg: "#fff5f7", bar: "#f8e1e9", accent: "#e0457f", ink: "#3d1f2c", sub: "Soft pink" },
-  latte: { name: "Nude", bg: "#f7f1ea", bar: "#ebdfd1", accent: "#a8714d", ink: "#34261c", sub: "Nude & beige" },
+  blush: { name: "Pink", bg: "#faf5f2", bar: "#f4cbd6", accent: "#1f1418", ink: "#1f1418", sub: "Soft pink" },
+  latte: { name: "Nude", bg: "#f7f2ec", bar: "#e8d6c2", accent: "#2a211b", ink: "#2a211b", sub: "Nude & beige" },
 };
 
 // The quick switch from the header: tap a look, everything changes at once.
