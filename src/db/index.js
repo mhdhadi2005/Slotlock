@@ -56,6 +56,12 @@ const ADDED_COLUMNS = [
   ["services", "mode", "TEXT NOT NULL DEFAULT 'book'"],
   ["bookings", "aftercare_sent_at", "TEXT"],
   ["bookings", "request_id", "INTEGER"],
+  ["artists", "look", "TEXT NOT NULL DEFAULT 'ink'"],
+  ["artists", "business_type", "TEXT NOT NULL DEFAULT 'tattoo'"],
+  ["services", "addons", "TEXT NOT NULL DEFAULT '[]'"],
+  ["services", "patch_test_hours", "INTEGER NOT NULL DEFAULT 0"],
+  ["bookings", "addons", "TEXT NOT NULL DEFAULT '[]'"],
+  ["bookings", "addons_cents", "INTEGER NOT NULL DEFAULT 0"],
 ];
 
 const columnsOf = (table) => new Set(db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name));

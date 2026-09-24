@@ -48,6 +48,10 @@ printed to the console instead of sent.
 | Consultation requests: idea + reference photos → quote → booking | `src/lib/requests.js`, `public/book.js` (`/request/:token`) |
 | Books open/closed, waitlist and the "books are open" email | `src/routes/artist.js`, `src/routes/public.js`, `public/leave.js` |
 | Consent forms (signed on the client's phone) and aftercare emails | `src/lib/forms.js`, `public/booking.js`, `src/jobs/scheduler.js` |
+| Business types (tattoo, nails, lashes & brows, hair, barber): wording, templates, starter services | `src/lib/business.js` |
+| Looks: Ink (dark), Blush and Latte (light), set by `data-look` on `<html>` | `public/style.css`, `src/server.js` (`withLook`) |
+| Add-ons and patch-test rules on services | `src/lib/addons.js`, `src/lib/slots.js` |
+| Beauty landing page and example page (`/beauty`, `/demo-beauty`) | `public/beauty.html`, `src/seed-beauty-demo.js` |
 | Optional artist subscription billing (Stripe) | `src/routes/billing.js`, `src/lib/stripe.js` |
 | The example page at `/demo`, with generated flash artwork | `src/seed-demo.js` |
 | Landing, auth, dashboard, booking and status pages | `public/` |
@@ -83,6 +87,17 @@ printed to the console instead of sent.
   birth (18+ on the appointment day), medical notes and a drawn signature. The
   exact wording signed is stored with it; the artist gets a printable record at
   `/app/consent/:bookingId`. Links go out in confirmation and reminder emails.
+- **Business types and looks.** Each artist picks what they do (tattoo, nails,
+  lashes & brows, hair, barber) and a look (Ink, Blush, Latte) in Settings or
+  at signup. The type sets the booking-page wording, the default consent form
+  and aftercare, and the starter services; the look themes their booking page,
+  request and booking pages and dashboard. The server writes the look into the
+  HTML so light pages never flash dark.
+- **Add-ons and patch tests.** Services can have add-ons (name, price, extra
+  minutes). Clients pick them before choosing a time, because extra minutes
+  change which slots fit; the server recomputes length and price. A service can
+  need a patch test 24/48/72 hours ahead: that becomes its minimum notice, and
+  the client must confirm it before booking.
 - **Aftercare.** Shown on the booking page after the appointment and emailed 3
   hours after it ends, with an optional review link.
 

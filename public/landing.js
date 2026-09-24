@@ -10,7 +10,7 @@
 
   // The phone mockup shows the live example's real portfolio.
   const art = document.querySelector(".mock-art");
-  api("/api/public/artists/demo")
+  api(`/api/public/artists/${document.body.dataset.demo || "demo"}`)
     .then(({ artist }) => {
       art.querySelectorAll("img").forEach((img, i) => {
         if (artist.portfolio[i]) img.src = artist.portfolio[i];

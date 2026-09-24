@@ -35,6 +35,7 @@ function render() {
   clearInterval(ticker);
   clearInterval(poller);
   const b = booking, a = b.artist;
+  setLook(a.look);
   setAccent(a.accent);
   document.title = `${b.serviceName} with ${a.displayName}`;
   const amount = money(b.depositCents, b.currency);
@@ -290,6 +291,7 @@ function detailsCard() {
   return h("section.card", { style: { marginTop: "26px" } },
     h("dl.details",
       h("dt", "Service"), h("dd", b.serviceName),
+      b.addons?.length ? [h("dt", "Add-ons"), h("dd", b.addons.map((x) => x.name + (x.priceCents ? ` (+${money(x.priceCents, b.currency)})` : "")).join(", "))] : null,
       h("dt", "When"), h("dd", h("b", b.when)),
       h("dt", "Length"), h("dd", duration(minutes)),
       a.location ? [h("dt", "Where"), h("dd", a.location)] : null,

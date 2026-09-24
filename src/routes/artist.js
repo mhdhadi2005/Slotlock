@@ -8,6 +8,8 @@ const { emailEnabled, sendEmail } = require("../lib/email");
 const { normalizeStatements } = require("../lib/forms");
 const { formatWhen } = require("../lib/time");
 const requests = require("../lib/requests");
+const { BUSINESS, LOOKS } = require("../lib/business");
+const { parseAddons, normalizeAddons } = require("../lib/addons");
 const { normalizeMethods } = require("../lib/payments");
 const bookings = require("../lib/bookings");
 const { OCCUPYING } = require("../lib/slots");
@@ -53,6 +55,8 @@ router.patch("/api/me", (req, res) => {
     aftercare_enabled: pick("aftercareEnabled", a.aftercare_enabled, (v) => (v ? 1 : 0)),
     aftercare_text: pick("aftercareText", a.aftercare_text, (v) => str(v, 4000)),
     review_url: pick("reviewUrl", a.review_url, (v) => str(v, 500)),
+    look: pick("look", a.look),
+    business_type: pick("businessType", a.business_type),
   };
 
   if (!next.display_name) return bad(res, "Name can't be empty.");
@@ -71,19 +75,21 @@ router.patch("/api/me", (req, res) => {
   if (!HOLD_OPTIONS.includes(next.hold_hours)) return bad(res, "Pick how long to hold unpaid requests.");
   if (b.paymentMethods !== undefined) next.payment_methods = JSON.stringify(normalizeMethods(b.paymentMethods));
   if (next.review_url && !isHttpUrl(next.review_url)) return bad(res, "The review link must start with http:// or https://");
+  if (!LOOKS.includes(next.look)) return bad(res, "Unknown look.");
+  if (!BUSINESS[next.business_type]) return bad(res, "Unknown business type.");
 
   db.prepare(`
     UPDATE artists SET display_name = ?, handle = ?, bio = ?, location = ?, instagram = ?, timezone = ?,
       currency = ?, policy = ?, theme = ?, slot_step_min = ?, min_notice_hours = ?, max_days_ahead = ?,
       cancel_window_hours = ?, hold_hours = ?, payment_note = ?, payment_methods = ?,
       books_open = ?, books_closed_message = ?, consent_enabled = ?, consent_intro = ?, consent_statements = ?,
-      aftercare_enabled = ?, aftercare_text = ?, review_url = ?
+      aftercare_enabled = ?, aftercare_text = ?, review_url = ?, look = ?, business_type = ?
     WHERE id = ?
   `).run(next.display_name, next.handle, next.bio, next.location, next.instagram, next.timezone,
     next.currency, next.policy, next.theme, next.slot_step_min, next.min_notice_hours, next.max_days_ahead,
     next.cancel_window_hours, next.hold_hours, next.payment_note, next.payment_methods,
     next.books_open, next.books_closed_message, next.consent_enabled, next.consent_intro, next.consent_statements,
-    next.aftercare_enabled, next.aftercare_text, next.review_url, a.id);
+    next.aftercare_enabled, next.aftercare_text, next.review_url, next.look, next.business_type, a.id);
 
   res.json({ artist: serializeArtist(reload(a.id)) });
 });
@@ -110,6 +116,7 @@ function serializeService(s) {
   return {
     id: s.id, name: s.name, description: s.description, durationMin: s.duration_min,
     priceCents: s.price_cents, depositCents: s.deposit_cents, mode: s.mode, active: !!s.active,
+    addons: parseAddons(s.addons), patchTestHours: s.patch_test_hours,
   };
 }
 
@@ -122,6 +129,8 @@ function readService(body, existing = {}) {
     price_cents: pick("priceCents", existing.price_cents ?? null),
     deposit_cents: pick("depositCents", existing.deposit_cents ?? 0),
     mode: pick("mode", existing.mode ?? "book"),
+    addons: body.addons !== undefined ? normalizeAddons(body.addons) : { addons: parseAddons(existing.addons ?? "[]") },
+    patch_test_hours: pick("patchTestHours", existing.patch_test_hours ?? 0),
     active: pick("active", existing.active === undefined ? true : !!existing.active) ? 1 : 0,
   };
 }
@@ -132,6 +141,8 @@ function validateService(s) {
   if (s.price_cents !== null && !intIn(s.price_cents, 0, 100_000_000)) return "Invalid price.";
   if (!intIn(s.deposit_cents, 0, 10_000_000)) return "Invalid deposit.";
   if (!["book", "consult"].includes(s.mode)) return "Pick how clients book this service.";
+  if (s.addons.error) return s.addons.error;
+  if (![0, 24, 48, 72].includes(s.patch_test_hours)) return "Patch test notice must be none, 24, 48 or 72 hours.";
   if (s.price_cents !== null && s.deposit_cents > s.price_cents) return "The deposit can't be more than the price.";
   return null;
 }
@@ -151,10 +162,27 @@ router.post("/api/services", (req, res) => {
     return bad(res, "That's a lot of services! Archive some before adding more.");
   }
   const { lastInsertRowid } = db.prepare(`
-    INSERT INTO services (artist_id, name, description, duration_min, price_cents, deposit_cents, mode, active, sort_order)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM services WHERE artist_id = ?))
-  `).run(req.artist.id, s.name, s.description, s.duration_min, s.price_cents, s.deposit_cents, s.mode, s.active, req.artist.id);
+    INSERT INTO services (artist_id, name, description, duration_min, price_cents, deposit_cents, mode, addons, patch_test_hours, active, sort_order)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM services WHERE artist_id = ?))
+  `).run(req.artist.id, s.name, s.description, s.duration_min, s.price_cents, s.deposit_cents, s.mode, JSON.stringify(s.addons.addons),
+    s.patch_test_hours, s.active, req.artist.id);
   res.status(201).json({ service: serializeService(db.prepare("SELECT * FROM services WHERE id = ?").get(lastInsertRowid)) });
+});
+
+// One tap to fill an empty services page with sensible ones for the business.
+router.post("/api/services/starters", (req, res) => {
+  const type = BUSINESS[req.body.businessType] ? req.body.businessType : req.artist.business_type;
+  const have = new Set(db.prepare("SELECT lower(name) AS n FROM services WHERE artist_id = ?").all(req.artist.id).map((r) => r.n));
+  const add = db.prepare(`INSERT INTO services (artist_id, name, description, duration_min, price_cents, deposit_cents, mode, addons, patch_test_hours, sort_order)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM services WHERE artist_id = ?))`);
+  let added = 0;
+  for (const st of BUSINESS[type].starters) {
+    if (have.has(st.name.toLowerCase())) continue;
+    add.run(req.artist.id, st.name, st.description, st.durationMin, st.priceCents, st.depositCents, st.mode || "book",
+      JSON.stringify(st.addons || []), st.patchTestHours || 0, req.artist.id);
+    added++;
+  }
+  res.status(201).json({ added });
 });
 
 router.patch("/api/services/:id", (req, res) => {
@@ -164,9 +192,11 @@ router.patch("/api/services/:id", (req, res) => {
   const err = validateService(s);
   if (err) return bad(res, err);
   db.prepare(`
-    UPDATE services SET name = ?, description = ?, duration_min = ?, price_cents = ?, deposit_cents = ?, mode = ?, active = ?
+    UPDATE services SET name = ?, description = ?, duration_min = ?, price_cents = ?, deposit_cents = ?, mode = ?, addons = ?,
+      patch_test_hours = ?, active = ?
     WHERE id = ?
-  `).run(s.name, s.description, s.duration_min, s.price_cents, s.deposit_cents, s.mode, s.active, existing.id);
+  `).run(s.name, s.description, s.duration_min, s.price_cents, s.deposit_cents, s.mode, JSON.stringify(s.addons.addons),
+    s.patch_test_hours, s.active, existing.id);
   res.json({ service: serializeService(db.prepare("SELECT * FROM services WHERE id = ?").get(existing.id)) });
 });
 
@@ -235,6 +265,7 @@ function serializeBooking(b) {
     depositPaid: !!b.deposit_paid, depositReportedAt: b.deposit_reported_at, depositMethod: b.deposit_method,
     holdExpiresAt: b.hold_expires_at, refundStatus: b.refund_status, cancelledBy: b.cancelled_by,
     cancelReason: b.cancel_reason, createdAt: b.created_at, requestId: b.request_id,
+    addons: parseAddons(b.addons), addonsCents: b.addons_cents,
     consentSigned: bookings.consentSigned(b),
   };
 }

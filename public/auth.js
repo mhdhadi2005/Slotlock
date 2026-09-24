@@ -41,9 +41,24 @@ function form(onSubmit, ...children) {
   return el;
 }
 
+const TYPES = [["tattoo", "Tattoo", "Rosa Vega Tattoo"], ["nails", "Nails", "Glow Nails by Jade"], ["lashes", "Lashes & brows", "Lash Lab by Mia"], ["hair", "Hair", "Studio Sol Hair"], ["barber", "Barber", "Fade Street Barbers"]];
+
 function signup() {
   document.title = "Create your page · Slotlock";
   const name = h("input", { autocomplete: "name", required: true, placeholder: "Rosa Vega Tattoo" });
+  // A link from the beauty landing page can preselect the type (/signup?type=nails).
+  let type = TYPES.some(([k]) => k === new URLSearchParams(location.search).get("type")) ? new URLSearchParams(location.search).get("type") : "tattoo";
+  const typeRow = h("div.look-types", { role: "radiogroup", "aria-label": "What you do" });
+  const drawTypes = () => {
+    fill(typeRow, TYPES.map(([key, label]) => h("button.look-type" + (key === type ? ".on" : ""), {
+      type: "button", role: "radio", "aria-checked": String(key === type),
+      onclick: () => { type = key; drawTypes(); },
+    }, label)));
+    name.placeholder = TYPES.find(([k]) => k === type)[2];
+    handle.placeholder = slug(name.placeholder);
+    // Preview the matching look: nails in Blush, lashes and hair in Latte.
+    setLook({ nails: "blush", lashes: "latte", hair: "latte" }[type] || "ink");
+  };
   const handle = h("input", { autocapitalize: "none", spellcheck: "false", required: true, placeholder: "rosavega" });
   const email = h("input", { type: "email", autocomplete: "email", required: true });
   const pw = passwordInput("new-password");
@@ -56,6 +71,7 @@ function signup() {
 
   let touched = false;
   const slug = (s) => s.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 30);
+  drawTypes();
   name.addEventListener("input", () => { if (!touched) handle.value = slug(name.value); });
   handle.addEventListener("input", () => { touched = true; handle.value = handle.value.toLowerCase().replace(/[^a-z0-9-]/g, ""); });
 
@@ -65,10 +81,11 @@ function signup() {
     h("p.sub", "Free during early access. Takes about 10 minutes to set up."),
     form(async () => {
       await api("/api/auth/signup", { method: "POST", body: {
-        displayName: name.value, handle: handle.value, email: email.value, password: pw.input.value, timezone: tz.value,
+        displayName: name.value, handle: handle.value, email: email.value, password: pw.input.value, timezone: tz.value, businessType: type,
       } });
       location.href = "/app?welcome=1";
     },
+      h("div.field", h("span.label", "What do you do?"), typeRow),
       field("Your name or studio", name),
       field("Your booking link", h("div.affix", h("span", `${location.host}/`), handle), "Lowercase letters, numbers and dashes. You can change it later."),
       field("Email", email),

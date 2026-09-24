@@ -9,6 +9,8 @@ const bookings = require("../lib/bookings");
 const requests = require("../lib/requests");
 const { consentForm, aftercareText, ageOn } = require("../lib/forms");
 const { decodeImage } = require("../lib/images");
+const { parseAddons, pickAddons } = require("../lib/addons");
+const { businessOf } = require("../lib/business");
 const {
   THEMES, billingState, depositsReady, rateLimit, str, isEmail, isHttpUrl,
 } = require("../lib/util");
@@ -37,6 +39,8 @@ function publicArtist(a) {
     isDemo: !!a.is_demo,
     booksOpen: !!a.books_open,
     booksClosedMessage: a.books_closed_message,
+    look: a.look,
+    businessType: a.business_type,
   };
 }
 
@@ -47,6 +51,8 @@ function artistPage(a) {
     portfolio: portfolioOf(a.id),
     paymentMethods: [...new Set(parseMethods(a.payment_methods).map((m) => TYPES[m.type].label))],
     acceptingBookings: billingState(a).active,
+    // Wording for the booking page, fitted to the kind of business.
+    words: (({ label, pro, work, notesPlaceholder, idea }) => ({ label, pro, work, notesPlaceholder, idea }))(businessOf(a)),
   };
 }
 
@@ -59,6 +65,7 @@ router.get("/api/public/artists/:handle", (req, res) => {
     .map((s) => ({
       id: s.id, name: s.name, description: s.description, durationMin: s.duration_min,
       priceCents: s.price_cents, depositCents: s.deposit_cents, mode: s.mode,
+      addons: parseAddons(s.addons), patchTestHours: s.patch_test_hours,
       // A consultation needs no deposit details until the artist quotes.
       bookable: s.mode === "consult" || s.deposit_cents === 0 || ready,
     }));
@@ -73,10 +80,12 @@ router.get("/api/public/artists/:handle/availability", (req, res) => {
   if (!a) return res.status(404).json({ error: "Not found." });
   const service = activeService(a.id, req.query.service);
   if (!service) return res.status(404).json({ error: "Service not found." });
+  // Chosen add-ons make the appointment longer, so fewer times may fit.
+  const extra = pickAddons(service, req.query.addons ? String(req.query.addons).split(",") : []).minutes;
   const today = localDateStr(Date.now(), a.timezone);
   const from = isDateStr(req.query.from) && req.query.from > today ? req.query.from : today;
   const days = Math.min(Math.max(parseInt(req.query.days, 10) || 14, 1), 31);
-  res.json({ timezone: a.timezone, today, days: slotsForService(a, service, from, days) });
+  res.json({ timezone: a.timezone, today, days: slotsForService(a, { ...service, duration_min: service.duration_min + extra }, from, days) });
 });
 
 router.post("/api/public/artists/:handle/bookings", bookingLimiter, async (req, res) => {
@@ -101,10 +110,15 @@ router.post("/api/public/artists/:handle/bookings", bookingLimiter, async (req, 
   if (!isEmail(email)) return res.status(400).json({ error: "Enter a valid email." });
   if (referenceUrl && !isHttpUrl(referenceUrl)) return res.status(400).json({ error: "Reference link must start with http:// or https://" });
   if (a.policy && req.body.agreedToPolicy !== true) return res.status(400).json({ error: "Please agree to the booking policy." });
+  if (service.patch_test_hours > 0 && req.body.patchTestOk !== true) {
+    return res.status(400).json({ error: "Please confirm the patch test." });
+  }
+  const extras = pickAddons(service, req.body.addons);
 
   const booking = await bookings.createBooking(a, {
-    serviceId: service.id, serviceName: service.name, durationMin: service.duration_min, depositCents: service.deposit_cents,
+    serviceId: service.id, serviceName: service.name, durationMin: service.duration_min + extras.minutes, depositCents: service.deposit_cents,
     startIso: req.body.start, client: { name, email, phone, instagram }, notes, referenceUrl,
+    patchTestHours: service.patch_test_hours, addons: extras.chosen, addonsCents: extras.cents,
   });
   res.status(201).json({ redirectUrl: `/booking/${booking.public_token}` });
 });
@@ -124,6 +138,8 @@ function serializeForClient(b) {
     endsAt: b.ends_at,
     when: formatWhen(b.starts_at, a.timezone),
     clientName: b.client_name,
+    addons: parseAddons(b.addons),
+    addonsCents: b.addons_cents,
     depositCents: b.deposit_cents,
     currency: b.currency,
     depositPaid: !!b.deposit_paid,

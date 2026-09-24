@@ -5,6 +5,7 @@ const { baseUrl, money, httpError } = require("./util");
 const { parseMethods, TYPES } = require("./payments");
 const { hasConflict, slotsForService } = require("./slots");
 const { randomToken, refCode } = require("./ids");
+const { parseAddons } = require("./addons");
 
 const getBooking = (id) => db.prepare("SELECT * FROM bookings WHERE id = ?").get(id);
 const getArtist = (id) => db.prepare("SELECT * FROM artists WHERE id = ?").get(id);
@@ -50,24 +51,25 @@ function consentLine(b, artist) {
 // Re-checks the time is still free, then saves the booking. There's no await
 // between the check and the INSERT: that's what stops two clients taking the
 // same slot (see db/index.js).
-function insertBooking(a, { serviceId, serviceName, durationMin, depositCents, startIso, client, notes = "", referenceUrl = "", requestId = null }, now = Date.now()) {
+function insertBooking(a, { serviceId, serviceName, durationMin, depositCents, startIso, client, notes = "", referenceUrl = "",
+  requestId = null, patchTestHours = 0, addons = [], addonsCents = 0 }, now = Date.now()) {
   const startMs = Date.parse(startIso);
   if (!startMs) throw httpError(400, "Pick a time.");
   const start = new Date(startMs).toISOString();
-  const [day] = slotsForService(a, { duration_min: durationMin }, localDateStr(startMs, a.timezone), 1, now);
+  const [day] = slotsForService(a, { duration_min: durationMin, patch_test_hours: patchTestHours }, localDateStr(startMs, a.timezone), 1, now);
   if (!day || !day.slots.includes(start)) throw httpError(409, "Sorry, that time was just taken. Please pick another.");
 
   const needsDeposit = depositCents > 0;
   const { lastInsertRowid } = db.prepare(`
     INSERT INTO bookings (artist_id, service_id, public_token, ref_code, service_name, starts_at, ends_at, status,
       hold_expires_at, client_name, client_email, client_phone, client_instagram, notes, reference_url,
-      deposit_cents, currency, request_id, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      deposit_cents, currency, request_id, addons, addons_cents, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(a.id, serviceId, randomToken(18), refCode(), serviceName, start, new Date(startMs + durationMin * 60000).toISOString(),
     needsDeposit ? "awaiting_deposit" : "confirmed",
     needsDeposit ? holdUntil(startMs, a.hold_hours, now) : null,
     client.name, client.email, client.phone || "", client.instagram || "", notes, referenceUrl,
-    depositCents, a.currency, requestId, new Date(now).toISOString());
+    depositCents, a.currency, requestId, JSON.stringify(addons), addonsCents, new Date(now).toISOString());
   return getBooking(lastInsertRowid);
 }
 
@@ -144,7 +146,7 @@ async function notifyConfirmed(b, { instant }) {
     subject: `You're booked with ${a.display_name}: ${when}`,
     text:
       `Hi ${b.client_name},\n\nYou're booked for ${b.service_name} with ${a.display_name}.\n\n` +
-      `When: ${when}\n${a.location ? `Where: ${a.location}\n` : ""}${deposit}\n` +
+      `When: ${when}\n${a.location ? `Where: ${a.location}\n` : ""}${addonLine(b)}${deposit}\n` +
       `Add to Google Calendar: ${googleCalendarLink(b, a)}\n` +
       `View or cancel: ${bookingLink(b)}\n` + consentLine(b, a) +
       (a.policy ? `\nPolicy:\n${a.policy}\n` : ""),
@@ -158,8 +160,13 @@ async function notifyConfirmed(b, { instant }) {
   }
 }
 
+function addonLine(b) {
+  const list = parseAddons(b.addons);
+  return list.length ? `Add-ons: ${list.map((x) => `${x.name}${x.priceCents ? ` (+${money(x.priceCents, b.currency)})` : ""}`).join(", ")}\n` : "";
+}
+
 function clientDetails(b) {
-  return `Email: ${b.client_email}\n` +
+  return addonLine(b) + `Email: ${b.client_email}\n` +
     (b.client_phone ? `Phone: ${b.client_phone}\n` : "") +
     (b.client_instagram ? `Instagram: ${b.client_instagram}\n` : "") +
     (b.notes ? `\nNotes:\n${b.notes}\n` : "") +
