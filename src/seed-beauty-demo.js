@@ -80,7 +80,7 @@ function seedBeautyDemo() {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 24, 24, 'rose', 'blush', 'nails', ?, 1, 1, 1, 'comped', ?, ?)
     `).run(
       DEMO_EMAIL, hashPassword(randomToken()), HANDLE, "Glow by Jade",
-      "Gel, BIAB & hand-painted nail art. Classic & hybrid lash sets.\nPrivate suite, by appointment ✨",
+      "Gel, BIAB & hand-painted nail art. Classic & hybrid lash sets.\nPrivate suite, by appointment.",
       "The Glow Suites, Wicker Park, Chicago", "glowbyjade", "America/Chicago",
       "Your deposit comes off the final price.\nPlease come with bare nails, or add a removal.\nCancel 24 hours ahead to get your deposit back.",
       JSON.stringify([{ type: "venmo", value: "glowbyjade-demo" }, { type: "cashapp", value: "glowbyjadedemo" }, { type: "zelle", value: "hello@glowbyjade.example" }]),
