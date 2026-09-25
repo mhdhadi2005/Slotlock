@@ -1,0 +1,144 @@
+<!doctype html><html data-look="blush"><head><meta charset="utf-8"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/lib.css"><link rel="stylesheet" href="/ui.css"><script src="/lib.js"></script>
+<script type="importmap">{ "imports": { "three": "/three.js", "three/addons/": "/addons/" } }</script>
+<style>
+  /* Blush palette for beauty episodes. */
+  body { background: #fff5f7; color: #3d1f2c; }
+  .glow { background: radial-gradient(60% 38% at 82% 8%, rgba(255,150,190,.55), transparent 70%), radial-gradient(55% 35% at 0% 100%, rgba(255,200,220,.6), transparent 70%); }
+  #cap { font: 600 86px/1.04 "Fraunces", Georgia, serif; letter-spacing: -.03em; color: #3d1f2c; }
+  em { color: #d63a70; font-style: italic; }
+  #foot { color: #a57f8f; }
+  .bub { box-shadow: 0 16px 40px -14px rgba(170,60,105,.5); border: 3px solid #f6cfdc; }
+  .bub::after { border-right: 3px solid #f6cfdc; border-bottom: 3px solid #f6cfdc; }
+  .bub.accent { background: linear-gradient(180deg, #f58ab2, #e0457f); color: #fff; border-color: transparent; } .bub.accent::after { background: #e24f86; border-color: transparent; }
+  .bub.dark { background: #3d1f2c; color: #fff5f7; border-color: #3d1f2c; } .bub.dark::after { background: #3d1f2c; border-color: #3d1f2c; }
+  .sfx { color: #fff; -webkit-text-stroke: 4px #7a1d45; }
+  #outro { background: radial-gradient(60% 40% at 50% 30%, rgba(255,150,190,.55), transparent 70%), #fff5f7; }
+  #outro h2 { font: italic 700 100px/1.02 "Fraunces", Georgia, serif; letter-spacing: -.03em; color: #3d1f2c; }
+  #outro p { color: #6e4b5b; }
+  #outro .cta { background: linear-gradient(180deg, #f58ab2, #e0457f); color: #fff; }
+  #outro .wordmark, #foot .wordmark { color: #3d1f2c; }
+</style>
+</head><body><div id="gl"></div><div id="bubbles"></div>
+<script type="module">
+import { THREE, setup, mesh, toon, flat, makeLockie, makeTech, makeNailTable, makeBlob, makeCoin, makeSign, makeClock, makeConfetti, makePoof, blinkAt } from "/kit.js";
+import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+import { bubbles, showBubbles } from "/ui.js";
+base();
+await document.fonts.load("900 40px 'Bricolage Grotesque'"); await document.fonts.load("700 40px 'Inter'");
+await document.fonts.load("italic 700 40px 'Fraunces'");
+const S = setup({ camPos: [0, 2.3, 10.5], look: [0, 1.75, 0], palette: "blush" });
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+
+const T = makeTech({ skin: 0x8d5a3b, hair: 0x1f120c, smock: 0xff9ec0 }); T.root.position.set(-0.7, 0, -0.35); S.scene.add(T.root);
+const table = makeNailTable(); table.position.set(0, 0, 0.35); S.scene.add(table);
+const client = makeBlob(0xffc56b, 0.85); S.scene.add(client.root);
+const L = makeLockie({ color: 0xff7aa8, feet: 0xe0457f, key: 0x7a1d45 }); L.root.scale.setScalar(0.62); S.scene.add(L.root);
+const clock = makeClock(); clock.position.set(1.25, 3.0, -1.2); clock.scale.setScalar(0.7); clock.children[0].material = toon(0xe0457f); S.scene.add(clock);
+const coin = makeCoin(); coin.scale.setScalar(0.7); S.scene.add(coin);
+const poof = makePoof(14, 5); S.scene.add(poof);
+const confetti = makeConfetti(90, 17); S.scene.add(confetti);
+const PINKS = [0xe0457f, 0xff8fb1, 0xffffff, 0xd7a6ff, 0xffc4d8, 0xf3c6b0];
+confetti.children.forEach((m, i) => { m.material = flat(PINKS[i % PINKS.length], { side: THREE.DoubleSide }); });
+
+// Lockie's sign and the wall board.
+const sign = makeSign(["48", "HOURS"], { w: 1.3, h: 0.95, bg: "#ffffff", color: "#e0457f" }); S.scene.add(sign);
+const boards = [["NEXT OPENING", "SAT 11 AM"], ["PATCH TEST: TODAY", "LASHES: SAT 11 AM"]].map((lines, i) => {
+  const s = makeSign(lines, { w: 2.2, h: 0.85, bg: i ? "#e0457f" : "#ffffff", color: i ? "#ffffff" : "#3d1f2c" });
+  s.children[0].visible = false; s.position.set(-0.15, 2.55, -1.4); s.scale.setScalar(0.72); S.scene.add(s); return s;
+});
+
+// Lashes on the client's eyes (they get very big at the end), and a disguise.
+const face = client.eyes[0].parent;
+const lashSets = client.eyes.map((e, side) => {
+  const g = new THREE.Group(); g.position.set(0, 0.08, 0.02); e.add(g);
+  for (let i = 0; i < 5; i++) {
+    const l = new THREE.Mesh(new THREE.CapsuleGeometry(0.008, 0.07, 3, 6), flat(0x1a0f0a));
+    const a = (i - 2) * 0.32 + (side ? 0.12 : -0.12);
+    l.position.set(Math.sin(a) * 0.08, Math.cos(a) * 0.03 + 0.03, 0.02); l.rotation.z = -a * 1.2; l.userData.a = a; g.add(l);
+  }
+  return g;
+});
+const disguise = new THREE.Group(); face.add(disguise);
+for (const s of [-1, 1]) { const ring = mesh(new THREE.TorusGeometry(0.1, 0.018, 8, 24), flat(0x1a0f0a), 0); ring.position.set(s * 0.15, 0.04, 0.07); disguise.add(ring); }
+const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, 0.02), flat(0x1a0f0a)); bridge.position.set(0, 0.06, 0.07); disguise.add(bridge);
+const nose = mesh(new THREE.SphereGeometry(0.06, 12, 10), toon(0xffb49a), 0.01); nose.position.set(0, -0.04, 0.09); disguise.add(nose);
+for (const s of [-1, 1]) { const m = mesh(new THREE.SphereGeometry(0.07, 12, 8), toon(0x3a2218), 0.01); m.scale.set(1.3, 0.45, 0.6); m.position.set(s * 0.06, -0.11, 0.07); m.rotation.z = s * -0.25; disguise.add(m); }
+
+const bub = bubbles([
+  { t0: 0.9, t1: 2.2, text: "full set?? like rn?? 🥺", anchor: () => V(1.0, 1.2, 1.0), align: 0.75, tail: "75%" },
+  { t0: 2.4, t1: 3.7, text: "had a patch test before?", cls: "dark", anchor: () => V(-0.7, 2.5, -0.35), align: 0.3, tail: "30%" },
+  { t0: 3.8, t1: 4.9, text: "a what 😇", anchor: () => V(1.0, 1.2, 1.0), align: 0.75, tail: "75%" },
+  { t0: 5.1, t1: 5.8, sfx: true, text: "POOF!", anchor: () => V(0.55, 1.9, 0.8), rot: 8 },
+  { t0: 7.8, t1: 9.1, text: "hi i'm someone else 🥸", anchor: () => V(1.0, 1.2, 1.0), align: 0.75, tail: "75%" },
+  { t0: 9.0, t1: 10.1, text: "still 48 hours 💅", cls: "dark", anchor: () => V(0.55, 2.35, 0.45), align: 0.5 },
+  { t0: 10.3, t1: 11.5, text: "ok booking both 💕", anchor: () => V(1.0, 1.2, 1.0), align: 0.75, tail: "75%" },
+  { t0: 11.6, t1: 12.4, sfx: true, text: "CLICK!", anchor: () => V(0.55, 1.85, 0.8), rot: -6 },
+  { t0: 14.8, t1: 15.9, sfx: true, text: "BLINK BLINK", anchor: () => V(1.0, 1.35, 1.0), rot: -5 },
+]);
+
+window.DUR = 20.8;
+window.render = (t) => {
+  captions(t, [
+    { t0: 0, t1: 2.2, html: "Client: “lashes… <em>today?</em>” 🥺" },
+    { t0: 2.2, t1: 4.9, html: "Patch test? <em>“What's that?”</em>" },
+    { t0: 5.3, t1: 9.6, html: "Slotlock opens their first slot <em>48h out.</em>" },
+    { t0: 9.6, t1: 12.6, html: "Patch test first, <em>then the lashes.</em>" },
+    { t0: 12.6, t1: 14.5, html: "48 hours later…" },
+    { t0: 14.5, t1: 17.6, html: "Safe, stunning, <em>fully booked.</em>" },
+  ]);
+  S.aim(V(0, 2.3, 10.5), V(0, 1.75, 0));
+  clock.userData.setTime(15 * 60 + keys(t, [[0, 0], [12.6, 20], [14.4, 48 * 60 + 20]]));
+
+  // The client: begs, gets told, tries a disguise, books properly, comes back with huge lashes.
+  const hopIn = (a, b) => E.out(prog(t, a, b)), hopOut = (a, b) => E.inOut(prog(t, a, b));
+  let x = 1.0, vis = true, hop = false;
+  if (t < 0.8) { x = lerp(3.2, 1.0, hopIn(0.2, 0.8)); hop = true; }
+  else if (t > 6.7 && t < 7.2) { x = 1.0 + hopOut(6.7, 7.1) * 2.2; hop = true; }
+  else if (t >= 7.2 && t < 7.8) { x = lerp(3.3, 1.0, hopIn(7.2, 7.7)); hop = true; }
+  else if (t > 12.6 && t < 13.1) { x = 1.0 + hopOut(12.6, 13.0) * 2.2; hop = true; }
+  else if (t >= 13.1 && t < 14.0) { vis = false; }
+  else if (t >= 14.0 && t < 14.5) { x = lerp(3.3, 1.0, hopIn(14.0, 14.45)); hop = true; }
+  client.root.visible = vis;
+  client.root.position.set(x, hop ? Math.abs(Math.sin(t * 11)) * 0.14 : 0, 1.0);
+  const flutter = t > 14.6 && t < 17.6 ? (Math.sin(t * 14) > 0.6 ? 0.85 : 0) : blinkAt(t, 2.1);
+  client.pose({ blink: flutter, lookX: -0.7, mouth: t > 3.7 && t < 4.9 ? "o" : "smile", armL: t > 11.0 && t < 11.5 ? 1.5 : 0.3 });
+  disguise.visible = t > 7.2 && t < 9.9;
+  disguise.position.y = t > 9.6 ? -((t - 9.6) ** 2) * 6 : 0;
+  const big = t > 13.5 ? 2.4 : 1;
+  for (const g of lashSets) g.scale.setScalar(big);
+
+  // The tech.
+  const worried = t > 3.8 && t < 5.3;
+  const cheer = E.back(prog(t, 14.6, 14.9)) * (1 - prog(t, 17.3, 17.6));
+  const catchK = E.back(prog(t, 11.3, 11.55)) * (1 - prog(t, 11.9, 12.2));
+  T.pose({ blink: blinkAt(t, 0.8), lookX: t < 5 ? 0.7 : t < 12.6 ? 0.5 : 0.7, mouth: worried ? "o" : "smile", sweat: worried,
+    armL: 0.1 + cheer * 2.5, armLx: cheer > 0.1 ? 0 : -0.9, armR: 0.1 + cheer * 2.5 + catchK * 1.3, armRx: cheer > 0.1 ? 0 : -0.9 - catchK * 0.6 });
+  const ck = prog(t, 10.9, 11.4);
+  coin.visible = ck > 0 && ck < 1;
+  coin.position.set(lerp(1.0, -0.2, ck), lerp(1.0, 1.55, ck) + Math.sin(ck * Math.PI) * 1.0, lerp(1.0, 0.2, ck)); coin.rotation.y = ck * 16;
+
+  // Pink Lockie drops onto the table with the 48 HOURS sign.
+  const drop = prog(t, 4.9, 5.25);
+  L.root.visible = t > 4.9;
+  const landK = t > 5.25 ? Math.exp(-(t - 5.25) * 6) * Math.cos((t - 5.25) * 18) : 0;
+  const signUp = E.back(prog(t, 5.6, 5.95)) * (1 - E.inOut(prog(t, 12.3, 12.6)));
+  const click = t > 11.6 ? Math.exp(-(t - 11.6) * 7) : 0;
+  const dance = prog(t, 14.6, 14.8) * (1 - prog(t, 17.4, 17.6));
+  const squint = t > 7.8 && t < 9.1;
+  L.root.position.set(0.5, 0.95 + (1 - E.out(drop)) * 3.5 + dance * Math.abs(Math.sin(t * 9)) * 0.2, 0.45);
+  L.pose({ squash: landK * 0.7 + click * 0.5, open: t < 11.6 ? 1 : 1 - E.out(prog(t, 11.6, 11.75)), tilt: dance * Math.sin(t * 9) * 0.15,
+    armR: 0.25 + signUp * 1.2 + dance * 2, armL: 0.25 + dance * 2, blink: squint ? 0.5 : blinkAt(t, 1.4), lookX: 0.6, mouth: squint ? "flat" : "smile" });
+  poof.position.set(0.5, 1.4, 0.7); poof.userData.at(prog(t, 5.0, 5.8));
+  sign.visible = signUp > 0.01;
+  sign.position.set(0.95, 1.35, 0.85); sign.scale.setScalar(0.55 * signUp); sign.rotation.z = -0.08 + Math.sin(t * 3) * 0.03;
+  boards[0].visible = t > 6.0 && t < 9.9; boards[0].scale.setScalar(0.72 * E.back(prog(t, 6.0, 6.3)));
+  boards[1].visible = t >= 9.9; boards[1].scale.setScalar(0.72 * E.back(prog(t, 9.9, 10.2)));
+
+  confetti.position.set(0, 2.2, 0.6); confetti.userData.at(t - 14.9);
+  showBubbles(t, bub, S.toScreen);
+  outro(t, 17.6, { h: "Patch test first.<br>Lashes second.", p: "Booking + deposits for nail techs,<br>lash artists & beauty pros." });
+  S.frame();
+};
+render(0);
+window.READY = true;
+</script></body></html>

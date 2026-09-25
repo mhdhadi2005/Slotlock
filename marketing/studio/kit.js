@@ -515,3 +515,53 @@ export function makeFlipSign(front, back, opts = {}) {
   const b = makeSign(back, { ...opts, ...(opts.back || {}) }); b.rotation.y = Math.PI; g.add(b);
   return g;
 }
+
+// Party hat: a striped cone with a pompom. Origin at the brim.
+export function makePartyHat(color = 0xff5c39, stripe = 0xffc53d) {
+  const g = new THREE.Group();
+  const c = document.createElement("canvas"); c.width = 64; c.height = 256;
+  const x = c.getContext("2d");
+  for (let i = 0; i < 8; i++) { x.fillStyle = i % 2 ? "#" + stripe.toString(16).padStart(6, "0") : "#" + color.toString(16).padStart(6, "0"); x.fillRect(0, i * 32, 64, 32); }
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+  const cone = mesh(new THREE.ConeGeometry(0.2, 0.5, 24), toon(0xffffff, { map: tex }), 0.018); cone.position.y = 0.25; g.add(cone);
+  const pom = mesh(new THREE.SphereGeometry(0.07, 12, 8), toon(0xffffff), 0.012); pom.position.y = 0.52; g.add(pom);
+  return g;
+}
+// Party cake with candles; userData.candles lets you blow them out.
+export function makeCake() {
+  const g = new THREE.Group();
+  const base = mesh(new THREE.CylinderGeometry(0.42, 0.44, 0.3, 32), toon(0xffe0ec), 0.02); base.position.y = 0.15; g.add(base);
+  const icing = mesh(new THREE.CylinderGeometry(0.44, 0.44, 0.06, 32), toon(0xff8fb1), 0.015); icing.position.y = 0.3; g.add(icing);
+  const top = mesh(new THREE.CylinderGeometry(0.28, 0.3, 0.22, 32), toon(0xffe0ec), 0.02); top.position.y = 0.44; g.add(top);
+  const flames = [];
+  for (let i = 0; i < 3; i++) {
+    const cd = mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.16, 8), toon([0x8fc1ff, 0x9fd8a8, 0xffc56b][i]), 0.008); cd.position.set(-0.12 + i * 0.12, 0.63, 0); g.add(cd);
+    const f = new THREE.Mesh(new THREE.SphereGeometry(0.035, 10, 8), flat(0xffb020)); f.scale.y = 1.6; f.position.set(-0.12 + i * 0.12, 0.75, 0); g.add(f); flames.push(f);
+  }
+  g.userData.candles = flames;
+  return g;
+}
+// A banner strung between two poles, with swappable text (userData.show(i)).
+export function makeBanner(texts, { w = 3.2, h = 0.55, bg = "#ffc53d", color = "#1a0905" } = {}) {
+  const g = new THREE.Group();
+  for (const s of [-1, 1]) { const p = mesh(new THREE.CylinderGeometry(0.04, 0.04, 2.4, 8), toon(0x8a5a3a), 0.012); p.position.set(s * (w / 2 + 0.05), -0.9, 0); g.add(p); }
+  const faces = texts.map((t, i) => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: textTexture("", { w: 1024, h: Math.round(1024 * h / w), font: "900 110px 'Bricolage Grotesque'", color: Array.isArray(color) ? color[i] : color, bg: Array.isArray(bg) ? bg[i] : bg, radius: 10, lines: [t] }), side: THREE.DoubleSide }));
+    g.add(m); return m;
+  });
+  g.userData.show = (i) => faces.forEach((f, j) => { f.visible = i === j; });
+  g.userData.show(0);
+  return g;
+}
+// A handheld phone whose screen can show a few different text screens (userData.show(i)).
+export function makePhone(screens, { w = 0.46, h = 0.8 } = {}) {
+  const g = new THREE.Group();
+  g.add(mesh(new RoundedBoxGeometry(w, h, 0.06, 3, 0.06), toon(0x1b1816), 0.015));
+  const faces = screens.map(({ lines, bg = "#ffffff", color = "#1a0905" }) => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w * 0.87, h * 0.87), new THREE.MeshBasicMaterial({ map: textTexture("", { w: 220, h: Math.round(220 * h / w), font: "900 60px 'Bricolage Grotesque'", color, bg, radius: 20, lines }) }));
+    m.position.z = 0.032; g.add(m); return m;
+  });
+  g.userData.show = (i) => faces.forEach((f, j) => { f.visible = i === j; });
+  g.userData.show(0);
+  return g;
+}
