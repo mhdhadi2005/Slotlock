@@ -565,3 +565,31 @@ export function makePhone(screens, { w = 0.46, h = 0.8 } = {}) {
   g.userData.show(0);
   return g;
 }
+
+// A snail (for "the DM way"). Origin under the body.
+export function makeSnail(shell = 0xd7a6ff, body = 0x9fd8a8) {
+  const g = new THREE.Group();
+  const b = mesh(new THREE.CapsuleGeometry(0.12, 0.6, 6, 12), toon(body), 0.018); b.rotation.z = Math.PI / 2; b.position.y = 0.12; g.add(b);
+  const neck = mesh(new THREE.CapsuleGeometry(0.1, 0.2, 6, 12), toon(body), 0.018); neck.position.set(0.36, 0.28, 0); neck.rotation.z = -0.3; g.add(neck);
+  for (const s of [-1, 1]) {
+    const st = mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.18, 6), toon(body), 0.008); st.position.set(0.42, 0.48, s * 0.05); st.rotation.x = s * 0.3; g.add(st);
+    const e = mesh(new THREE.SphereGeometry(0.035, 10, 8), toon(0xffffff), 0.008); e.position.set(0.42, 0.58, s * 0.08); g.add(e);
+    const p = new THREE.Mesh(new THREE.SphereGeometry(0.018, 8, 6), flat(0x16100c)); p.position.set(0.44, 0.58, s * 0.08 + 0.02); g.add(p);
+  }
+  const sh = mesh(new THREE.TorusGeometry(0.18, 0.1, 12, 24), toon(shell), 0.02); sh.position.set(-0.05, 0.38, 0); g.add(sh);
+  const core = mesh(new THREE.SphereGeometry(0.12, 16, 12), toon(shell), 0.02); core.scale.z = 0.8; core.position.set(-0.05, 0.38, 0); g.add(core);
+  return g;
+}
+// A gold medal on a ribbon; hang it at the wearer's chest.
+export function makeMedal(text = "#1") {
+  const g = new THREE.Group();
+  for (const s of [-1, 1]) { const r = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 0.34), flat(s < 0 ? 0x3b6fd6 : 0xd9434b, { side: THREE.DoubleSide })); r.position.set(s * 0.05, 0.17, 0); r.rotation.z = s * -0.35; g.add(r); }
+  const disc = mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.04, 28), toon(0xffc53d, { emissive: 0x3a2600 }), 0.015); disc.rotation.x = Math.PI / 2; g.add(disc);
+  const face = new THREE.Mesh(new THREE.CircleGeometry(0.12, 24), new THREE.MeshBasicMaterial({ map: textTexture("", { size: 128, font: "900 70px 'Bricolage Grotesque'", color: "#8a5a00", bg: null, lines: [text] }), transparent: true }));
+  face.position.z = 0.025; g.add(face);
+  return g;
+}
+// A small flat label (name tags, stamps). Returns a plane mesh.
+export function makeLabel(lines, { w = 0.5, h = 0.3, bg = "#ffffff", color = "#1a0905", font = "900 60px 'Bricolage Grotesque'" } = {}) {
+  return new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: textTexture("", { w: 256, h: Math.round(256 * h / w), font, color, bg, radius: 12, lines }), transparent: true, side: THREE.DoubleSide }));
+}

@@ -1,0 +1,129 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/lib.css"><link rel="stylesheet" href="/ui.css"><script src="/lib.js"></script>
+<script type="importmap">{ "imports": { "three": "/three.js", "three/addons/": "/addons/" } }</script>
+<style>
+  #counter { position: absolute; right: 70px; top: 360px; z-index: 6; display: inline-flex; align-items: baseline; gap: 14px; padding: 18px 30px; border-radius: 999px;
+    background: #1d1a18; border: 3px solid #ff5c39; color: #f6f2eb; font: 800 40px var(--font); opacity: 0; box-shadow: 0 20px 50px -20px rgba(0,0,0,.8); }
+  #counter b { font: 800 76px/1 var(--display); color: #ff7a52; letter-spacing: -0.04em; }
+</style>
+</head><body><div id="gl"></div><div id="bubbles"></div><div id="counter">still available? <b>×0</b></div>
+<script type="module">
+import { THREE, setup, mesh, toon, flat, makeLockie, makeArtist, makeBlob, makeCoin, makeSign, makeLabel, makeConfetti, blinkAt, rng, BLOB_COLORS } from "/kit.js";
+import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+import { bubbles, showBubbles } from "/ui.js";
+base();
+await document.fonts.load("900 40px 'Bricolage Grotesque'"); await document.fonts.load("700 40px 'Inter'");
+const S = setup({ camPos: [0, 2.6, 13], look: [0, 1.95, 0] });
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+
+// The flash sheet: six little designs drawn on paper.
+const flashTex = (() => {
+  const c = document.createElement("canvas"); c.width = 768; c.height = 460; const g = c.getContext("2d");
+  g.fillStyle = "#fbf5ea"; g.fillRect(0, 0, 768, 460);
+  g.fillStyle = "#1a0905"; g.font = "900 44px 'Bricolage Grotesque'"; g.fillText("FLASH · $150 EACH", 24, 52);
+  g.lineWidth = 7; g.strokeStyle = "#1a0905"; g.lineJoin = "round";
+  const cell = (i) => [128 + (i % 3) * 256, 170 + Math.floor(i / 3) * 190];
+  // heart
+  let [x, y] = cell(0); g.fillStyle = "#e0453a"; g.beginPath(); g.moveTo(x, y + 45); g.bezierCurveTo(x - 90, y - 10, x - 40, y - 70, x, y - 25); g.bezierCurveTo(x + 40, y - 70, x + 90, y - 10, x, y + 45); g.fill(); g.stroke();
+  // star
+  [x, y] = cell(1); g.fillStyle = "#ffc53d"; g.beginPath(); for (let k = 0; k < 10; k++) { const r = k % 2 ? 26 : 62, a = -Math.PI / 2 + k * Math.PI / 5; g.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); } g.closePath(); g.fill(); g.stroke();
+  // moon
+  [x, y] = cell(2); g.fillStyle = "#8fc1ff"; g.beginPath(); g.arc(x, y, 58, 0.6, Math.PI * 2 - 0.6); g.arc(x + 30, y - 6, 44, Math.PI * 2 - 0.9, 0.9, true); g.closePath(); g.fill(); g.stroke();
+  // dagger
+  [x, y] = cell(3); g.fillStyle = "#d9d2c8"; g.beginPath(); g.moveTo(x, y + 70); g.lineTo(x - 16, y - 10); g.lineTo(x + 16, y - 10); g.closePath(); g.fill(); g.stroke();
+  g.fillStyle = "#6b3f2a"; g.fillRect(x - 44, y - 22, 88, 14); g.strokeRect(x - 44, y - 22, 88, 14); g.fillRect(x - 9, y - 70, 18, 48); g.strokeRect(x - 9, y - 70, 18, 48);
+  // snake
+  [x, y] = cell(4); g.strokeStyle = "#2f9a6a"; g.lineWidth = 20; g.lineCap = "round"; g.beginPath(); g.moveTo(x - 80, y + 30); g.bezierCurveTo(x - 40, y - 60, x, y + 70, x + 40, y - 20); g.quadraticCurveTo(x + 60, y - 50, x + 80, y - 30); g.stroke();
+  g.strokeStyle = "#1a0905"; g.lineWidth = 7; g.fillStyle = "#1a0905"; g.beginPath(); g.arc(x + 76, y - 34, 6, 0, Math.PI * 2); g.fill();
+  // rose
+  [x, y] = cell(5); g.fillStyle = "#e0457f"; g.beginPath(); g.arc(x, y - 10, 46, 0, Math.PI * 2); g.fill(); g.stroke();
+  g.beginPath(); g.arc(x, y - 10, 26, 0.5, 5.5); g.stroke(); g.beginPath(); g.arc(x + 4, y - 12, 10, 0, 5); g.stroke();
+  g.strokeStyle = "#2f9a6a"; g.beginPath(); g.moveTo(x, y + 36); g.lineTo(x, y + 80); g.stroke();
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+})();
+const sheet = new THREE.Group(); sheet.position.set(0, 2.8, -2.2); S.scene.add(sheet);
+sheet.add(mesh(new RoundedBoxGeometry(3.5, 2.15, 0.08, 3, 0.06), toon(0x2a2420), 0.03));
+const paper = new THREE.Mesh(new THREE.PlaneGeometry(3.3, 1.98), new THREE.MeshBasicMaterial({ map: flashTex })); paper.position.z = 0.045; sheet.add(paper);
+const cellPos = (i) => V(-1.1 + (i % 3) * 1.1, 0.25 - Math.floor(i / 3) * 0.82, 0.07);
+const stamps = [0, 1, 2, 3, 4, 5].map((i) => { const s = makeLabel(["TAKEN"], { w: 0.8, h: 0.3, bg: "#ff5c39", color: "#ffffff" }); s.position.copy(cellPos(i)); s.rotation.z = (i % 2 ? 0.18 : -0.15); s.visible = false; sheet.add(s); return s; });
+
+const A = makeArtist(); A.root.position.set(-1.15, 0, 0.3); S.scene.add(A.root);
+const L = makeLockie(); S.scene.add(L.root);
+const sign = makeSign(["ONE LINK.", "REAL OPENINGS."], { w: 1.9, h: 0.9 }); S.scene.add(sign);
+const BUYERS = [[BLOB_COLORS[0], 11.4, 4], [BLOB_COLORS[3], 12.2, 0], [BLOB_COLORS[1], 13.0, 5], [BLOB_COLORS[4], 13.8, 2]];
+const blobs = BUYERS.map(([c]) => { const b = makeBlob(c, 0.8); S.scene.add(b.root); return b; });
+const coins = BUYERS.map(() => { const c = makeCoin(); c.scale.setScalar(0.7); S.scene.add(c); return c; });
+const confetti = makeConfetti(90, 33); S.scene.add(confetti);
+
+// The flood of identical questions.
+const r = rng(8);
+const SPOTS = [[-0.4, 2.1], [0.9, 1.6], [-0.9, 1.1], [0.5, 2.4], [1.1, 0.9], [-0.2, 1.5], [0.8, 2.0], [-0.7, 2.5], [0.2, 0.9], [1.0, 2.6], [-0.5, 1.8], [0.4, 1.2]];
+const Q = SPOTS.map(([x, y], i) => ({ t0: 2.3 + i * 0.4, t1: 7.2, text: "is this still available?", cls: i % 4 === 1 ? "dark" : "", anchor: () => V(x, y, 1.0), rot: (r() - 0.5) * 10 }));
+const bub = bubbles([
+  ...Q,
+  { t0: 7.2, t1: 8.0, sfx: true, text: "BONK!", anchor: () => V(0.2, 2.0, 0.9), rot: 8 },
+  ...BUYERS.map(([, at]) => ({ t0: at + 0.55, t1: at + 1.15, sfx: true, text: "STAMP!", anchor: () => V(0.9, 1.4, 1.2), rot: -8 })),
+]);
+
+window.DUR = 21.4;
+window.render = (t) => {
+  captions(t, [
+    { t0: 0, t1: 2.2, html: "Posted one <em>flash sheet</em>…" },
+    { t0: 2.2, t1: 7.2, html: "“Is this still <em>available?</em>”" },
+    { t0: 7.4, t1: 11.2, html: "One link. Every design. <em>Every real opening.</em>" },
+    { t0: 11.2, t1: 15.2, html: "Want it? <em>Book it. Send the deposit.</em>" },
+    { t0: 15.2, t1: 18.2, html: "Still available? <em>Your page answers.</em>" },
+  ]);
+  const shake = t > 5.5 && t < 7.2 ? Math.sin(t * 50) * 0.03 : 0;
+  S.aim(V(shake, 2.6 + shake, 13), V(0, 1.95, 0));
+  sheet.scale.setScalar(E.back(prog(t, 0.2, 0.6)));
+
+  // The counter ticks up to 40.
+  const n = Math.round(keys(t, [[2.3, 1], [7.1, 40]], (k) => k * k));
+  const ce = document.getElementById("counter");
+  ce.lastChild.textContent = `×${t < 2.3 ? 0 : n}`;
+  const ck = env(t, 2.3, 7.6, 0.3, 0.3);
+  style(ce, { o: ck, s: lerp(0.7, 1, ck) * (1 + (t > 2.3 && t < 7.2 ? Math.max(0, Math.sin(t * 20)) * 0.04 : 0)) });
+
+  // The artist: proud, then twitching, then relieved.
+  const flood = t > 2.3 && t < 7.4;
+  const cheer = E.back(prog(t, 15.2, 15.5)) * (1 - prog(t, 17.9, 18.2));
+  let catchK = 0; BUYERS.forEach(([, at]) => { catchK = Math.max(catchK, E.back(prog(t, at + 0.35, at + 0.55)) * (1 - prog(t, at + 0.75, at + 0.95))); });
+  A.pose({ blink: flood && Math.floor(t * 7) % 5 === 0 ? 0.7 : blinkAt(t, 0.5), mouth: flood ? (t > 5 ? "frown" : "flat") : "smile", lookX: 0.6,
+    slump: flood ? prog(t, 3, 7) : 0, headTilt: flood ? Math.sin(t * 13) * 0.04 * prog(t, 4, 7) : 0,
+    armL: 0.15 + cheer * 2.4 + (t < 2.2 ? E.back(prog(t, 0.6, 0.9)) * (1 - prog(t, 1.8, 2.1)) * 2.2 : 0), armR: 0.15 + cheer * 2.4 + catchK * 1.4 });
+
+  // Lockie drops in with the answer.
+  const drop = prog(t, 7.0, 7.35);
+  L.root.visible = t > 7.0;
+  const landK = t > 7.35 ? Math.exp(-(t - 7.35) * 6) * Math.cos((t - 7.35) * 18) : 0;
+  const signUp = E.back(prog(t, 7.7, 8.1)) * (1 - E.inOut(prog(t, 10.8, 11.2)));
+  const dance = prog(t, 15.2, 15.4) * (1 - prog(t, 18.0, 18.2));
+  L.root.position.set(0.1, (1 - E.out(drop)) * 4.5 + dance * Math.abs(Math.sin(t * 9)) * 0.22, 0.7);
+  L.pose({ squash: landK * 0.8, armR: 0.25 + signUp * 1.2 + dance * 2, armL: 0.25 + dance * 2, tilt: dance * Math.sin(t * 9) * 0.15,
+    blink: blinkAt(t, 1.2), lookX: t > 11.2 ? 0.7 : 0, open: t > 11.2 && t < 15.2 ? 0.3 : 0 });
+  sign.visible = signUp > 0.01;
+  sign.position.set(0.95, 1.1, 1.2); sign.scale.setScalar(0.82 * signUp); sign.rotation.z = -0.08 + Math.sin(t * 3) * 0.03;
+
+  // Buyers hop in, send the deposit to the artist, and their design gets stamped TAKEN.
+  BUYERS.forEach(([, at, cell], i) => {
+    const b = blobs[i], c = coins[i];
+    const inK = E.out(prog(t, at - 0.4, at)), outK = E.inOut(prog(t, at + 0.9, at + 1.4));
+    b.root.visible = t > at - 0.4 && (outK < 1 || i === BUYERS.length - 1);
+    const lastStay = i === BUYERS.length - 1;
+    b.root.position.set(lerp(3.2, 1.15, inK) + (lastStay ? 0 : outK * 2.2), inK < 1 || (outK > 0 && !lastStay) || dance > 0 ? Math.abs(Math.sin(t * 11)) * 0.14 : 0, 1.0);
+    b.pose({ blink: blinkAt(t, i * 0.6), lookX: -0.7, armL: t > at && t < at + 0.4 ? 1.5 : 0.3 + dance * 1.5, armR: 0.3 + dance * 1.5 });
+    const k = prog(t, at + 0.05, at + 0.5);
+    c.visible = k > 0 && k < 1;
+    c.position.set(lerp(1.0, -0.9, k), lerp(1.0, 1.85, k) + Math.sin(k * Math.PI) * 1.2, lerp(1.0, 0.7, k)); c.rotation.y = k * 16;
+    const st = stamps[cell], sk = prog(t, at + 0.55, at + 0.75);
+    st.visible = sk > 0; st.scale.setScalar(sk > 0 ? lerp(2.2, 1, E.out(sk)) : 1);
+  });
+
+  confetti.position.set(0, 2.4, 0.4); confetti.userData.at(t - 15.2);
+  showBubbles(t, bub, S.toScreen);
+  outro(t, 18.2, { h: "Stop answering.<br>Start booking.", p: "Booking + deposits for tattoo artists.<br>Free for founding artists." });
+  S.frame();
+};
+render(0);
+window.READY = true;
+</script></body></html>

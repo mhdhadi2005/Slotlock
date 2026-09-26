@@ -57,7 +57,7 @@ characters and props from `kit.js`, and `bubbles()` / `showBubbles()` from `ui.j
 
 Props: `makeNailTable` (polish, UV lamp, wrist cushion), `makeMagnifier`, `makeHourglass` (`at(k)` drains it),
 `makeBell`, `makeJar(label)` (`fill(n)` stacks coins), `makeFlipSign(front, back)`, `makePartyHat`, `makeCake`
-(`candles`), `makeBanner(texts)` (`show(i)`), `makePhone(screens)` (`show(i)`), `makeChair`, `makeClock`, `makeSign(lines)`, `makeCoin`, `makeTumbleweed`,
+(`candles`), `makeBanner(texts)` (`show(i)`), `makePhone(screens)` (`show(i)`), `makeSnail`, `makeMedal`, `makeLabel(lines)`, `makeChair`, `makeClock`, `makeSign(lines)`, `makeCoin`, `makeTumbleweed`,
 `makeConfetti`, `makePoof`.
 
 ## Episode log
@@ -69,6 +69,11 @@ Add every new episode here so ideas never repeat.
 | 2026-09-23 | ghosted | No-deposit client vanishes at 2pm; Lockie's "DEPOSIT FIRST" sign scares the ghost off | Ghost-proof your books. |
 | 2026-09-23 | bouncer | Lockie bounces "I'll pay later" at the calendar's velvet rope | Hire the bouncer. |
 | 2026-09-23 | flood | DM bubbles bury the artist; Lockie bursts out with one link | One link. Zero chaos. |
+| 2026-09-26 | consult | Blurry "like this but different" photo; Lockie hands over the idea form, the artist quotes, the client books the quote | Less guessing. More tattooing. |
+| 2026-09-26 | lastminute | Client cancels 1 hour before a lash set and wants the deposit back; pink Lockie shows the 24h policy, the deposit stays, the slot reopens | Cancel late? Deposit stays. |
+| 2026-09-26 | stillavailable | "Is this still available?" ×40 on one flash sheet; Lockie's one link, designs get stamped TAKEN as clients book | Stop answering. Start booking. |
+| 2026-09-26 | speedrun | Booking speedrun with a timer HUD: service, add-on, time, deposit, confirm in 9.4 s vs. the DM snail at 3 days | Booked in 10 seconds. Not 3 days. |
+| 2026-09-26 | firstday | Lockie's first day learning the 3 rules; a coin bonks Lockie, who hands it straight to the artist | Hired. Forever. |
 | 2026-09-25 | paperwork | A blizzard of paper consent forms buries the artist; Lockie pops out of the pile and the client signs on their phone | Sign here. (on your phone) |
 | 2026-09-25 | patchtest | Lash client wants a full set today, no patch test; pink Lockie's 48 HOURS sign, a fake-nose disguise, then huge lashes 48h later | Patch test first. Lashes second. |
 | 2026-09-25 | reunion | Every no-show of the year throws a party; Lockie crashes it with DEPOSIT FIRST, ghosts poof, real clients take over | RSVP: deposit first. |
@@ -80,15 +85,10 @@ Add every new episode here so ideas never repeat.
 ## Idea backlog
 
 
-- Consult-first: a client sends a blurry "like this but different" photo; Lockie hands over the idea form and a quote comes back
 - Aftercare: Lockie as a tiny nurse reminding the client "no pool for 2 weeks"
 
 - "I'm 5 min away" client (a clock shows it's been 45 min)
-- Lockie's first day on the job
 - "Can I get a discount if I bring my cousin?"
 - Client asks to move the appointment 6 times
-- "Is this still available?" asked 40 times
-- Lockie vs. the cancellation 1 hour before (the deposit stays with the artist per their policy)
 - Before/after: artist's DMs vs. artist's calendar
 - Lockie tries a new tattoo (a tiny heart on the shackle)
-- Speed-run: book, pay, confirm in 10 seconds

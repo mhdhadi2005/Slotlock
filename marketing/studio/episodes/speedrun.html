@@ -1,0 +1,125 @@
+<!doctype html><html data-look="blush"><head><meta charset="utf-8"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/lib.css"><link rel="stylesheet" href="/ui.css"><script src="/lib.js"></script>
+<script type="importmap">{ "imports": { "three": "/three.js", "three/addons/": "/addons/" } }</script>
+<style>
+  /* Blush palette for beauty episodes. */
+  body { background: #fff5f7; color: #3d1f2c; }
+  .glow { background: radial-gradient(60% 38% at 82% 8%, rgba(255,150,190,.55), transparent 70%), radial-gradient(55% 35% at 0% 100%, rgba(255,200,220,.6), transparent 70%); }
+  #cap { font: 700 84px/1.04 "Fraunces", Georgia, serif; letter-spacing: -.03em; color: #3d1f2c; }
+  em { color: #d63a70; font-style: italic; }
+  #foot { color: #a57f8f; }
+  .bub { box-shadow: 0 16px 40px -14px rgba(170,60,105,.5); border: 3px solid #f6cfdc; }
+  .bub::after { border-right: 3px solid #f6cfdc; border-bottom: 3px solid #f6cfdc; }
+  .bub.accent { background: linear-gradient(180deg, #f58ab2, #e0457f); color: #fff; border-color: transparent; } .bub.accent::after { background: #e24f86; border-color: transparent; }
+  .bub.dark { background: #3d1f2c; color: #fff5f7; border-color: #3d1f2c; } .bub.dark::after { background: #3d1f2c; border-color: #3d1f2c; }
+  .sfx { color: #fff; -webkit-text-stroke: 4px #7a1d45; }
+  #outro { background: radial-gradient(60% 40% at 50% 30%, rgba(255,150,190,.55), transparent 70%), #fff5f7; }
+  #outro h2 { font: italic 700 100px/1.02 "Fraunces", Georgia, serif; letter-spacing: -.03em; color: #3d1f2c; }
+  #outro p { color: #6e4b5b; }
+  #outro .cta { background: linear-gradient(180deg, #f58ab2, #e0457f); color: #fff; }
+  #outro .wordmark, #foot .wordmark { color: #3d1f2c; }
+</style>
+<style>
+  #hud { position: absolute; right: 60px; top: 330px; z-index: 6; width: 400px; padding: 22px 26px; border-radius: 22px; background: rgba(61,31,44,.92); color: #fff5f7;
+    font: 700 28px/1.5 ui-monospace, "SF Mono", Menlo, monospace; opacity: 0; }
+  #hud .tm { font: 800 64px/1 ui-monospace, "SF Mono", Menlo, monospace; color: #7dffa8; margin-bottom: 12px; letter-spacing: -0.02em; }
+  #hud .row { display: flex; justify-content: space-between; opacity: 0; }
+  .sfx { font-family: "Bricolage Grotesque", sans-serif; font-weight: 800; }
+  .sfx.big { font-size: 320px; }
+  #hud .row.red { color: #ff8a8a; } #hud .row.gold { color: #ffd66b; }
+</style>
+</head><body><div id="gl"></div><div id="bubbles"></div>
+<div id="hud"><div class="tm">0:00.00</div>
+  <div class="row" data-t="3.3"><span>Service</span><span>0:01.65</span></div>
+  <div class="row" data-t="4.6"><span>Add-on</span><span>0:03.30</span></div>
+  <div class="row" data-t="5.9"><span>Time</span><span>0:04.95</span></div>
+  <div class="row" data-t="7.2"><span>Deposit</span><span>0:06.60</span></div>
+  <div class="row gold" data-t="9.4"><span>Confirmed</span><span>0:09.40</span></div>
+  <div class="row red" data-t="12.4"><span>DM route</span><span>3d 4h 12m</span></div>
+</div>
+<script type="module">
+import { THREE, setup, mesh, toon, flat, makeLockie, makeTech, makeNailTable, makeBlob, makePhone, makeSnail, makeLabel, makeSign, makeConfetti, blinkAt } from "/kit.js";
+import { bubbles, showBubbles } from "/ui.js";
+base();
+await document.fonts.load("900 40px 'Bricolage Grotesque'"); await document.fonts.load("700 40px 'Inter'");
+await document.fonts.load("700 40px 'Fraunces'"); await document.fonts.load("italic 700 40px 'Fraunces'");
+const S = setup({ camPos: [0, 2.3, 10.5], look: [0, 1.75, 0], palette: "blush" });
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+
+const T = makeTech({ skin: 0xc68a64, hair: 0x3a2219, smock: 0xff9ec0 }); T.root.position.set(-0.7, 0, -0.35); S.scene.add(T.root);
+const table = makeNailTable(); table.position.set(0, 0, 0.35); S.scene.add(table);
+const L = makeLockie({ color: 0xff7aa8, feet: 0xe0457f, key: 0x7a1d45 }); L.root.scale.setScalar(0.62); L.root.position.set(0.55, 0.95, 0.45); S.scene.add(L.root);
+const flag = makeSign(["GO!"], { w: 0.9, h: 0.6, bg: "#ffffff", color: "#e0457f" }); S.scene.add(flag);
+const client = makeBlob(0xd7a6ff, 0.8); client.root.position.set(1.0, 0, 1.0); S.scene.add(client.root);
+const phone = makePhone([{ lines: ["GEL", "MANI"] }, { lines: ["+ CHROME", "+15 MIN"] }, { lines: ["THU", "1 PM"] }, { lines: ["$20", "VENMO"] }, { lines: ["SENT", "✓"], bg: "#e6fff1", color: "#128a52" }]); S.scene.add(phone);
+const snail = makeSnail(); S.scene.add(snail);
+const tag = makeLabel(["DMs"], { w: 0.42, h: 0.22, bg: "#3d1f2c", color: "#ffffff" }); tag.position.set(-0.05, 0.4, 0.2); snail.add(tag);
+const confetti = makeConfetti(100, 37); S.scene.add(confetti);
+const PINKS = [0xe0457f, 0xff8fb1, 0xffffff, 0xd7a6ff, 0xffc4d8, 0xffd66b];
+confetti.children.forEach((m, i) => { m.material = flat(PINKS[i % PINKS.length], { side: THREE.DoubleSide }); });
+
+const bub = bubbles([
+  { t0: 0.3, t1: 0.75, sfx: true, cls: "big", text: "3", anchor: () => V(0.1, 2.0, 0.8) },
+  { t0: 0.8, t1: 1.25, sfx: true, cls: "big", text: "2", anchor: () => V(0.1, 2.0, 0.8) },
+  { t0: 1.3, t1: 1.75, sfx: true, cls: "big", text: "1", anchor: () => V(0.1, 2.0, 0.8) },
+  { t0: 1.8, t1: 2.5, sfx: true, cls: "big", text: "GO!", anchor: () => V(0.1, 2.0, 0.8), rot: -6 },
+  { t0: 9.4, t1: 10.2, sfx: true, text: "CLICK!", anchor: () => V(0.55, 1.95, 0.8), rot: -6 },
+  { t0: 12.6, t1: 14.2, text: "hiii r u free sometime 🐌", cls: "dark", anchor: () => snail.position.clone().add(V(0.3, 1.1, 0)), align: 0.3, tail: "30%" },
+]);
+
+window.DUR = 20.8;
+window.render = (t) => {
+  captions(t, [
+    { t0: 0, t1: 2.0, html: "Booking speedrun. <em>Any%.</em> 🏁" },
+    { t0: 2.0, t1: 7.6, html: "Service. Add-on. Time. <em>Deposit.</em>" },
+    { t0: 7.6, t1: 11.4, html: "Tech taps confirm. <em>9.4 seconds.</em>" },
+    { t0: 11.4, t1: 14.6, html: "The DM route: <em>3 days, 4 hours.</em>" },
+    { t0: 14.6, t1: 17.6, html: "New world record 🏆" },
+  ]);
+  S.aim(V(0, 2.3, 10.5), V(0, 1.75, 0));
+
+  // HUD: the timer runs from GO to the tech's confirm.
+  const hud = document.getElementById("hud");
+  style(hud, { o: env(t, 1.8, 17.6, 0.3, 0.3) });
+  const secs = clamp((t - 2.0) * 1.27, 0, 9.4);
+  hud.querySelector(".tm").textContent = `0:${secs.toFixed(2).padStart(5, "0")}`;
+  hud.querySelector(".tm").style.color = t > 9.4 ? "#ffd66b" : "#7dffa8";
+  for (const row of hud.querySelectorAll(".row")) { const k = E.out(prog(t, +row.dataset.t, +row.dataset.t + 0.25)); row.style.opacity = k; row.style.transform = `translateX(${(1 - k) * 30}px)`; }
+
+  // The client speed-taps through the booking on the phone.
+  const ph = E.out(prog(t, 1.9, 2.2)) * (1 - prog(t, 8.2, 8.6));
+  phone.visible = ph > 0.01; phone.position.set(0.98, 1.75, 1.25); phone.scale.setScalar(1.3 * ph); phone.rotation.set(-0.1, -0.2, 0);
+  phone.userData.show(t < 3.3 ? 0 : t < 4.6 ? 1 : t < 5.9 ? 2 : t < 7.2 ? 3 : 4);
+  const cheer = E.back(prog(t, 14.6, 14.9)) * (1 - prog(t, 17.3, 17.6));
+  const tapping = t > 2 && t < 7.4;
+  client.root.position.y = cheer > 0 ? Math.abs(Math.sin(t * 9)) * 0.2 : 0;
+  client.pose({ blink: blinkAt(t, 1.9), lookX: -0.5, lookY: tapping ? 0.3 : 0, mouth: "smile", armL: tapping ? 1.0 + Math.abs(Math.sin(t * 25)) * 0.3 : 0.3 + cheer * 2, armR: 0.3 + cheer * 2 });
+
+  // The tech taps confirm at 9.4.
+  const tap = E.back(prog(t, 9.1, 9.35)) * (1 - prog(t, 9.6, 9.9));
+  T.pose({ blink: blinkAt(t, 0.7), lookX: 0.6, mouth: t > 11.4 && t < 14.6 ? "o" : "smile",
+    armL: 0.1 + cheer * 2.5, armLx: cheer > 0.1 ? 0 : -0.9, armR: 0.1 + cheer * 2.5 + tap * 1.2, armRx: cheer > 0.1 ? 0 : -0.9 - tap * 0.5 });
+
+  // Lockie waves the flag, locks the booking, then watches the snail go by.
+  const click = t > 9.4 ? Math.exp(-(t - 9.4) * 7) : 0;
+  const dance = prog(t, 14.6, 14.8) * (1 - prog(t, 17.4, 17.6));
+  const flagUp = E.back(prog(t, 0.1, 0.4)) * (1 - E.inOut(prog(t, 2.4, 2.8)));
+  L.root.position.y = 0.95 + dance * Math.abs(Math.sin(t * 9)) * 0.2;
+  L.pose({ squash: click * 0.5, open: t < 9.4 ? 1 : 1 - E.out(prog(t, 9.4, 9.55)), tilt: dance * Math.sin(t * 9) * 0.15,
+    armR: 0.25 + flagUp * (1.2 + (t > 1.8 && t < 2.4 ? Math.sin(t * 30) * 0.3 : 0)) + dance * 2, armL: 0.25 + dance * 2,
+    blink: blinkAt(t, 1.4), lookX: t > 11.4 && t < 14.6 ? -0.8 : 0.5, lookY: t > 11.4 && t < 14.6 ? -0.6 : 0, mouth: click > 0.3 ? "o" : "smile" });
+  flag.visible = flagUp > 0.01;
+  flag.position.set(0.95, 1.4, 0.8); flag.scale.setScalar(0.55 * flagUp); flag.rotation.z = -0.1 + (t > 1.8 && t < 2.4 ? Math.sin(t * 30) * 0.2 : 0);
+
+  // The snail: the DM route, taking its time.
+  const sk = prog(t, 11.4, 14.8);
+  snail.visible = t > 11.4 && t < 14.9;
+  snail.position.set(lerp(-2.0, 0.1, sk), 0, 1.5); snail.scale.setScalar(1.6);
+
+  confetti.position.set(0, 2.2, 0.6); confetti.userData.at(t - 14.6);
+  showBubbles(t, bub, S.toScreen);
+  outro(t, 17.6, { h: "Booked in 10 seconds.<br>Not 3 days.", p: "Booking + deposits for nail techs,<br>lash artists & beauty pros." });
+  S.frame();
+};
+render(0);
+window.READY = true;
+</script></body></html>
