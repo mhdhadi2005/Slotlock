@@ -1,0 +1,121 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/lib.css"><link rel="stylesheet" href="/ui.css"><script src="/lib.js"></script>
+<script type="importmap">{ "imports": { "three": "/three.js", "three/addons/": "/addons/" } }</script>
+<style>
+  #split { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+  #split .tint { position: absolute; top: 0; bottom: 0; width: 50%; }
+  #split .tint.l { left: 0; background: linear-gradient(180deg, rgba(120,20,20,.0), rgba(120,20,20,.22)); }
+  #split .tint.r { right: 0; background: linear-gradient(180deg, rgba(255,140,60,0), rgba(255,140,60,.10)); }
+  #split .line { position: absolute; left: 50%; top: 400px; bottom: 170px; width: 4px; margin-left: -2px; background: rgba(246,242,235,.35); border-radius: 2px; }
+  #split .lbl { position: absolute; top: 420px; font: 800 44px var(--display); letter-spacing: .08em; padding: 12px 26px; border-radius: 999px; }
+  #split .lbl.l { left: 60px; background: #3a1414; color: #ff8a80; }
+  #split .lbl.r { right: 60px; background: #ff5c39; color: #1a0905; }
+</style>
+</head><body><div id="gl"></div><div id="bubbles"></div>
+<div id="split"><div class="tint l"></div><div class="tint r"></div><div class="line"></div><div class="lbl l">BEFORE</div><div class="lbl r">AFTER</div></div>
+<script type="module">
+import { THREE, setup, mesh, toon, flat, makeLockie, makeArtist, makeGhost, makeCoin, makeConfetti, makePoof, blinkAt, rng } from "/kit.js";
+import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+import { bubbles, showBubbles } from "/ui.js";
+base();
+await document.fonts.load("900 40px 'Bricolage Grotesque'"); await document.fonts.load("700 40px 'Inter'");
+const S = setup({ camPos: [0, 2.5, 14], look: [0, 1.9, 0] });
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+
+// A small calendar on each side: the left one stays empty, the right one fills and locks.
+function calendar(x) {
+  const g = new THREE.Group(); g.position.set(x, 3.0, -1.6); S.scene.add(g);
+  g.add(mesh(new RoundedBoxGeometry(1.8, 1.2, 0.1, 3, 0.08), toon(0x2a2420), 0.025));
+  const tiles = [];
+  for (let r = 0; r < 2; r++) for (let c = 0; c < 3; c++) {
+    const mat = toon(0x4a423c);
+    const t = mesh(new RoundedBoxGeometry(0.5, 0.42, 0.06, 2, 0.05), mat, 0.015); t.position.set(-0.56 + c * 0.56, 0.25 - r * 0.5, 0.07); g.add(t);
+    const lock = new THREE.Group(); lock.position.set(t.position.x, t.position.y, 0.13); g.add(lock);
+    lock.add(mesh(new RoundedBoxGeometry(0.16, 0.13, 0.05, 2, 0.03), flat(0xffffff), 0.01));
+    const arc = mesh(new THREE.TorusGeometry(0.05, 0.016, 8, 16, Math.PI), flat(0xffffff), 0.008); arc.position.y = 0.065; lock.add(arc);
+    lock.visible = false; tiles.push({ mat, lock });
+  }
+  return tiles;
+}
+const leftCal = calendar(-1.05), rightCal = calendar(1.05);
+
+const AL = makeArtist(); AL.root.position.set(-1.05, 0, 0.2); S.scene.add(AL.root);
+const AR = makeArtist(); AR.root.position.set(1.0, 0, 0.2); S.scene.add(AR.root);
+const L = makeLockie(); L.root.scale.setScalar(0.5); L.root.position.set(1.55, 0, 0.8); S.scene.add(L.root);
+const G = makeGhost(); G.root.scale.setScalar(0.6); S.scene.add(G.root);
+const gPoof = makePoof(10, 5); S.scene.add(gPoof);
+const coins = [0, 1, 2].map(() => { const c = makeCoin(); c.scale.setScalar(0.6); S.scene.add(c); return c; });
+const COIN_AT = [7.0, 8.0, 9.0];
+const confetti = makeConfetti(80, 51); S.scene.add(confetti);
+// The phone buzzing in the left artist's hand.
+const phone = new THREE.Group(); S.scene.add(phone);
+phone.add(mesh(new RoundedBoxGeometry(0.3, 0.52, 0.05, 3, 0.05), toon(0x1b1816), 0.015));
+const pscreen = new THREE.Mesh(new THREE.PlaneGeometry(0.25, 0.44), flat(0xffd2c0)); pscreen.position.z = 0.027; phone.add(pscreen);
+
+const r = rng(12);
+const DMS = ["u free sat?", "how much", "can u hold it", "hello??", "nvm", "???"];
+const bub = bubbles([
+  ...DMS.map((text, i) => ({ t0: 2.3 + i * 0.6, t1: 7.3, text, cls: i % 3 === 1 ? "dark" : "", anchor: () => V(i % 2 ? -1.45 : -2.0, 0.75 + i * 0.4, 0.9), align: 0, rot: (r() - 0.5) * 8 })),
+  { t0: 7.4, t1: 9.4, text: "“sent it!!” (didn't)", cls: "dark", anchor: () => V(-1.05, 2.45, 0.2), align: 0.3, tail: "30%" },
+  { t0: 11.0, t1: 12.6, text: "…hello?", cls: "dark", anchor: () => V(-1.05, 2.45, 0.2), align: 0.3, tail: "30%" },
+  { t0: 12.2, t1: 12.9, sfx: true, text: "POOF", anchor: () => V(-0.5, 1.4, 0.8), rot: 8 },
+  { t0: 4.0, t1: 5.6, text: "booked ✅", cls: "accent", anchor: () => V(1.0, 2.45, 0.2), align: 0.7, tail: "70%" },
+  { t0: 15.6, t1: 16.8, sfx: true, text: "SLAP!", anchor: () => V(0.7, 2.3, 0.4), rot: -8 },
+]);
+
+window.DUR = 20.7;
+window.render = (t) => {
+  captions(t, [
+    { t0: 0, t1: 2.2, html: "Same artist. <em>Same week.</em>" },
+    { t0: 2.2, t1: 6.5, html: "Before: <em>142 DMs.</em> After: <em>one link.</em>" },
+    { t0: 6.5, t1: 10.5, html: "Before: <em>chasing deposits.</em> After: <em>already paid.</em>" },
+    { t0: 10.5, t1: 14.5, html: "Before: <em>no-shows.</em> After: <em>fully booked.</em>" },
+    { t0: 14.5, t1: 17.5, html: "Pick a side. 👀" },
+  ]);
+  S.aim(V(0, 2.5, 14), V(0, 1.9, 0));
+  const walk = E.inOut(prog(t, 14.6, 15.6));
+  const split = document.getElementById("split");
+  split.style.opacity = 1 - prog(t, 15.4, 16.0);
+
+  // Left: DM chaos, a fake "sent it", a no-show. The calendar stays grey.
+  const frazzled = t > 2.3 && t < 14.6;
+  AL.root.position.set(lerp(-1.05, 0.05, walk), walk > 0 && walk < 1 ? Math.abs(Math.sin(t * 10)) * 0.06 : 0, 0.2);
+  const hi5 = E.back(prog(t, 15.5, 15.75)) * (1 - prog(t, 16.3, 16.6));
+  AL.pose({ blink: frazzled && Math.floor(t * 6) % 5 === 0 ? 0.7 : blinkAt(t, 0.3), mouth: frazzled ? (t > 11 ? "frown" : "o") : "smile", lookX: walk > 0 ? 0.8 : 0.1, lookY: frazzled ? -0.5 : 0,
+    slump: frazzled ? prog(t, 3, 9) : 0, headTilt: frazzled ? Math.sin(t * 9) * 0.05 : 0, armL: frazzled ? 0.3 : 0.15, armLx: frazzled ? -1.2 : 0, armR: 0.15 + hi5 * 2.6 });
+  phone.visible = frazzled && t < 10.6;
+  phone.position.set(AL.root.position.x + 0.2, 1.25 + (Math.floor(t * 12) % 2 ? 0.01 : 0), 0.75); phone.rotation.x = -0.4;
+  pscreen.material.color.setHex(Math.floor(t * 6) % 2 ? 0xffffff : 0xffc2ad);
+  const gin = E.out(prog(t, 10.6, 11.2)), gout = prog(t, 12.2, 12.6);
+  G.root.visible = t > 10.6 && gout < 1;
+  G.root.position.set(-0.45, 0, 0.8);
+  G.pose({ opacity: gin * (1 - gout), float: Math.abs(Math.sin(t * 5)) * 0.06, mouth: "smile", blink: 0.35, lookX: -0.6 }, t);
+  gPoof.position.set(-0.45, 0.8, 0.9); gPoof.userData.at(prog(t, 12.2, 12.9));
+  leftCal.forEach((c, i) => { c.mat.color.setHex(t > 12.4 && i === 1 ? 0x8a2a24 : 0x4a423c); });
+
+  // Right: bookings fill the calendar, deposits arrive, Lockie approves.
+  rightCal.forEach((c, i) => {
+    const at = 3.2 + i * 1.0, lit = E.back(prog(t, at, at + 0.25));
+    c.mat.color.setHex(0x4a423c).lerp(new THREE.Color(0xff5c39), clamp(lit));
+    c.lock.visible = t > 10.6; c.lock.scale.setScalar(Math.max(0.01, E.back(prog(t, 10.6 + i * 0.12, 10.85 + i * 0.12))));
+  });
+  let catchK = 0;
+  COIN_AT.forEach((at, i) => {
+    const k = prog(t, at, at + 0.5), c = coins[i];
+    c.visible = k > 0 && k < 1;
+    c.position.set(lerp(2.4, 1.2, k), lerp(0.9, 1.7, k) + Math.sin(k * Math.PI) * 0.9, 0.6); c.rotation.y = k * 16;
+    catchK = Math.max(catchK, E.back(prog(t, at + 0.35, at + 0.55)) * (1 - prog(t, at + 0.75, at + 0.95)));
+  });
+  const relax = t > 2.3 && t < 14.6;
+  AR.pose({ blink: blinkAt(t, 1.0), mouth: "smile", lookX: walk > 0 ? -0.8 : 0.3, armR: 0.15 + catchK * 1.4, armL: 0.15 + (relax ? 0.2 : 0) + hi5 * 2.6, headTilt: relax ? Math.sin(t * 2) * 0.04 : 0 });
+  const dance = prog(t, 14.5, 14.7) * (1 - prog(t, 17.3, 17.5));
+  L.root.position.y = dance * Math.abs(Math.sin(t * 9)) * 0.18;
+  L.pose({ blink: blinkAt(t, 1.5), lookX: -0.7, armL: 0.25 + (t > 4 && t < 14 ? 1.4 : 0) + dance * 2, armR: 0.25 + dance * 2, tilt: dance * Math.sin(t * 9) * 0.15, open: t > 10.6 ? 0 : 0.5 });
+
+  confetti.position.set(0.5, 2.4, 0.4); confetti.userData.at(t - 15.6);
+  showBubbles(t, bub, S.toScreen);
+  outro(t, 17.5, { h: "Pick a side.<br>(the right one)", p: "Booking + deposits for tattoo artists.<br>Free for founding artists." });
+  S.frame();
+};
+render(0);
+window.READY = true;
+</script></body></html>

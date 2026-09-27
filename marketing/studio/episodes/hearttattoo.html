@@ -1,0 +1,87 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/lib.css"><link rel="stylesheet" href="/ui.css"><script src="/lib.js"></script>
+<script type="importmap">{ "imports": { "three": "/three.js", "three/addons/": "/addons/" } }</script>
+</head><body><div id="gl"></div><div id="bubbles"></div>
+<script type="module">
+import { THREE, setup, mesh, toon, flat, makeLockie, makeArtist, makeChair, makeCoin, makeClock, makePhone, makeHeart, makeLabel, makeConfetti, blinkAt } from "/kit.js";
+import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+import { bubbles, showBubbles } from "/ui.js";
+base();
+await document.fonts.load("900 40px 'Bricolage Grotesque'"); await document.fonts.load("700 40px 'Inter'");
+const S = setup({ camPos: [0, 2.6, 13], look: [0, 1.95, 0] });
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+
+const A = makeArtist(); S.scene.add(A.root);
+const chair = makeChair(); chair.position.set(0.45, 0, 0.3); chair.rotation.y = -0.25; S.scene.add(chair);
+const L = makeLockie(); S.scene.add(L.root);
+const heart = makeHeart(0xe0453a); heart.scale.setScalar(0.13); heart.position.set(0.2, 0.36, 0.12); heart.visible = false; L.shackle.add(heart);
+const phone = makePhone([{ lines: ["SMALL", "HEART"] }, { lines: ["SAT", "2 PM"] }, { lines: ["$50", "DEPOSIT"] }, { lines: ["SENT", "✓"], bg: "#e6fff1", color: "#128a52" }]); S.scene.add(phone);
+const coin = makeCoin(); coin.scale.setScalar(0.8); S.scene.add(coin);
+const clock = makeClock(); clock.position.set(-1.35, 3.25, -1.4); clock.scale.setScalar(0.62); S.scene.add(clock);
+const confetti = makeConfetti(100, 53); S.scene.add(confetti);
+// The flash sheet on the wall.
+const flash = new THREE.Group(); flash.position.set(0.9, 3.0, -1.6); S.scene.add(flash);
+flash.add(mesh(new RoundedBoxGeometry(1.5, 1.15, 0.08, 3, 0.06), toon(0xfbf5ea), 0.025));
+const fh = makeHeart(0xe0453a); fh.scale.setScalar(0.55); fh.position.set(0, -0.08, 0.08); flash.add(fh);
+const fl = makeLabel(["FLASH · $150"], { w: 1.1, h: 0.22, bg: null, color: "#1a0905" }); fl.position.set(0, 0.4, 0.05); flash.add(fl);
+
+const bub = bubbles([
+  { t0: 0.7, t1: 2.2, text: "that heart 😍", anchor: () => V(1.25, 2.1, 0.6), align: 0.7, tail: "70%" },
+  { t0: 5.9, t1: 7.3, text: "a client who pays first?? 🥹", anchor: () => V(-1.2, 2.55, 0.2), align: 0.25, tail: "25%" },
+  { t0: 7.6, t1: 8.4, sfx: true, text: "DING!", anchor: () => V(-1.35, 3.8, -1.4), rot: -8 },
+  { t0: 9.4, t1: 11.5, sfx: true, text: "BZZZZZ", anchor: () => V(0.0, 2.6, 0.5), rot: 6 },
+  { t0: 10.0, t1: 11.4, text: "i'm fine. totally fine.", cls: "dark", anchor: () => V(0.5, 2.3, 0.4), align: 0.6, tail: "60%" },
+  { t0: 11.7, t1: 12.6, sfx: true, text: "TA-DA!", anchor: () => V(0.7, 2.6, 0.5), rot: -6 },
+]);
+
+window.DUR = 19.6;
+window.render = (t) => {
+  captions(t, [
+    { t0: 0, t1: 2.2, html: "Lockie wants <em>a tattoo.</em>" },
+    { t0: 2.2, t1: 7.3, html: "Picks a design. Picks a time. <em>Pays the deposit.</em>" },
+    { t0: 7.4, t1: 9.2, html: "Shows up <em>on the dot.</em>" },
+    { t0: 9.2, t1: 13.2, html: "Tiny heart. <em>Big feelings.</em>" },
+    { t0: 13.2, t1: 16.4, html: "No deposit, no tattoo. <em>Even for Lockie.</em>" },
+  ]);
+  const zoom = E.inOut(prog(t, 11.4, 11.9)) * (1 - E.inOut(prog(t, 13.0, 13.6)));
+  S.aim(V(0.45 * zoom, 2.6 - 0.3 * zoom, 13 - 5 * zoom), V(0.45 * zoom, 1.95 - 0.05 * zoom, 0));
+  clock.userData.setTime(13 * 60 + 40 + keys(t, [[0, 0], [6.2, 5], [7.6, 20], [20, 22]]));
+
+  // Lockie: dreamy at the flash sheet, books on the phone, sends the deposit, shows up, gets tattooed.
+  const onChair = E.inOut(prog(t, 7.9, 8.6));
+  const lx = lerp(1.3, 0.5, onChair), ly = onChair > 0 && onChair < 1 ? Math.sin(onChair * Math.PI) * 0.8 + onChair * 0.72 : onChair >= 1 ? 0.72 : 0;
+  const away = t > 6.3 && t < 7.5;
+  L.root.visible = !away;
+  const arriveK = E.out(prog(t, 7.5, 7.9));
+  const dance = prog(t, 13.3, 13.5) * (1 - prog(t, 16.2, 16.4));
+  L.root.position.set(t >= 7.5 && t < 7.9 ? lerp(3.0, 1.3, arriveK) : lx, ly + dance * Math.abs(Math.sin(t * 9)) * 0.2, 0.6);
+  const tattooing = t > 9.3 && t < 11.6;
+  const booking = t > 2.3 && t < 5.9;
+  const send = E.back(prog(t, 5.2, 5.45)) * (1 - prog(t, 5.8, 6.0));
+  L.pose({ squash: tattooing ? Math.sin(t * 60) * 0.03 : 0, tilt: tattooing ? Math.sin(t * 40) * 0.02 : dance * Math.sin(t * 9) * 0.15,
+    armR: 0.25 + (booking ? 1.0 : 0) + send * 1.4 + dance * 2, armL: 0.25 + dance * 2 + (t > 12 && t < 13.2 ? 1.6 : 0),
+    blink: tattooing ? 0.55 : blinkAt(t, 1.2), lookX: t < 2.2 ? -0.3 : booking ? -0.2 : t > 11.7 && t < 13.2 ? 0.2 : -0.7, lookY: t < 2.2 ? 0.8 : booking ? -0.6 : t > 11.7 && t < 13.2 ? 0.7 : 0,
+    mouth: tattooing ? "flat" : "smile", open: 0 });
+  heart.visible = t > 11.6; heart.scale.setScalar(0.13 * (t > 11.6 ? E.back(prog(t, 11.6, 11.9)) : 1));
+  const pk = E.out(prog(t, 2.3, 2.6)) * (1 - prog(t, 5.9, 6.2));
+  phone.visible = pk > 0.01; phone.position.set(0.6, 1.45, 1.3); phone.scale.setScalar(1.3 * pk); phone.rotation.set(-0.1, -0.2, 0);
+  phone.userData.show(t < 3.3 ? 0 : t < 4.3 ? 1 : t < 5.3 ? 2 : 3);
+  const ck = prog(t, 5.35, 5.9);
+  coin.visible = ck > 0 && ck < 1;
+  coin.position.set(lerp(1.5, -1.0, ck), lerp(1.3, 1.9, ck) + Math.sin(ck * Math.PI) * 1.1, 0.6); coin.rotation.y = ck * 18;
+
+  // The artist catches the deposit, then tattoos the heart.
+  const toWork = E.inOut(prog(t, 8.6, 9.2)) * (1 - E.inOut(prog(t, 12.8, 13.3)));
+  A.root.position.set(lerp(-1.25, -0.55, toWork), 0, lerp(0.2, 0.55, toWork));
+  const catchK = E.back(prog(t, 5.7, 5.95)) * (1 - prog(t, 6.3, 6.6));
+  const cheer = E.back(prog(t, 13.3, 13.6)) * (1 - prog(t, 16.1, 16.4));
+  A.pose({ blink: blinkAt(t, 0.6), mouth: "smile", lookX: 0.7, lookY: tattooing ? 0.4 : 0, headNod: tattooing ? -0.1 : 0,
+    armR: 0.15 + catchK * 1.4 + toWork * 1.1 + cheer * 2.4 + (tattooing ? Math.sin(t * 50) * 0.04 : 0), armRx: -toWork * 0.9, armL: 0.15 + cheer * 2.4 });
+
+  confetti.position.set(0.4, 2.5, 0.4); confetti.userData.at(t - 13.3);
+  showBubbles(t, bub, S.toScreen);
+  outro(t, 16.4, { h: "Even Lockie<br>pays the deposit.", p: "Booking + deposits for tattoo artists.<br>Free for founding artists." });
+  S.frame();
+};
+render(0);
+window.READY = true;
+</script></body></html>

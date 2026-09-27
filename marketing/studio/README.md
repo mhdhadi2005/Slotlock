@@ -57,7 +57,7 @@ characters and props from `kit.js`, and `bubbles()` / `showBubbles()` from `ui.j
 
 Props: `makeNailTable` (polish, UV lamp, wrist cushion), `makeMagnifier`, `makeHourglass` (`at(k)` drains it),
 `makeBell`, `makeJar(label)` (`fill(n)` stacks coins), `makeFlipSign(front, back)`, `makePartyHat`, `makeCake`
-(`candles`), `makeBanner(texts)` (`show(i)`), `makePhone(screens)` (`show(i)`), `makeSnail`, `makeMedal`, `makeLabel(lines)`, `makeChair`, `makeClock`, `makeSign(lines)`, `makeCoin`, `makeTumbleweed`,
+(`candles`), `makeBanner(texts)` (`show(i)`), `makePhone(screens)` (`show(i)`), `makeSnail`, `makeMedal`, `makeLabel(lines)`, `makeHeart`, `makeCup`, `makeChair`, `makeClock`, `makeSign(lines)`, `makeCoin`, `makeTumbleweed`,
 `makeConfetti`, `makePoof`.
 
 ## Episode log
@@ -69,6 +69,11 @@ Add every new episode here so ideas never repeat.
 | 2026-09-23 | ghosted | No-deposit client vanishes at 2pm; Lockie's "DEPOSIT FIRST" sign scares the ghost off | Ghost-proof your books. |
 | 2026-09-23 | bouncer | Lockie bounces "I'll pay later" at the calendar's velvet rope | Hire the bouncer. |
 | 2026-09-23 | flood | DM bubbles bury the artist; Lockie bursts out with one link | One link. Zero chaos. |
+| 2026-09-27 | fivemin | "5 min away" for 45 minutes while a tumbleweed rolls by; pink Lockie shows the late policy and the deposit already paid | "5 min away"? Deposit's paid. |
+| 2026-09-27 | cousin | "Discount if I bring my cousin?" becomes a tower of five cousins; prices on the page, each books and pays their own deposit | Cousins welcome. Deposits too. |
+| 2026-09-27 | beforeafter | Split screen, same artist: DM chaos and no-shows vs. one link, deposits and a locked calendar | Pick a side. (the right one) |
+| 2026-09-27 | hearttattoo | Lockie books his own heart tattoo: flash, time, deposit, on the dot, BZZZZ, heart on the shackle | Even Lockie pays the deposit. |
+| 2026-09-27 | doublebook | Two clients booked for 2 PM in a western standoff; Lockie shows a slot books once and the second takes 4 PM | One slot. One client. No duels. |
 | 2026-09-26 | consult | Blurry "like this but different" photo; Lockie hands over the idea form, the artist quotes, the client books the quote | Less guessing. More tattooing. |
 | 2026-09-26 | lastminute | Client cancels 1 hour before a lash set and wants the deposit back; pink Lockie shows the 24h policy, the deposit stays, the slot reopens | Cancel late? Deposit stays. |
 | 2026-09-26 | stillavailable | "Is this still available?" ×40 on one flash sheet; Lockie's one link, designs get stamped TAKEN as clients book | Stop answering. Start booking. |
@@ -84,11 +89,11 @@ Add every new episode here so ideas never repeat.
 
 ## Idea backlog
 
+- The walk-in who wants "just a quick one" right now; Lockie shows the next real opening today
+- A bridal party of 6 wants nails at 7am on the wedding day; each bridesmaid books her own slot
+- The client who DMs a 3am voice note; Lockie answers with the booking link
+
 
 - Aftercare: Lockie as a tiny nurse reminding the client "no pool for 2 weeks"
 
-- "I'm 5 min away" client (a clock shows it's been 45 min)
-- "Can I get a discount if I bring my cousin?"
 - Client asks to move the appointment 6 times
-- Before/after: artist's DMs vs. artist's calendar
-- Lockie tries a new tattoo (a tiny heart on the shackle)

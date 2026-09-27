@@ -1,0 +1,117 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/lib.css"><link rel="stylesheet" href="/ui.css"><script src="/lib.js"></script>
+<script type="importmap">{ "imports": { "three": "/three.js", "three/addons/": "/addons/" } }</script>
+<style>
+  .glow { background: radial-gradient(60% 38% at 50% 10%, rgba(255,160,70,.32), transparent 70%), radial-gradient(55% 35% at 50% 100%, rgba(255,120,60,.18), transparent 70%); }
+</style>
+</head><body><div id="gl"></div><div id="bubbles"></div>
+<script type="module">
+import { THREE, setup, mesh, toon, flat, makeLockie, makeArtist, makeBlob, makeCoin, makeClock, makeTumbleweed, makePhone, makeLabel, makeConfetti, blinkAt, BLOB_COLORS } from "/kit.js";
+import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+import { bubbles, showBubbles } from "/ui.js";
+base();
+await document.fonts.load("900 40px 'Bricolage Grotesque'"); await document.fonts.load("700 40px 'Inter'");
+const S = setup({ camPos: [0, 2.6, 13], look: [0, 1.95, 0] });
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+
+const A = makeArtist(); A.root.position.set(0, 0, -0.3); S.scene.add(A.root);
+const C1 = makeBlob(BLOB_COLORS[0], 0.9), C2 = makeBlob(BLOB_COLORS[4], 0.9); S.scene.add(C1.root, C2.root);
+// Cowboy hats for the standoff.
+function hat() {
+  const g = new THREE.Group();
+  const brim = mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.03, 24), toon(0x8a5a3a), 0.015); g.add(brim);
+  const crown = mesh(new THREE.CylinderGeometry(0.17, 0.2, 0.2, 18), toon(0x8a5a3a), 0.015); crown.position.y = 0.11; g.add(crown);
+  const band = mesh(new THREE.CylinderGeometry(0.205, 0.205, 0.04, 18), toon(0x2a1a12), 0); band.position.y = 0.03; g.add(band);
+  return g;
+}
+const h1 = hat(), h2 = hat(); h1.position.set(0, 0.93, 0); h2.position.set(0, 0.93, 0); h1.rotation.z = 0.15; h2.rotation.z = -0.15; C1.body.add(h1); C2.body.add(h2);
+const L = makeLockie(); S.scene.add(L.root);
+const clock = makeClock(); clock.position.set(0, 3.35, -1.6); clock.scale.setScalar(0.8); S.scene.add(clock);
+const weed = makeTumbleweed(); weed.scale.setScalar(1.3); S.scene.add(weed);
+const phone = makePhone([{ lines: ["2 PM", "BOOKED"], bg: "#ffe1d6" }, { lines: ["NEXT:", "4 PM"] }, { lines: ["4 PM", "BOOKED ✓"], bg: "#e6fff1", color: "#128a52" }]); S.scene.add(phone);
+const coin = makeCoin(); coin.scale.setScalar(0.7); S.scene.add(coin);
+const confetti = makeConfetti(90, 57); S.scene.add(confetti);
+// The day's calendar with the 2 PM and 4 PM slots.
+const slots = [["2 PM", "OPEN"], ["2 PM", "BOOKED"], ["4 PM", "OPEN"], ["4 PM", "BOOKED"]].map(([a, b], i) => {
+  const m = makeLabel([a, b], { w: 0.95, h: 0.62, bg: b === "BOOKED" ? "#ff5c39" : "#ffffff", color: b === "BOOKED" ? "#ffffff" : "#1a0905" });
+  m.position.set(i < 2 ? -0.6 : 0.6, 2.35, -1.5); m.visible = false; S.scene.add(m); return m;
+});
+
+const bub = bubbles([
+  { t0: 1.0, t1: 2.3, text: "i booked 2pm.", anchor: () => V(-1.3, 1.25, 0.6), align: 0.2, tail: "20%" },
+  { t0: 1.5, t1: 2.3, text: "no, I booked 2pm.", cls: "dark", anchor: () => V(1.3, 1.25, 0.6), align: 0.8, tail: "80%" },
+  { t0: 4.6, t1: 6.2, text: "uh… i said yes to both in DMs 😬", anchor: () => V(0, 1.95, 0.5), align: 0.5 },
+  { t0: 6.4, t1: 7.2, sfx: true, text: "THUD!", anchor: () => V(0, 1.7, 0.8), rot: -8 },
+  { t0: 9.0, t1: 9.8, sfx: true, text: "CLICK!", anchor: () => V(-0.6, 3.0, -1.3), rot: 6 },
+  { t0: 12.0, t1: 13.2, text: "oh, 4pm then 🤠", cls: "dark", anchor: () => V(1.3, 1.25, 0.6), align: 0.8, tail: "80%" },
+  { t0: 13.3, t1: 14.1, sfx: true, text: "YEEHAW!", anchor: () => V(0, 2.4, 0.6), rot: -6 },
+]);
+
+window.DUR = 19.8;
+window.render = (t) => {
+  captions(t, [
+    { t0: 0, t1: 2.3, html: "2:00 PM. <em>Two clients.</em> One chair." },
+    { t0: 2.3, t1: 6.3, html: "This town ain't big enough for <em>both bookings.</em> 🤠" },
+    { t0: 6.4, t1: 10.2, html: "With Slotlock, a slot books <em>once.</em>" },
+    { t0: 10.2, t1: 13.2, html: "Everyone else sees <em>the next real opening.</em>" },
+    { t0: 13.2, t1: 16.5, html: "No double bookings. <em>No duels.</em>" },
+  ]);
+  // Standoff camera: slow push in on the stare-down, then back out.
+  const push = E.inOut(prog(t, 2.3, 5.5)) * (1 - E.inOut(prog(t, 6.3, 7.0)));
+  const shake = t > 6.4 && t < 6.9 ? Math.sin(t * 60) * 0.05 : 0;
+  S.aim(V(shake, 2.6 - push * 0.5, 13 - push * 2.2), V(0, 1.95 - push * 0.55, 0));
+  clock.visible = push < 0.25;
+  clock.userData.setTime(14 * 60 + t * 0.4);
+
+  // The two clients face off, then one books 4 PM instead.
+  const slide = E.inOut(prog(t, 0.2, 1.0));
+  const leave = E.inOut(prog(t, 12.0, 12.8));
+  const stare = t > 2.3 && t < 6.4;
+  C1.root.position.set(lerp(-2.8, -1.3, slide), 0, 0.6);
+  C2.root.position.set(lerp(2.8, 1.3, slide) + leave * 0, 0, 0.6);
+  const party = prog(t, 13.2, 13.4) * (1 - prog(t, 16.3, 16.5));
+  for (const [c, dir, i] of [[C1, 1, 0], [C2, -1, 1]]) {
+    c.root.position.y = party * Math.abs(Math.sin(t * 9 + i)) * 0.2;
+    c.pose({ blink: stare ? 0.55 : blinkAt(t, i), lookX: dir * 0.8, mouth: stare ? "flat" : "smile", squash: stare ? Math.sin(t * 2 + i) * 0.03 : 0,
+      armL: 0.3 + (i === 1 && t > 9.6 && t < 10.1 ? 1.4 : 0) + party * 1.5, armR: 0.3 + party * 1.5 });
+  }
+  h1.rotation.z = 0.15 + party * Math.sin(t * 9) * 0.3; h2.rotation.z = -0.15 - party * Math.sin(t * 9) * 0.3;
+
+  // Tumbleweed during the stare-down.
+  const wk = prog(t, 2.8, 5.6);
+  weed.visible = wk > 0 && wk < 1;
+  weed.position.set(lerp(-2.6, 2.6, wk), 0.45 + Math.abs(Math.sin(wk * 12)) * 0.25, 1.2); weed.rotation.z = -wk * 16;
+
+  // The artist in the middle, sweating it out.
+  const cheer = E.back(prog(t, 13.2, 13.5)) * (1 - prog(t, 16.2, 16.5));
+  const catchK = E.back(prog(t, 10.9, 11.15)) * (1 - prog(t, 11.5, 11.8));
+  A.pose({ blink: blinkAt(t, 0.7), mouth: t > 1 && t < 6.4 ? "o" : "smile", lookX: Math.sin(t * 3) * (t > 1 && t < 6.4 ? 0.9 : 0.3),
+    headTilt: t > 4.6 && t < 6.2 ? 0.15 : 0, armL: 0.15 + cheer * 2.4, armR: 0.15 + cheer * 2.4 + catchK * 1.2, slump: t > 4.6 && t < 6.4 ? 0.5 : 0 });
+
+  // Lockie lands between them and shows how the calendar works.
+  const drop = prog(t, 6.2, 6.55);
+  L.root.visible = t > 6.2;
+  const landK = t > 6.55 ? Math.exp(-(t - 6.55) * 6) * Math.cos((t - 6.55) * 18) : 0;
+  const point = E.back(prog(t, 7.0, 7.3)) * (1 - prog(t, 12.6, 12.9));
+  L.root.position.set(0, (1 - E.out(drop)) * 4.5 + party * Math.abs(Math.sin(t * 9)) * 0.22, 0.9);
+  L.pose({ squash: landK * 0.8, armR: 0.25 + point * 2.2 + party * 2, armL: 0.25 + party * 2, lookY: point > 0.3 ? 0.6 : 0, blink: blinkAt(t, 1.1), open: t < 9.0 ? 0.6 : 0, tilt: party * Math.sin(t * 9) * 0.15 });
+  L.shades.visible = t > 6.2;
+  const cal = t > 7.3;
+  slots[0].visible = cal && t < 9.0; slots[1].visible = t >= 9.0; slots[1].scale.setScalar(E.back(prog(t, 9.0, 9.3)));
+  slots[2].visible = cal && t < 11.1; slots[3].visible = t >= 11.1; slots[3].scale.setScalar(E.back(prog(t, 11.1, 11.4)));
+
+  // The second client's phone: 2 PM is taken, 4 PM is next, booked.
+  const pk = E.out(prog(t, 9.4, 9.7)) * (1 - prog(t, 12.0, 12.3));
+  phone.visible = pk > 0.01; phone.position.set(1.05, 1.6, 1.3); phone.scale.setScalar(1.35 * pk); phone.rotation.set(-0.1, -0.25, 0);
+  phone.userData.show(t < 10.2 ? 0 : t < 11.1 ? 1 : 2);
+  const ck = prog(t, 10.6, 11.1);
+  coin.visible = ck > 0 && ck < 1;
+  coin.position.set(lerp(1.2, 0.3, ck), lerp(1.0, 1.9, ck) + Math.sin(ck * Math.PI) * 1.0, lerp(0.6, -0.1, ck)); coin.rotation.y = ck * 16;
+
+  confetti.position.set(0, 2.5, 0.4); confetti.userData.at(t - 13.2);
+  showBubbles(t, bub, S.toScreen);
+  outro(t, 16.5, { h: "One slot. One client.<br>No duels.", p: "Booking + deposits for tattoo artists.<br>Free for founding artists." });
+  S.frame();
+};
+render(0);
+window.READY = true;
+</script></body></html>

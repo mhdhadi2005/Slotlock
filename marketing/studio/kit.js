@@ -593,3 +593,22 @@ export function makeMedal(text = "#1") {
 export function makeLabel(lines, { w = 0.5, h = 0.3, bg = "#ffffff", color = "#1a0905", font = "900 60px 'Bricolage Grotesque'" } = {}) {
   return new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: textTexture("", { w: 256, h: Math.round(256 * h / w), font, color, bg, radius: 12, lines }), transparent: true, side: THREE.DoubleSide }));
 }
+
+// A small extruded heart (tattoos, love). Centered on its origin, about 0.9 units wide before scaling.
+export function makeHeart(color = 0xe0453a) {
+  const s = new THREE.Shape();
+  s.moveTo(0, 0.25); s.bezierCurveTo(0, 0.3, -0.05, 0.4, -0.2, 0.4); s.bezierCurveTo(-0.45, 0.4, -0.45, 0.1, -0.45, 0.1);
+  s.bezierCurveTo(-0.45, -0.05, -0.3, -0.25, 0, -0.45); s.bezierCurveTo(0.3, -0.25, 0.45, -0.05, 0.45, 0.1);
+  s.bezierCurveTo(0.45, 0.1, 0.45, 0.4, 0.2, 0.4); s.bezierCurveTo(0.05, 0.4, 0, 0.3, 0, 0.25);
+  const geo = new THREE.ExtrudeGeometry(s, { depth: 0.12, bevelEnabled: true, bevelSize: 0.03, bevelThickness: 0.03, bevelSegments: 3, curveSegments: 16 });
+  geo.center();
+  return mesh(geo, toon(color), 0.02);
+}
+// A takeaway cup with a straw.
+export function makeCup(color = 0xffc4d8) {
+  const g = new THREE.Group();
+  const c = mesh(new THREE.CylinderGeometry(0.11, 0.085, 0.3, 18), toon(color), 0.015); c.position.y = 0.15; g.add(c);
+  const lid = mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.03, 18), toon(0xffffff), 0.012); lid.position.y = 0.31; g.add(lid);
+  const straw = mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.25, 8), toon(0xe0457f), 0.008); straw.position.set(0.03, 0.42, 0); straw.rotation.z = -0.2; g.add(straw);
+  return g;
+}
