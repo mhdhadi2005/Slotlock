@@ -612,3 +612,15 @@ export function makeCup(color = 0xffc4d8) {
   const straw = mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.25, 8), toon(0xe0457f), 0.008); straw.position.set(0.03, 0.42, 0); straw.rotation.z = -0.2; g.add(straw);
   return g;
 }
+
+// Beach umbrella with a striped canopy. Origin at the foot of the pole.
+export function makeUmbrella(a = 0xff8fb1, b = 0xffffff) {
+  const g = new THREE.Group();
+  const pole = mesh(new THREE.CylinderGeometry(0.035, 0.035, 2.3, 10), toon(0xd9d2c8), 0.012); pole.position.y = 1.15; g.add(pole);
+  const c = document.createElement("canvas"); c.width = 256; c.height = 32; const x = c.getContext("2d");
+  for (let i = 0; i < 8; i++) { x.fillStyle = "#" + (i % 2 ? b : a).toString(16).padStart(6, "0"); x.fillRect(i * 32, 0, 32, 32); }
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+  const canopy = mesh(new THREE.ConeGeometry(1.2, 0.5, 24, 1, true), toon(0xffffff, { map: tex, side: THREE.DoubleSide }), 0.02); canopy.position.y = 2.35; g.add(canopy);
+  const tip = mesh(new THREE.SphereGeometry(0.06, 10, 8), toon(0xd9d2c8), 0.01); tip.position.y = 2.62; g.add(tip);
+  return g;
+}

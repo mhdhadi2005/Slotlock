@@ -1,0 +1,140 @@
+<!doctype html><html data-look="blush"><head><meta charset="utf-8"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/lib.css"><link rel="stylesheet" href="/ui.css"><script src="/lib.js"></script>
+<script type="importmap">{ "imports": { "three": "/three.js", "three/addons/": "/addons/" } }</script>
+<style>
+  /* Blush palette for beauty episodes. */
+  body { background: #fff5f7; color: #3d1f2c; }
+  .glow { background: radial-gradient(60% 38% at 82% 8%, rgba(255,150,190,.55), transparent 70%), radial-gradient(55% 35% at 0% 100%, rgba(255,200,220,.6), transparent 70%); }
+  #cap { font: 700 84px/1.04 "Fraunces", Georgia, serif; letter-spacing: -.03em; color: #3d1f2c; }
+  em { color: #d63a70; font-style: italic; }
+  #foot { color: #a57f8f; }
+  .bub { box-shadow: 0 16px 40px -14px rgba(170,60,105,.5); border: 3px solid #f6cfdc; }
+  .bub::after { border-right: 3px solid #f6cfdc; border-bottom: 3px solid #f6cfdc; }
+  .bub.accent { background: linear-gradient(180deg, #f58ab2, #e0457f); color: #fff; border-color: transparent; } .bub.accent::after { background: #e24f86; border-color: transparent; }
+  .bub.dark { background: #3d1f2c; color: #fff5f7; border-color: #3d1f2c; } .bub.dark::after { background: #3d1f2c; border-color: #3d1f2c; }
+  .sfx { color: #fff; -webkit-text-stroke: 4px #7a1d45; }
+  #outro { background: radial-gradient(60% 40% at 50% 30%, rgba(255,150,190,.55), transparent 70%), #fff5f7; }
+  #outro h2 { font: italic 700 100px/1.02 "Fraunces", Georgia, serif; letter-spacing: -.03em; color: #3d1f2c; }
+  #outro p { color: #6e4b5b; }
+  #outro .cta { background: linear-gradient(180deg, #f58ab2, #e0457f); color: #fff; }
+  #outro .wordmark, #foot .wordmark { color: #3d1f2c; }
+</style>
+</head><body><div id="gl"></div><div id="bubbles"></div>
+<script type="module">
+import { THREE, setup, mesh, toon, flat, makeLockie, makeTech, makeBlob, makeCoin, makeSign, makeFlipSign, makeJar, makeLabel, makeCup, makeUmbrella, makeConfetti, makePoof, blinkAt, BLOB_COLORS } from "/kit.js";
+import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+import { bubbles, showBubbles } from "/ui.js";
+base();
+await document.fonts.load("900 40px 'Bricolage Grotesque'"); await document.fonts.load("700 40px 'Inter'");
+await document.fonts.load("600 40px 'Fraunces'"); await document.fonts.load("italic 600 40px 'Fraunces'");
+const S = setup({ camPos: [0, 2.4, 12], look: [0, 1.8, 0], palette: "blush" });
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+
+// The beach: sand, sea, sun, a lounger under an umbrella.
+const sand = new THREE.Mesh(new THREE.CircleGeometry(2.8, 48), toon(0xf7e1c8)); sand.rotation.x = -Math.PI / 2; sand.position.y = 0.005; S.scene.add(sand);
+const sea = new THREE.Mesh(new THREE.PlaneGeometry(9, 1.1), flat(0xa8dff0)); sea.position.set(0, 0.55, -2.4); S.scene.add(sea);
+const sun = new THREE.Mesh(new THREE.CircleGeometry(0.36, 32), flat(0xffd36b)); sun.position.set(1.15, 3.2, -2.4); S.scene.add(sun);
+const umb = makeUmbrella(); umb.position.set(-0.15, 0, -0.7); umb.scale.setScalar(0.9); S.scene.add(umb);
+const lounger = new THREE.Group(); lounger.position.set(-0.5, 0, 0); lounger.scale.setScalar(0.85); S.scene.add(lounger);
+const seat = mesh(new RoundedBoxGeometry(1.35, 0.16, 0.72, 3, 0.05), toon(0xffffff), 0.02); seat.position.set(0.1, 0.42, 0); lounger.add(seat);
+const back = mesh(new RoundedBoxGeometry(0.16, 1.0, 0.72, 3, 0.05), toon(0xffffff), 0.02); back.position.set(-0.62, 0.8, -0.05); back.rotation.z = 0.6; lounger.add(back);
+for (const x of [-0.45, 0.65]) for (const z of [-0.28, 0.28]) { const l = mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.4, 8), toon(0xe8c9d4), 0.01); l.position.set(x, 0.2, z); lounger.add(l); }
+
+// The tech, reclined with a drink. A hip pivot lets her sit up when she's back.
+const hip = new THREE.Group(); hip.position.set(-0.45, 0.68, 0.05); hip.scale.setScalar(0.82); S.scene.add(hip);
+const T = makeTech({ skin: 0xe8b48f, hair: 0x2a1a12, smock: 0xff9ec0 }); T.root.position.y = -0.6; hip.add(T.root);
+const cup = makeCup(); cup.scale.setScalar(0.9); cup.position.set(0, -0.05, 0.1); T.arms[1].userData.hand.add(cup);
+const phone = new THREE.Group(); phone.position.set(0.2, 0.03, 1.0); phone.rotation.x = -Math.PI / 2; S.scene.add(phone);
+phone.add(mesh(new RoundedBoxGeometry(0.3, 0.52, 0.05, 3, 0.05), toon(0x3d1f2c), 0.015));
+const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.25, 0.44), flat(0xffd6e5)); screen.position.z = 0.027; phone.add(screen);
+const jar = makeJar("DEPOSITS"); jar.position.set(-0.3, 0, 1.3); jar.scale.setScalar(0.62); S.scene.add(jar);
+
+const L = makeLockie({ color: 0xff7aa8, feet: 0xe0457f, key: 0x7a1d45 }); L.root.scale.setScalar(0.6); S.scene.add(L.root);
+const flip = makeFlipSign(["BOOKS", "CLOSED"], ["JOIN THE", "WAITLIST"], { w: 1.6, h: 0.9, bg: "#3d1f2c", color: "#ffffff", back: { bg: "#ffffff", color: "#e0457f" } }); S.scene.add(flip);
+const openSign = makeSign(["BOOKS", "OPEN ✓"], { w: 1.6, h: 0.9, bg: "#e0457f", color: "#ffffff" }); S.scene.add(openSign);
+const poof = makePoof(14, 41); S.scene.add(poof);
+const confetti = makeConfetti(90, 43); S.scene.add(confetti);
+const PINKS = [0xe0457f, 0xff8fb1, 0xffffff, 0xd7a6ff, 0xffc4d8, 0xf3c6b0];
+confetti.children.forEach((m, i) => { m.material = flat(PINKS[i % PINKS.length], { side: THREE.DoubleSide }); });
+
+// Clients who join the waitlist, each with a ticket; then they book.
+const QX = [0.2, 0.7, 1.2];
+const q = [0, 1, 2].map((i) => { const b = makeBlob([0x8fc1ff, 0xd7a6ff, 0xffc56b][i], 0.55); S.scene.add(b.root); return b; });
+const tix = [0, 1, 2].map((i) => { const m = makeLabel(["#" + (i + 1)], { w: 0.34, h: 0.24, bg: "#ffffff", color: "#e0457f" }); S.scene.add(m); return m; });
+const done = [0, 1, 2].map(() => { const m = makeLabel(["BOOKED"], { w: 0.44, h: 0.18, bg: "#e0457f", color: "#ffffff" }); S.scene.add(m); return m; });
+const coins = [0, 1, 2].map(() => { const c = makeCoin(); c.scale.setScalar(0.5); S.scene.add(c); return c; });
+const ARR = [8.0, 8.5, 9.0], PAY = [12.9, 13.4, 13.9];
+
+const bub = bubbles([
+  { t0: 2.7, t1: 5.3, text: "r u open next week?? 💅", anchor: () => V(0.55, 0.9, 1.2), align: 0.5, rot: -3 },
+  { t0: 3.3, t1: 5.3, text: "need lashes for a wedding!!", cls: "dark", anchor: () => V(0.8, 1.55, 1.2), align: 0.6, rot: 3 },
+  { t0: 3.9, t1: 5.3, text: "hello?? 🥺", anchor: () => V(0.9, 2.2, 1.2), align: 0.6, rot: -2 },
+  { t0: 5.4, t1: 6.1, sfx: true, text: "POOF!", anchor: () => V(0.85, 1.6, 0.3), rot: 8 },
+  { t0: 11.1, t1: 12.3, sfx: true, text: "1 week later…", anchor: () => V(0, 2.9, 0.5), rot: -4 },
+]);
+
+window.DUR = 18.8;
+window.render = (t) => {
+  captions(t, [
+    { t0: 0, t1: 2.6, html: "Vacation mode. <em>Finally.</em> 🌴" },
+    { t0: 2.6, t1: 5.4, html: "Meanwhile, <em>in your DMs…</em>" },
+    { t0: 5.6, t1: 8.0, html: "Books closed. <em>Waitlist open.</em>" },
+    { t0: 8.0, t1: 11.0, html: "They join the waitlist. <em>Not your DMs.</em>" },
+    { t0: 12.2, t1: 15.6, html: "Books open. <em>The waitlist books in.</em>" },
+  ]);
+  S.aim(V(0, 2.4, 12), V(0, 1.8, 0));
+
+  // The tech: reclined, cucumbers on, sipping. Sits up when she's back.
+  const up = E.inOut(prog(t, 11.8, 12.4));
+  hip.rotation.z = lerp(0.62, 0.05, up);
+  const sip = t < 11.8 ? E.inOut(prog(t % 3.2, 0.8, 1.2)) * (1 - E.inOut(prog(t % 3.2, 1.8, 2.2))) : 0;
+  const cheer = E.back(prog(t, 14.2, 14.5)) * (1 - prog(t, 15.3, 15.6));
+  cup.visible = t < 11.8;
+  T.pose({ cukes: t < 11.8, blink: t < 11.8 ? 1 : blinkAt(t, 0.8), mouth: "smile", lookX: 0.5, lookY: -0.1,
+    armR: 0.4 + sip * 1.3 + cheer * 2.2, armRx: t < 11.8 ? -0.6 - sip * 0.6 : 0, armL: 0.15 + cheer * 2.4, headTilt: t < 11.8 ? Math.sin(t * 1.5) * 0.05 : 0 });
+  phone.position.x = 0.2 + (t > 2.6 && t < 5.3 && Math.floor(t * 14) % 2 ? 0.012 : 0);
+  screen.material.color.setHex(t > 2.6 && t < 5.3 && Math.floor(t * 6) % 2 === 0 ? 0xffffff : 0xffc4d8);
+
+  // Pink Lockie holds the sign: closed → waitlist → open.
+  const drop = prog(t, 5.2, 5.55);
+  L.root.visible = t > 5.2;
+  const landK = t > 5.55 ? Math.exp(-(t - 5.55) * 6) * Math.cos((t - 5.55) * 18) : 0;
+  const dance = prog(t, 14.2, 14.4) * (1 - prog(t, 15.4, 15.6));
+  L.root.position.set(1.05, (1 - E.out(drop)) * 3.5 + dance * Math.abs(Math.sin(t * 9)) * 0.2, -0.5);
+  const signUp = E.back(prog(t, 5.8, 6.15));
+  const flipK = E.inOut(prog(t, 6.9, 7.4));
+  L.pose({ squash: landK * 0.7, open: t < 12.4 ? 0 : 0.6, armR: 0.25 + signUp * 1.3 + dance * 2, armL: 0.25 + dance * 2, blink: blinkAt(t, 1.4), lookX: -0.3, tilt: dance * Math.sin(t * 9) * 0.15 });
+  poof.position.set(1.05, 1.0, -0.4); poof.userData.at(prog(t, 5.3, 6.1));
+  const swap = t > 12.4;
+  flip.visible = signUp > 0.01 && !swap; openSign.visible = swap;
+  const sy = 1.35 + Math.sin(t * 3) * 0.02;
+  flip.position.set(1.25, sy + 0.1, -0.35); flip.scale.setScalar(0.5 * signUp); flip.rotation.y = flipK * Math.PI;
+  openSign.position.set(1.25, sy + 0.1, -0.35); openSign.scale.setScalar(0.5 * E.back(prog(t, 12.4, 12.7)));
+
+  // The waitlist: each client arrives and gets a ticket, then books when the books open.
+  let landed = 0;
+  q.forEach((b, i) => {
+    const k = E.out(prog(t, ARR[i], ARR[i] + 0.45));
+    b.root.visible = t > ARR[i];
+    const hop = t > PAY[i] - 0.3 && t < PAY[i] + 0.1 ? Math.sin(prog(t, PAY[i] - 0.3, PAY[i] + 0.1) * Math.PI) * 0.22 : 0;
+    b.root.position.set(lerp(2.8, QX[i], k), (k < 1 ? Math.abs(Math.sin(t * 11 + i)) * 0.15 : 0) + hop + dance * Math.abs(Math.sin(t * 9 + i)) * 0.15, 1.5);
+    b.pose({ blink: blinkAt(t, i * 0.5), lookX: -0.6, lookY: 0.3, mouth: "smile", armL: 0.3 + (hop > 0.05 ? 1.4 : 0) + dance * 1.5, armR: 0.3 + dance * 1.5 });
+    const tk = E.back(prog(t, ARR[i] + 0.45, ARR[i] + 0.75));
+    tix[i].visible = t > ARR[i] + 0.45 && t < PAY[i] + 0.4; tix[i].scale.setScalar(Math.max(0.01, tk));
+    tix[i].position.set(QX[i], 0.72 + Math.sin(t * 3 + i) * 0.03, 1.55);
+    done[i].visible = t > PAY[i] + 0.4; done[i].scale.setScalar(Math.max(0.01, E.back(prog(t, PAY[i] + 0.4, PAY[i] + 0.7))));
+    done[i].position.set(QX[i], 0.72, 1.6);
+    const ck = prog(t, PAY[i], PAY[i] + 0.5), c = coins[i];
+    c.visible = ck > 0 && ck < 1;
+    c.position.set(lerp(QX[i], -0.3, ck), lerp(0.6, 0.55, ck) + Math.sin(ck * Math.PI) * 1.1, lerp(1.5, 1.3, ck)); c.rotation.y = ck * 16;
+    if (t > PAY[i] + 0.5) landed++;
+  });
+  jar.userData.fill(landed);
+
+  confetti.position.set(0.3, 1.3, 0.9); confetti.userData.at(t - 14.2);
+  showBubbles(t, bub, S.toScreen);
+  outro(t, 15.6, { h: "Go on vacation.<br>Come back booked.", p: "Booking + deposits for nail techs,<br>lash artists & beauty pros." });
+  S.frame();
+};
+render(0);
+window.READY = true;
+</script></body></html>

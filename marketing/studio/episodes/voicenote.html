@@ -1,0 +1,119 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/lib.css"><link rel="stylesheet" href="/ui.css"><script src="/lib.js"></script>
+<script type="importmap">{ "imports": { "three": "/three.js", "three/addons/": "/addons/" } }</script>
+<style>
+  #night { position: absolute; inset: 0; z-index: 3; pointer-events: none; background: radial-gradient(70% 45% at 70% 35%, rgba(40,60,140,.25), transparent 70%), rgba(8,12,38,.5); }
+</style>
+</head><body><div id="gl"></div><div id="night"></div><div id="bubbles"></div>
+<script type="module">
+import { THREE, setup, mesh, toon, flat, makeLockie, makeArtist, makeCoin, makeClock, makeJar, makePhone, makeSign, makeLabel, makeConfetti, makePoof, blinkAt } from "/kit.js";
+import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+import { bubbles, showBubbles } from "/ui.js";
+base();
+await document.fonts.load("900 40px 'Bricolage Grotesque'"); await document.fonts.load("700 40px 'Inter'");
+const S = setup({ camPos: [0, 2.6, 13], look: [0, 1.95, 0] });
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const box = (w, h, d, col, x, y, z, r = 0.06) => { const m = mesh(new RoundedBoxGeometry(w, h, d, 3, r), toon(col), 0.025); m.position.set(x, y, z); S.scene.add(m); return m; };
+
+// The bedroom: bed, blanket, nightstand, window with the moon.
+box(2.5, 0.45, 1.25, 0x6b4a3a, -0.15, 0.28, 0);
+box(0.14, 1.3, 1.25, 0x6b4a3a, -1.42, 0.65, 0);
+box(2.35, 0.2, 1.18, 0xf6f2eb, -0.15, 0.58, 0);
+box(0.5, 0.2, 0.8, 0xffffff, -1.05, 0.76, 0, 0.09);
+box(0.62, 0.72, 0.6, 0x8a5a3a, 1.5, 0.36, -0.15);
+const win = new THREE.Group(); win.position.set(0.75, 2.85, -1.6); S.scene.add(win);
+win.add(mesh(new RoundedBoxGeometry(1.3, 1.1, 0.08, 3, 0.05), toon(0xf6f2eb), 0.02));
+const sky = new THREE.Mesh(new THREE.PlaneGeometry(1.14, 0.94), flat(0x1c2458)); sky.position.z = 0.045; win.add(sky);
+const moon = new THREE.Mesh(new THREE.CircleGeometry(0.17, 28), flat(0xfff4c8)); moon.position.set(0.25, 0.18, 0.05); win.add(moon);
+const bar = new THREE.Mesh(new THREE.PlaneGeometry(0.05, 0.94), flat(0xf6f2eb)); bar.position.z = 0.05; win.add(bar);
+
+// The artist, asleep. A hip pivot lets them sit up at 9 AM.
+const hip = new THREE.Group(); hip.position.set(0.2, 1.05, 0.05); S.scene.add(hip);
+const A = makeArtist(); A.root.position.y = -0.6; hip.add(A.root);
+const blanket = box(1.55, 1.0, 1.22, 0xff5c39, 0.33, 1.15, 0.03, 0.3);
+
+const phone = makePhone([{ lines: ["VOICE NOTE", "▶ 4:32"], bg: "#dff0ff" }, { lines: ["3:07", "AM"], bg: "#2a2f4a", color: "#8f9ac8" }]); S.scene.add(phone);
+phone.position.set(1.5, 1.0, 0.0); phone.scale.setScalar(0.62); phone.rotation.set(-0.25, -0.3, 0);
+const jar = makeJar("DEPOSITS"); jar.position.set(1.45, 0, 0.85); jar.scale.setScalar(0.62); jar.userData.fill(1); S.scene.add(jar);
+const clock = makeClock(); clock.position.set(-1.3, 3.3, -1.6); clock.scale.setScalar(0.62); S.scene.add(clock);
+const slotOpen = makeLabel(["SAT 1 PM", "OPEN"], { w: 0.95, h: 0.56, bg: "#ffffff", color: "#1a0905" });
+const slotBooked = makeLabel(["SAT 1 PM", "BOOKED ✓"], { w: 0.95, h: 0.56, bg: "#ff5c39", color: "#ffffff" });
+slotOpen.position.set(-0.3, 2.95, -1.6); slotBooked.position.set(-0.3, 2.95, -1.58); S.scene.add(slotOpen, slotBooked);
+const L = makeLockie(); L.root.scale.setScalar(0.6); S.scene.add(L.root);
+const sign = makeSign(["LINK IN BIO", "IS OPEN 24/7"], { w: 1.9, h: 0.9 }); S.scene.add(sign);
+const coin = makeCoin(); coin.scale.setScalar(0.6); S.scene.add(coin);
+const poof = makePoof(14, 21); S.scene.add(poof);
+const confetti = makeConfetti(80, 77); S.scene.add(confetti);
+
+const bub = bubbles([
+  { t0: 0.3, t1: 1.0, sfx: true, text: "bzzt!", anchor: () => V(1.5, 1.7, 0.2), rot: -8 },
+  { t0: 0.8, t1: 2.7, text: "▶ ıllıılıllıılı  4:32", anchor: () => V(1.4, 1.5, 0.2), align: 0.8, tail: "80%" },
+  { t0: 2.7, t1: 4.9, text: "…so it's a wolf. but also my nan 🐺👵", cls: "dark", anchor: () => V(1.4, 1.5, 0.2), align: 0.8, tail: "80%" },
+  { t0: 1.6, t1: 2.6, sfx: true, text: "z z z", anchor: () => V(-0.8, 1.95, 0.3), rot: -10 },
+  { t0: 3.4, t1: 4.6, sfx: true, text: "z z z", anchor: () => V(-0.8, 1.95, 0.3), rot: 8 },
+  { t0: 5.1, t1: 5.8, sfx: true, text: "POOF!", anchor: () => V(0.85, 1.6, 1.3), rot: 8 },
+  { t0: 10.3, t1: 11.1, sfx: true, text: "CLICK!", anchor: () => V(0.85, 1.8, 1.3), rot: -6 },
+  { t0: 13.8, t1: 15.4, text: "wait… i'm booked?? 😳", anchor: () => V(0.85, 2.0, 0.6), align: 0.15, tail: "15%" },
+]);
+
+window.DUR = 18.8;
+window.render = (t) => {
+  captions(t, [
+    { t0: 0, t1: 2.7, html: "3:07 AM. A <em>4-minute voice note.</em>" },
+    { t0: 2.7, t1: 5.1, html: "You're asleep. <em>Good.</em>" },
+    { t0: 5.3, t1: 8.4, html: "The link in your bio <em>never sleeps.</em>" },
+    { t0: 8.4, t1: 12.0, html: "They pick a slot. <em>They pay the deposit.</em>" },
+    { t0: 12.0, t1: 15.6, html: "9 AM. <em>You wake up booked.</em>" },
+  ]);
+  S.aim(V(0, 2.6, 13), V(0, 1.95, 0));
+  const dawn = E.inOut(prog(t, 12.2, 13.2));
+  document.getElementById("night").style.opacity = 1 - dawn;
+  sky.material.color.setHex(0x1c2458).lerp(new THREE.Color(0x9fd4ff), dawn);
+  moon.material.color.setHex(0xfff4c8).lerp(new THREE.Color(0xffc53d), dawn); moon.scale.setScalar(1 + dawn * 0.4);
+  clock.userData.setTime(3 * 60 + 7 + keys(t, [[0, 0], [12.0, 3], [13.2, 353], [20, 355]]));
+
+  // The artist sleeps through it all, then sits up.
+  const up = E.inOut(prog(t, 13.0, 13.6));
+  hip.rotation.z = lerp(Math.PI / 2, 0.08, up);
+  // The duvet flattens as they sit up.
+  blanket.scale.y = lerp(1, 0.5, up); blanket.position.y = lerp(1.15, 0.9, up);
+  const breathe = Math.sin(t * 2.2) * 0.03;
+  const stretch = E.back(prog(t, 13.6, 13.9)) * (1 - prog(t, 15.3, 15.6));
+  A.pose({ blink: t < 13.3 ? 1 : blinkAt(t, 0.4), mouth: t < 13.3 ? "o" : "smile", squash: t < 13 ? breathe : 0, lookX: 0.5, lookY: 0.2,
+    armL: t < 13 ? 0.1 : 0.15 + stretch * 2.4, armR: t < 13 ? 0.1 : 0.15 + stretch * 2.4 });
+
+  phone.userData.show(t < 5.0 ? 0 : 1);
+  phone.position.x = 1.5 + (t > 0.3 && t < 2.7 && Math.floor(t * 14) % 2 ? 0.015 : 0);
+
+  // Lockie on night shift: shades on, sign up, locks the booking in.
+  const drop = prog(t, 4.9, 5.25);
+  L.root.visible = t > 4.9;
+  const landK = t > 5.25 ? Math.exp(-(t - 5.25) * 6) * Math.cos((t - 5.25) * 18) : 0;
+  const signUp = E.back(prog(t, 5.5, 5.85)) * (1 - E.inOut(prog(t, 8.2, 8.5)));
+  const point = E.back(prog(t, 8.5, 8.8)) * (1 - prog(t, 11.6, 11.9));
+  const click = t > 10.3 ? Math.exp(-(t - 10.3) * 7) : 0;
+  const dance = prog(t, 14.0, 14.2) * (1 - prog(t, 15.4, 15.6));
+  L.root.position.set(0.85, (1 - E.out(drop)) * 4.5 + dance * Math.abs(Math.sin(t * 9)) * 0.2, 1.3);
+  L.shades.visible = t < 13.2;
+  L.pose({ squash: landK * 0.8 + click * 0.5, open: t < 10.3 ? 1 : 1 - E.out(prog(t, 10.3, 10.45)), armR: 0.25 + signUp * 1.2 + dance * 2, armL: 0.25 + point * 2.2 + dance * 2,
+    lookX: point > 0.3 ? -0.4 : 0.2, lookY: point > 0.3 ? 0.7 : 0, blink: blinkAt(t, 1.3), tilt: dance * Math.sin(t * 9) * 0.15, mouth: click > 0.3 ? "o" : "smile" });
+  poof.position.set(0.85, 1.0, 1.4); poof.userData.at(prog(t, 5.0, 5.8));
+  sign.visible = signUp > 0.01;
+  sign.position.set(1.25, 1.0, 1.6); sign.scale.setScalar(0.52 * signUp); sign.rotation.z = -0.08 + Math.sin(t * 3) * 0.03;
+
+  // The booking lands on the wall; the deposit floats in through the window.
+  const bk = E.back(prog(t, 9.0, 9.3));
+  slotOpen.visible = bk < 0.5; slotBooked.visible = t > 9.0; slotBooked.scale.setScalar(Math.max(0.01, bk));
+  slotOpen.visible = slotOpen.visible && t > 8.4; slotBooked.visible = slotBooked.visible && t > 8.4;
+  const ck = prog(t, 9.4, 10.2);
+  coin.visible = ck > 0 && ck < 1;
+  coin.position.set(lerp(0.75, 1.45, ck), lerp(2.85, 0.45, E.inOut(ck)) + Math.sin(ck * Math.PI) * 0.5, lerp(-1.4, 0.85, ck)); coin.rotation.y = ck * 16;
+  jar.userData.fill(t < 10.2 ? 1 : 2);
+
+  confetti.position.set(0.2, 1.9, 0.6); confetti.userData.at(t - 14.0);
+  showBubbles(t, bub, S.toScreen);
+  outro(t, 15.6, { h: "They book at 3 AM.<br>You sleep.", p: "Booking + deposits for tattoo artists.<br>Free for founding artists." });
+  S.frame();
+};
+render(0);
+window.READY = true;
+</script></body></html>

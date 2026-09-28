@@ -69,6 +69,11 @@ Add every new episode here so ideas never repeat.
 | 2026-09-23 | ghosted | No-deposit client vanishes at 2pm; Lockie's "DEPOSIT FIRST" sign scares the ghost off | Ghost-proof your books. |
 | 2026-09-23 | bouncer | Lockie bounces "I'll pay later" at the calendar's velvet rope | Hire the bouncer. |
 | 2026-09-23 | flood | DM bubbles bury the artist; Lockie bursts out with one link | One link. Zero chaos. |
+| 2026-09-28 | walkin | Walk-in wants "just a quick one? right now?" mid-session; Lockie shows the next real opening, they book 4:30 PM with a deposit and come back right on time | Walk-ins welcome. At 4:30. |
+| 2026-09-28 | bridal | A bridal party of six (bride in a veil + five bridesmaids); one link, the board fills as each books and pays her own deposit | Six in the party. Six deposits. |
+| 2026-09-28 | voicenote | 3:07 AM 4-minute voice note ("a wolf but also my nan"); the artist sleeps while night-shift Lockie's link books Sat 1 PM, deposit floats in the window; wakes up booked | They book at 3 AM. You sleep. |
+| 2026-09-28 | ghostback | March's no-show ghost is back ("hey stranger u free sat?"); bouncer Lockie says DEPOSIT FIRST; the ghost pays and turns into a real client | Ghosts welcome. Deposits first. |
+| 2026-09-28 | vacation | Tech on the beach with cucumbers and a drink; pink Lockie flips BOOKS CLOSED to JOIN THE WAITLIST, tickets #1-#3; a week later BOOKS OPEN and the waitlist books with deposits | Go on vacation. Come back booked. |
 | 2026-09-27 | fivemin | "5 min away" for 45 minutes while a tumbleweed rolls by; pink Lockie shows the late policy and the deposit already paid | "5 min away"? Deposit's paid. |
 | 2026-09-27 | cousin | "Discount if I bring my cousin?" becomes a tower of five cousins; prices on the page, each books and pays their own deposit | Cousins welcome. Deposits too. |
 | 2026-09-27 | beforeafter | Split screen, same artist: DM chaos and no-shows vs. one link, deposits and a locked calendar | Pick a side. (the right one) |
@@ -88,11 +93,6 @@ Add every new episode here so ideas never repeat.
 | 2026-09-24 | squeeze | Nail tech at 7pm buried in "can u squeeze me in??"; pink Lockie shows the next real opening, client books, tech goes spa mode | Squeeze-ins? Not anymore. |
 
 ## Idea backlog
-
-- The walk-in who wants "just a quick one" right now; Lockie shows the next real opening today
-- A bridal party of 6 wants nails at 7am on the wedding day; each bridesmaid books her own slot
-- The client who DMs a 3am voice note; Lockie answers with the booking link
-
 
 - Aftercare: Lockie as a tiny nurse reminding the client "no pool for 2 weeks"
 
