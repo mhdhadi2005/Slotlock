@@ -1,0 +1,96 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/lib.css"><link rel="stylesheet" href="/ui.css"><script src="/lib.js"></script>
+<script type="importmap">{ "imports": { "three": "/three.js", "three/addons/": "/addons/" } }</script>
+</head><body><div id="gl"></div><div id="bubbles"></div>
+<script type="module">
+import { THREE, setup, mesh, toon, flat, makeLockie, makeArtist, makeBlob, makeCoin, makeJar, makePhone, makeSign, makeLabel, makeHeart, makeRingLight, makeConfetti, makePoof, blinkAt, BLOB_COLORS } from "/kit.js";
+import { bubbles, showBubbles } from "/ui.js";
+base();
+await document.fonts.load("900 40px 'Bricolage Grotesque'"); await document.fonts.load("700 40px 'Inter'");
+const S = setup({ camPos: [0, 2.6, 13], look: [0, 1.95, 0] });
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+
+const A = makeArtist(); A.root.position.set(-1.25, 0, 0.1); S.scene.add(A.root);
+const inf = makeBlob(BLOB_COLORS[4], 0.9); S.scene.add(inf.root);
+const ring = makeRingLight(); ring.scale.setScalar(0.8); S.scene.add(ring);
+const cam = makePhone([{ lines: ["● REC"], bg: "#1b1816", color: "#ff4d4d" }, { lines: ["$60", "DEPOSIT"] }, { lines: ["SENT", "✓"], bg: "#e6fff1", color: "#128a52" }, { lines: ["● LIVE"], bg: "#ff4d6d", color: "#ffffff" }]); S.scene.add(cam);
+const followers = makeLabel(["900 FOLLOWERS"], { w: 1.2, h: 0.3, bg: "#ffffff", color: "#1a0905" }); S.scene.add(followers);
+const L = makeLockie(); L.root.scale.setScalar(0.8); S.scene.add(L.root);
+const sign = makeSign(["EXPOSURE", "≠ DEPOSIT"], { w: 1.6, h: 0.9 }); S.scene.add(sign);
+const jar = makeJar("DEPOSITS"); jar.position.set(-0.95, 0, 1.35); jar.scale.setScalar(0.7); jar.userData.fill(2); S.scene.add(jar);
+const coin = makeCoin(); coin.scale.setScalar(0.7); S.scene.add(coin);
+const hearts = [0, 1, 2, 3, 4, 5, 6].map(() => { const h = makeHeart(0xff4d6d); h.scale.setScalar(0.22); S.scene.add(h); return h; });
+const poof = makePoof(14, 71); S.scene.add(poof);
+const confetti = makeConfetti(90, 73); S.scene.add(confetti);
+const IX = 1.1;
+
+const bub = bubbles([
+  { t0: 0.5, t1: 1.8, text: "hiii besties 🤳", anchor: () => V(IX, 1.45, 0.7), align: 0.75, tail: "75%" },
+  { t0: 1.8, t1: 3.3, text: "free tattoo for a shoutout? 💅", anchor: () => V(IX, 1.45, 0.7), align: 0.75, tail: "75%" },
+  { t0: 3.4, t1: 5.2, text: "my rent is $2,400 😐", cls: "dark", anchor: () => V(-1.25, 2.55, 0.1), align: 0.25, tail: "25%" },
+  { t0: 5.3, t1: 6.0, sfx: true, text: "POOF!", anchor: () => V(0.05, 1.9, 1.0), rot: 8 },
+  { t0: 7.6, t1: 8.8, text: "…fine 🙄", anchor: () => V(IX, 1.45, 0.7), align: 0.75, tail: "75%" },
+  { t0: 11.1, t1: 11.8, sfx: true, text: "CLICK!", anchor: () => V(0.05, 1.9, 1.0), rot: -6 },
+  { t0: 12.0, t1: 14.6, text: "just booked my tattoo!! link in bio 🔒✨", anchor: () => V(IX, 1.45, 0.7), align: 0.75, tail: "75%" },
+]);
+
+window.DUR = 18.8;
+window.render = (t) => {
+  captions(t, [
+    { t0: 0, t1: 3.3, html: "“Free tattoo? <em>I'll give you a shoutout.</em>” 🤳" },
+    { t0: 3.3, t1: 5.3, html: "Exposure doesn't <em>pay rent.</em>" },
+    { t0: 5.5, t1: 8.8, html: "Everyone pays the deposit. <em>Even influencers.</em>" },
+    { t0: 8.8, t1: 11.8, html: "Deposit sent. <em>Slot locked.</em>" },
+    { t0: 11.8, t1: 15.6, html: "And they post about it <em>anyway.</em> 📸" },
+  ]);
+  S.aim(V(0, 2.6, 13), V(0, 1.95, 0));
+
+  // The influencer and their ring light.
+  const cin = E.out(prog(t, 0.1, 0.6));
+  const party = prog(t, 12.0, 12.2) * (1 - prog(t, 15.3, 15.5));
+  inf.root.position.set(lerp(3.2, IX, cin), (cin < 1 ? Math.abs(Math.sin(t * 11)) * 0.15 : 0) + party * Math.abs(Math.sin(t * 9)) * 0.16, 0.7);
+  ring.position.set(lerp(3.8, 1.55, cin), 0, -0.7);
+  const pout = t > 5.6 && t < 8.8;
+  const filming = t < 3.3 || t > 11.8;
+  inf.pose({ blink: pout ? 0.45 : blinkAt(t, 1.7), lookX: t < 3.3 || t > 11.8 ? 0 : -0.7, lookY: filming ? 0.2 : 0, mouth: pout ? "flat" : "smile", tilt: party * Math.sin(t * 9) * 0.1, armL: filming || (t > 9.0 && t < 10.4) ? 1.4 : 0.3, armR: 0.3 + party * 1.5 });
+  cam.visible = cin > 0.9;
+  cam.position.set(IX - 0.6, 1.0 + (filming ? Math.sin(t * 4) * 0.03 : 0), 1.15); cam.scale.setScalar(0.8); cam.rotation.set(-0.05, 0.25, 0.08);
+  cam.userData.show(t < 9.0 ? 0 : t < 9.8 ? 1 : t < 11.8 ? 2 : 3);
+  followers.visible = t > 2.0 && t < 5.4; followers.position.set(IX, 2.35 + Math.sin(t * 3) * 0.04, 0.6); followers.scale.setScalar(Math.max(0.01, E.back(prog(t, 2.0, 2.3))));
+  hearts.forEach((h, i) => {
+    const k = prog(t, 12.2 + i * 0.35, 13.8 + i * 0.35);
+    h.visible = k > 0 && k < 1;
+    h.position.set(IX - 0.45 + Math.sin(k * 6 + i) * 0.25, 1.5 + k * 2.0, 1.2); h.scale.setScalar(0.22 * (1 - k * 0.4)); h.rotation.z = Math.sin(k * 8 + i) * 0.3;
+  });
+  const ck = prog(t, 9.9, 10.5);
+  coin.visible = ck > 0 && ck < 1;
+  coin.position.set(lerp(0.7, -0.95, ck), lerp(1.3, 0.7, ck) + Math.sin(ck * Math.PI) * 1.3, lerp(1.1, 1.35, ck)); coin.rotation.y = ck * 16;
+  jar.userData.fill(t < 10.5 ? 2 : 3);
+
+  // The artist: deadpan, then happy.
+  const dead = t > 1.8 && t < 10.5;
+  const cheer = E.back(prog(t, 12.1, 12.4)) * (1 - prog(t, 15.3, 15.6));
+  A.pose({ blink: dead ? 0.45 : blinkAt(t, 0.6), mouth: dead ? "flat" : "smile", lookX: 0.8, headTilt: dead ? -0.1 : 0,
+    armL: 0.15 + (dead ? 0.5 : 0) + cheer * 2.4, armLx: dead ? -1.1 : 0, armR: 0.15 + (dead ? 0.5 : 0) + cheer * 2.4, armRx: dead ? -1.1 : 0 });
+
+  // Lockie in shades with the house rule.
+  const drop = prog(t, 5.1, 5.45);
+  L.root.visible = t > 5.1;
+  const landK = t > 5.45 ? Math.exp(-(t - 5.45) * 6) * Math.cos((t - 5.45) * 18) : 0;
+  const signUp = E.back(prog(t, 5.7, 6.05)) * (1 - E.inOut(prog(t, 8.6, 8.9)));
+  const click = t > 11.1 ? Math.exp(-(t - 11.1) * 7) : 0;
+  L.root.position.set(0.05, (1 - E.out(drop)) * 4.5 + party * Math.abs(Math.sin(t * 9 + 1)) * 0.18, 1.0);
+  L.shades.visible = t > 5.1 && t < 11.1;
+  L.pose({ squash: landK * 0.8 + click * 0.5, open: t < 11.1 ? 1 : 1 - E.out(prog(t, 11.1, 11.25)), armR: 0.25 + signUp * 2.3 + party * 2, armL: 0.25 + party * 2,
+    blink: blinkAt(t, 1.2), lookX: 0.6, mouth: click > 0.3 ? "o" : "smile", tilt: party * Math.sin(t * 9) * 0.15 });
+  poof.position.set(0.05, 1.0, 1.1); poof.userData.at(prog(t, 5.2, 6.0));
+  sign.visible = signUp > 0.01;
+  sign.position.set(0.2, 1.45, 1.2); sign.scale.setScalar(0.6 * signUp); sign.rotation.z = -0.06 + Math.sin(t * 3) * 0.03;
+
+  confetti.position.set(0, 1.6, 0.6); confetti.userData.at(t - 12.1);
+  showBubbles(t, bub, S.toScreen);
+  outro(t, 15.6, { h: "Exposure's cute.<br>Deposits pay rent.", p: "Booking + deposits for tattoo artists.<br>Free for founding artists." });
+  S.frame();
+};
+render(0);
+window.READY = true;
+</script></body></html>

@@ -624,3 +624,35 @@ export function makeUmbrella(a = 0xff8fb1, b = 0xffffff) {
   const tip = mesh(new THREE.SphereGeometry(0.06, 10, 8), toon(0xd9d2c8), 0.01); tip.position.y = 2.62; g.add(tip);
   return g;
 }
+
+// Nurse cap with a red cross. Origin at the brim; sit it on top of a head.
+export function makeNurseCap() {
+  const g = new THREE.Group();
+  const cap = mesh(new RoundedBoxGeometry(0.62, 0.26, 0.34, 3, 0.08), toon(0xffffff), 0.018); cap.position.y = 0.13; g.add(cap);
+  for (const [w, h] of [[0.16, 0.05], [0.05, 0.16]]) { const c = new THREE.Mesh(new THREE.PlaneGeometry(w, h), flat(0xe0453a)); c.position.set(0, 0.14, 0.172); g.add(c); }
+  return g;
+}
+// Inflatable pool ring, striped. Lies flat; origin at its centre.
+export function makeFloaty(a = 0xff8fb1, b = 0xffffff) {
+  const c = document.createElement("canvas"); c.width = 256; c.height = 16; const x = c.getContext("2d");
+  for (let i = 0; i < 8; i++) { x.fillStyle = "#" + (i % 2 ? b : a).toString(16).padStart(6, "0"); x.fillRect(i * 32, 0, 32, 16); }
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+  const m = mesh(new THREE.TorusGeometry(0.42, 0.16, 16, 40), toon(0xffffff, { map: tex }), 0.02); m.rotation.x = Math.PI / 2;
+  const g = new THREE.Group(); g.add(m); return g;
+}
+// Ring light on a stand (for the influencer). Origin at the foot.
+export function makeRingLight() {
+  const g = new THREE.Group();
+  const pole = mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.9, 8), toon(0x2a2420), 0.012); pole.position.y = 0.95; g.add(pole);
+  const foot = mesh(new THREE.CylinderGeometry(0.3, 0.34, 0.05, 20), toon(0x2a2420), 0.012); foot.position.y = 0.03; g.add(foot);
+  const ring = mesh(new THREE.TorusGeometry(0.42, 0.06, 12, 40), toon(0xffffff, { emissive: 0xfff2d0 }), 0.018); ring.position.y = 2.2; g.add(ring);
+  return g;
+}
+// Paper shopping bag with rope handles.
+export function makeShoppingBag(color = 0xff8fb1, label = "") {
+  const g = new THREE.Group();
+  const bag = mesh(new THREE.BoxGeometry(0.42, 0.5, 0.2), toon(color), 0.015); bag.position.y = 0.25; g.add(bag);
+  const h = mesh(new THREE.TorusGeometry(0.1, 0.015, 6, 16, Math.PI), toon(0x2a1a12), 0.006); h.position.y = 0.5; g.add(h);
+  if (label) { const l = new THREE.Mesh(new THREE.PlaneGeometry(0.36, 0.16), new THREE.MeshBasicMaterial({ map: textTexture("", { w: 256, h: 112, font: "900 64px 'Bricolage Grotesque'", color: "#ffffff", bg: null, lines: [label] }), transparent: true })); l.position.set(0, 0.28, 0.101); g.add(l); }
+  return g;
+}

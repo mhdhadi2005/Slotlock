@@ -69,6 +69,11 @@ Add every new episode here so ideas never repeat.
 | 2026-09-23 | ghosted | No-deposit client vanishes at 2pm; Lockie's "DEPOSIT FIRST" sign scares the ghost off | Ghost-proof your books. |
 | 2026-09-23 | bouncer | Lockie bounces "I'll pay later" at the calendar's velvet rope | Hire the bouncer. |
 | 2026-09-23 | flood | DM bubbles bury the artist; Lockie bursts out with one link | One link. Zero chaos. |
+| 2026-09-29 | holdexpire | "Hold Saturday? I get paid Friday"; the hold's hourglass runs out while Jay goes shopping, the slot reopens and the next client books with a deposit | Holds expire. Deposits don't. |
+| 2026-09-29 | forgot | 2 PM lash fill, nobody shows ("omg i totally forgot"); REWIND, pink Lockie's day-before reminder email, the client arrives right on time | They forget. Slotlock doesn't. |
+| 2026-09-29 | influencer | "Free tattoo for a shoutout? I have 900 followers"; bouncer Lockie's EXPOSURE ≠ DEPOSIT, they pay, then post about it anyway | Exposure's cute. Deposits pay rent. |
+| 2026-09-29 | oldprices | Client waves a 2019 price screenshot ("full set is $25 right?"); pink Lockie shows today's prices and stamps it OUTDATED; they book at $65 with a deposit | Prices from 2019? Not on your page. |
+| 2026-09-29 | aftercare | Fresh tattoo, then "pool party tonight"; nurse Lockie brings the aftercare email (no pool, no sun, wash + moisturize), the floaty deflates; 2 weeks later, cannonball | Aftercare sent. Tattoo saved. |
 | 2026-09-28 | walkin | Walk-in wants "just a quick one? right now?" mid-session; Lockie shows the next real opening, they book 4:30 PM with a deposit and come back right on time | Walk-ins welcome. At 4:30. |
 | 2026-09-28 | bridal | A bridal party of six (bride in a veil + five bridesmaids); one link, the board fills as each books and pays her own deposit | Six in the party. Six deposits. |
 | 2026-09-28 | voicenote | 3:07 AM 4-minute voice note ("a wolf but also my nan"); the artist sleeps while night-shift Lockie's link books Sat 1 PM, deposit floats in the window; wakes up booked | They book at 3 AM. You sleep. |
@@ -94,6 +99,7 @@ Add every new episode here so ideas never repeat.
 
 ## Idea backlog
 
-- Aftercare: Lockie as a tiny nurse reminding the client "no pool for 2 weeks"
-
 - Client asks to move the appointment 6 times
+- The client who wants to split a 6-hour session into twelve 30-minute ones
+- Lash client who falls asleep on the bed and wakes up asking for the next slot
+- "Are you open on Christmas?" ×20 in December; the page only shows days you actually have open

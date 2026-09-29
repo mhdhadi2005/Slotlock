@@ -1,0 +1,111 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/lib.css"><link rel="stylesheet" href="/ui.css"><script src="/lib.js"></script>
+<script type="importmap">{ "imports": { "three": "/three.js", "three/addons/": "/addons/" } }</script>
+</head><body><div id="gl"></div><div id="bubbles"></div>
+<script type="module">
+import { THREE, setup, mesh, toon, flat, makeLockie, makeArtist, makeBlob, makeCoin, makeJar, makePhone, makeLabel, makeHourglass, makeShoppingBag, makeConfetti, makePoof, blinkAt, BLOB_COLORS } from "/kit.js";
+import { bubbles, showBubbles } from "/ui.js";
+base();
+await document.fonts.load("900 40px 'Bricolage Grotesque'"); await document.fonts.load("700 40px 'Inter'");
+const S = setup({ camPos: [0, 2.6, 13], look: [0, 1.95, 0] });
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+
+const A = makeArtist(); A.root.position.set(-1.25, 0, 0.1); S.scene.add(A.root);
+const jay = makeBlob(BLOB_COLORS[3], 0.85); S.scene.add(jay.root);
+const bags = [makeShoppingBag(0xff8fb1, "SALE"), makeShoppingBag(0x8fc1ff, "NEW"), makeShoppingBag(0x9fd8a8, "👟")];
+bags.forEach((b, i) => { b.scale.setScalar(1.35); b.position.set([-0.7, 0.72, 1.05][i], 0, [0.35, 0.35, 0.1][i]); b.rotation.z = [0.12, -0.12, 0][i]; b.rotation.y = [0.3, -0.3, -0.4][i]; jay.root.add(b); });
+const next = makeBlob(BLOB_COLORS[5], 0.85); S.scene.add(next.root);
+const L = makeLockie(); L.root.scale.setScalar(0.8); S.scene.add(L.root);
+const jar = makeJar("DEPOSITS"); jar.position.set(-0.95, 0, 1.35); jar.scale.setScalar(0.7); jar.userData.fill(2); S.scene.add(jar);
+const hg = makeHourglass(); S.scene.add(hg);
+const TILES = [[["SAT 3 PM", "OPEN"], "#ffffff", "#1a0905"], [["SAT 3 PM", "HELD · JAY"], "#ffc53d", "#1a0905"], [["HOLD", "EXPIRED"], "#3a1414", "#ff8a80"], [["SAT 3 PM", "OPEN"], "#ffffff", "#1a0905"], [["SAT 3 PM", "BOOKED ✓"], "#ff5c39", "#ffffff"]];
+const tiles = TILES.map(([lines, bg, color]) => { const m = makeLabel(lines, { w: 1.3, h: 0.72, bg, color }); m.position.set(-0.15, 3.0, -1.6); S.scene.add(m); return m; });
+const TILE_AT = [0, 2.9, 9.6, 10.4, 12.1];
+const days = [makeLabel(["TODAY: THU"], { w: 1.1, h: 0.26, bg: null, color: "#998f84" }), makeLabel(["TODAY: FRI"], { w: 1.1, h: 0.26, bg: null, color: "#ffc53d" })];
+days.forEach((d) => { d.position.set(-0.15, 3.55, -1.6); S.scene.add(d); });
+const phone = makePhone([{ lines: ["SAT", "3 PM"] }, { lines: ["$50", "DEPOSIT"] }, { lines: ["SENT", "✓"], bg: "#e6fff1", color: "#128a52" }]); S.scene.add(phone);
+const pay = [0, 1, 2, 3, 4].map(() => { const c = makeCoin(); c.scale.setScalar(0.55); S.scene.add(c); return c; });
+const coin = makeCoin(); coin.scale.setScalar(0.7); S.scene.add(coin);
+const poof = makePoof(14, 51); S.scene.add(poof);
+const confetti = makeConfetti(90, 53); S.scene.add(confetti);
+
+const bub = bubbles([
+  { t0: 0.6, t1: 2.3, text: "hold sat for me? i get paid friday 🙏", anchor: () => V(1.25, 1.35, 0.8), align: 0.8, tail: "80%" },
+  { t0: 2.4, t1: 3.0, sfx: true, text: "POOF!", anchor: () => V(0.1, 1.9, 1.0), rot: 8 },
+  { t0: 5.2, t1: 6.1, sfx: true, text: "PAYDAY!", anchor: () => V(1.25, 2.1, 0.8), rot: -6 },
+  { t0: 8.0, t1: 9.4, text: "got new sneakers tho 👟", anchor: () => V(1.25, 1.35, 0.8), align: 0.8, tail: "80%" },
+  { t0: 9.5, t1: 10.2, sfx: true, text: "DING!", anchor: () => V(1.05, 3.4, -1.4), rot: 6 },
+  { t0: 12.1, t1: 12.8, sfx: true, text: "CLICK!", anchor: () => V(0.1, 1.9, 1.0), rot: -6 },
+  { t0: 13.0, t1: 14.6, text: "wait… my slot?? 😭", cls: "dark", anchor: () => V(1.6, 1.2, -0.4), align: 0.8, tail: "80%" },
+]);
+
+window.DUR = 18.8;
+window.render = (t) => {
+  captions(t, [
+    { t0: 0, t1: 2.4, html: "“Hold Saturday? <em>I get paid Friday.</em>” 🙏" },
+    { t0: 2.4, t1: 5.0, html: "Slotlock holds it. <em>With a timer.</em> ⏳" },
+    { t0: 5.0, t1: 9.4, html: "Friday. Payday. <em>…shopping spree.</em> 🛍️" },
+    { t0: 9.4, t1: 12.4, html: "No deposit? The hold expires. <em>The slot opens up.</em>" },
+    { t0: 12.4, t1: 15.6, html: "Next client pays. <em>Saturday's booked.</em>" },
+  ]);
+  S.aim(V(0, 2.6, 13), V(0, 1.95, 0));
+  let st = 0; TILE_AT.forEach((a, i) => { if (t >= a) st = i; });
+  tiles.forEach((m, i) => { m.visible = i === st; m.scale.setScalar(i === st && i > 0 ? E.back(prog(t, TILE_AT[i], TILE_AT[i] + 0.3)) : 1); });
+  days[0].visible = t < 5.0; days[1].visible = t >= 5.0;
+  const hk = E.back(prog(t, 3.0, 3.3)) * (1 - prog(t, 10.2, 10.5));
+  hg.visible = hk > 0.01; hg.position.set(1.05, 2.55, -1.6); hg.scale.setScalar(0.55 * hk); hg.rotation.z = t > 9.5 && t < 10.2 ? Math.sin(t * 40) * 0.08 : 0;
+  hg.userData.at(prog(t, 3.3, 9.5));
+
+  // Jay: asks for a hold, gets paid, goes shopping, comes back, loses the slot.
+  const cin = E.out(prog(t, 0.1, 0.6));
+  const off = E.inOut(prog(t, 6.2, 6.7)), back = E.out(prog(t, 7.3, 7.8));
+  const aside = E.inOut(prog(t, 10.0, 10.5));
+  let jx = lerp(3.2, 1.25, cin);
+  if (t > 6.2) jx = lerp(1.25, 3.4, off);
+  if (t > 7.3) jx = lerp(3.4, 1.05, back);
+  jx = lerp(jx, 1.6, aside);
+  const walking = (cin > 0 && cin < 1) || (off > 0 && off < 1) || (back > 0 && back < 1);
+  jay.root.position.set(jx, walking ? Math.abs(Math.sin(t * 11)) * 0.15 : 0, lerp(0.8, -0.4, aside));
+  bags.forEach((b) => { b.visible = t > 7.0; });
+  const sad = t > 12.8;
+  jay.pose({ blink: blinkAt(t, 1.7), lookX: -0.7, mouth: sad ? "o" : "smile", armL: 0.3 + (t < 2.3 ? 1.1 + Math.sin(t * 6) * 0.2 : 0) + (t > 5.2 && t < 6.1 ? 1.8 : 0), armR: 0.3 + (t > 5.2 && t < 6.1 ? 1.8 : 0) });
+  pay.forEach((c, i) => { const k = prog(t, 5.1 + i * 0.12, 5.6 + i * 0.12); c.visible = k > 0 && k < 1; c.position.set(1.25 + (i - 2) * 0.25, lerp(4.2, 0.7, k * k), 0.9); c.rotation.y = k * 12; });
+
+  // The next client books the freed slot and pays.
+  const nin = E.out(prog(t, 10.4, 10.9));
+  next.root.visible = t > 10.4;
+  const party = prog(t, 12.4, 12.6) * (1 - prog(t, 15.3, 15.5));
+  next.root.position.set(lerp(3.2, 1.0, nin), (nin < 1 ? Math.abs(Math.sin(t * 11)) * 0.15 : 0) + party * Math.abs(Math.sin(t * 9)) * 0.18, 1.0);
+  const tapping = t > 11.0 && t < 11.6;
+  next.pose({ blink: blinkAt(t, 2.2), lookX: -0.7, mouth: "smile", armL: 0.3 + (tapping ? 1.1 + Math.abs(Math.sin(t * 20)) * 0.2 : 0) + party * 1.5, armR: 0.3 + party * 1.5 });
+  const pk = E.out(prog(t, 10.9, 11.1)) * (1 - prog(t, 12.0, 12.2));
+  phone.visible = pk > 0.01; phone.position.set(0.95, 2.2, 1.1); phone.scale.setScalar(1.2 * pk); phone.rotation.set(-0.1, -0.2, 0);
+  phone.userData.show(t < 11.3 ? 0 : t < 11.6 ? 1 : 2);
+  const ck = prog(t, 11.5, 12.0);
+  coin.visible = ck > 0 && ck < 1;
+  coin.position.set(lerp(0.9, -0.95, ck), lerp(1.0, 0.7, ck) + Math.sin(ck * Math.PI) * 1.4, lerp(1.0, 1.35, ck)); coin.rotation.y = ck * 16;
+  jar.userData.fill(t < 12.0 ? 2 : 3);
+
+  // The artist: patient, side-eyeing the bags, then happy.
+  const cheer = E.back(prog(t, 12.5, 12.8)) * (1 - prog(t, 15.3, 15.6));
+  const eye = t > 7.8 && t < 9.5;
+  A.pose({ blink: eye ? 0.45 : blinkAt(t, 0.6), mouth: eye ? "flat" : "smile", lookX: 0.8, headTilt: eye ? -0.12 : 0, armL: 0.15 + cheer * 2.4, armR: 0.15 + cheer * 2.4 });
+
+  // Lockie sets the hold, flips it back when it runs out, and locks the new booking.
+  const drop = prog(t, 2.3, 2.65);
+  L.root.visible = t > 2.3;
+  const landK = t > 2.65 ? Math.exp(-(t - 2.65) * 6) * Math.cos((t - 2.65) * 18) : 0;
+  const point = E.back(prog(t, 2.8, 3.1)) * (1 - prog(t, 4.6, 4.9)) + E.back(prog(t, 9.6, 9.9)) * (1 - prog(t, 10.6, 10.9));
+  const click = t > 12.1 ? Math.exp(-(t - 12.1) * 7) : 0;
+  L.root.position.set(0.1, (1 - E.out(drop)) * 4.5 + party * Math.abs(Math.sin(t * 9 + 1)) * 0.18, 1.0);
+  L.pose({ squash: landK * 0.8 + click * 0.5, open: t < 12.1 ? 1 : 1 - E.out(prog(t, 12.1, 12.25)), armL: 0.25 + point * 2.2 + party * 2, armR: 0.25 + party * 2,
+    lookX: point > 0.3 ? -0.2 : 0.5, lookY: point > 0.3 ? 0.7 : 0, blink: blinkAt(t, 1.2), mouth: click > 0.3 ? "o" : "smile", tilt: party * Math.sin(t * 9) * 0.15 });
+  poof.position.set(0.1, 1.0, 1.1); poof.userData.at(prog(t, 2.4, 3.2));
+
+  confetti.position.set(0, 1.8, 0.6); confetti.userData.at(t - 12.5);
+  showBubbles(t, bub, S.toScreen);
+  outro(t, 15.6, { h: "Holds expire.<br>Deposits don't.", p: "Booking + deposits for tattoo artists.<br>Free for founding artists." });
+  S.frame();
+};
+render(0);
+window.READY = true;
+</script></body></html>
