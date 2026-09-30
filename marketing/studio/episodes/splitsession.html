@@ -1,0 +1,111 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/lib.css"><link rel="stylesheet" href="/ui.css"><script src="/lib.js"></script>
+<script type="importmap">{ "imports": { "three": "/three.js", "three/addons/": "/addons/" } }</script>
+</head><body><div id="gl"></div><div id="bubbles"></div>
+<script type="module">
+import { THREE, setup, mesh, toon, flat, textTexture, makeLockie, makeArtist, makeBlob, makeCoin, makeClock, makeJar, makePhone, makeSign, makeLabel, makeConfetti, makePoof, blinkAt, rng, BLOB_COLORS } from "/kit.js";
+import { bubbles, showBubbles } from "/ui.js";
+base();
+await document.fonts.load("900 40px 'Bricolage Grotesque'"); await document.fonts.load("700 40px 'Inter'");
+const S = setup({ camPos: [0, 2.6, 13], look: [0, 1.95, 0] });
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+
+const A = makeArtist(); A.root.position.set(-1.25, 0, 0.1); S.scene.add(A.root);
+const C = makeBlob(BLOB_COLORS[5], 0.85); S.scene.add(C.root);
+const L = makeLockie(); L.root.scale.setScalar(0.8); S.scene.add(L.root);
+const jar = makeJar("DEPOSITS"); jar.position.set(-0.95, 0, 1.35); jar.scale.setScalar(0.7); jar.userData.fill(2); S.scene.add(jar);
+const clock = makeClock(); clock.position.set(1.35, 3.55, -1.6); clock.scale.setScalar(0.55); S.scene.add(clock);
+// The back piece design, cut into 12 tiles (4 × 3) that can fly apart.
+const W = 1.8, H = 1.2, COLS = 4, ROWS = 3;
+const tex = textTexture("", { w: 600, h: 400, font: "900 300px 'Bricolage Grotesque'", color: "#1a0905", bg: "#fbf5ea", radius: 24, lines: ["🐉"] });
+const title = makeLabel(["BACK PIECE"], { w: 1.4, h: 0.28, bg: null, color: "#f6f2eb" }); title.position.set(-0.2, 2.2, -1.6); S.scene.add(title);
+const r = rng(5);
+const tiles = [];
+for (let row = 0; row < ROWS; row++) for (let col = 0; col < COLS; col++) {
+  const g = new THREE.PlaneGeometry(W / COLS, H / ROWS);
+  const uv = g.attributes.uv;
+  for (let i = 0; i < uv.count; i++) uv.setXY(i, (col + uv.getX(i)) / COLS, (ROWS - 1 - row + uv.getY(i)) / ROWS);
+  const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide }));
+  const home = new THREE.Vector3(-0.2 + (col - 1.5) * W / COLS, 2.95 + (1 - row) * H / ROWS, -1.6);
+  const away = new THREE.Vector3(-0.2 + (col - 1.5) * 0.62 + (r() - 0.5) * 0.2, 2.6 + (1 - row) * 0.62 + (r() - 0.5) * 0.2, -1.2);
+  m.userData = { home, away, spin: (r() - 0.5) * 0.8 }; S.scene.add(m); tiles.push(m);
+}
+const chunks = makeLabel(["12 × 30 MIN"], { w: 1.2, h: 0.3, bg: "#3a1414", color: "#ff8a80" }); S.scene.add(chunks);
+const sign = makeSign(["BACK PIECE", "6 HRS · 1 DAY"], { w: 1.7, h: 0.95 }); S.scene.add(sign);
+const phone = makePhone([{ lines: ["BACK PIECE", "6 HRS"] }, { lines: ["SAT", "11 AM"] }, { lines: ["$100", "DEPOSIT"] }, { lines: ["BOOKED", "✓"], bg: "#e6fff1", color: "#128a52" }]); S.scene.add(phone);
+const ink = makeLabel(["🐉"], { w: 0.5, h: 0.5, bg: null, color: "#1a0905", font: "900 160px 'Bricolage Grotesque'" }); ink.position.set(0, 0.5, -0.47); ink.rotation.y = Math.PI; C.body.add(ink);
+const coin = makeCoin(); coin.scale.setScalar(0.7); S.scene.add(coin);
+const poof = makePoof(14, 141); S.scene.add(poof);
+const confetti = makeConfetti(90, 143); S.scene.add(confetti);
+const CX = 1.0;
+
+const bub = bubbles([
+  { t0: 0.6, t1: 2.6, text: "30-min chunks? on my lunch break 🥪", anchor: () => V(CX, 1.35, 0.8), align: 0.8, tail: "80%" },
+  { t0: 2.7, t1: 3.4, sfx: true, text: "CRACK!", anchor: () => V(-0.2, 3.3, -1.2), rot: -6 },
+  { t0: 3.4, t1: 5.1, text: "that's 12 setups 😵‍💫", cls: "dark", anchor: () => V(-1.25, 2.55, 0.1), align: 0.25, tail: "25%" },
+  { t0: 5.3, t1: 6.0, sfx: true, text: "POOF!", anchor: () => V(0.0, 1.9, 1.0), rot: 8 },
+  { t0: 11.1, t1: 11.8, sfx: true, text: "CLICK!", anchor: () => V(0.0, 1.9, 1.0), rot: -6 },
+  { t0: 13.4, t1: 15.2, text: "worth the whole day 🐉", anchor: () => V(CX, 1.35, 0.8), align: 0.8, tail: "80%" },
+]);
+
+window.DUR = 18.8;
+window.render = (t) => {
+  captions(t, [
+    { t0: 0, t1: 2.6, html: "“Can we split my back piece into <em>30-min chunks?</em>”" },
+    { t0: 2.6, t1: 5.3, html: "Twelve sessions. <em>Twelve setups.</em> One dragon." },
+    { t0: 5.5, t1: 8.6, html: "You set how long <em>each service takes.</em>" },
+    { t0: 8.6, t1: 11.9, html: "They book the whole session. <em>Deposit in.</em>" },
+    { t0: 11.9, t1: 15.6, html: "One day. <em>One dragon.</em> 🐉" },
+  ]);
+  S.aim(V(0, 2.6, 13), V(0, 1.95, 0));
+  clock.userData.setTime(11 * 60 + keys(t, [[0, 0], [11.9, 0], [12.8, 360], [20, 362]]));
+
+  // The design splits apart, then Lockie snaps it back together.
+  const apart = E.back(prog(t, 2.7, 3.2)) * (1 - E.inOut(prog(t, 5.6, 6.1)));
+  tiles.forEach((m) => { const u = m.userData; m.position.lerpVectors(u.home, u.away, apart); m.rotation.z = u.spin * apart + (apart > 0.5 ? Math.sin(t * 6 + u.spin * 10) * 0.05 : 0); m.scale.setScalar(1 - apart * 0.25); });
+  chunks.visible = apart > 0.5 && t < 5.4; title.visible = apart < 0.3; chunks.position.set(-0.2, 3.75, -1.2);
+
+  // The client: pitches the chunks, books the full day, shows off the result.
+  const cin = E.out(prog(t, 0.1, 0.6));
+  const turn = E.inOut(prog(t, 12.8, 13.3)) * (1 - E.inOut(prog(t, 15.0, 15.4)));
+  const party = prog(t, 13.3, 13.5) * (1 - prog(t, 15.3, 15.5));
+  C.root.position.set(lerp(3.2, CX, cin), (cin < 1 ? Math.abs(Math.sin(t * 11)) * 0.15 : 0) + party * Math.abs(Math.sin(t * 9)) * 0.12, 0.8);
+  C.root.rotation.y = turn * Math.PI * 0.85;
+  ink.visible = t > 12.8;
+  const tapping = t > 9.0 && t < 10.6;
+  C.pose({ blink: blinkAt(t, 1.7), lookX: -0.7, mouth: "smile", armL: 0.3 + (tapping ? 1.1 + Math.abs(Math.sin(t * 20)) * 0.2 : 0) + party * 1.5, armR: 0.3 + (t < 2.6 ? 1.2 + Math.sin(t * 6) * 0.2 : 0) + party * 1.5 });
+  const pk = E.out(prog(t, 8.8, 9.1)) * (1 - prog(t, 11.0, 11.2));
+  phone.visible = pk > 0.01; phone.position.set(0.85, 2.15, 1.1); phone.scale.setScalar(1.2 * pk); phone.rotation.set(-0.1, -0.2, 0);
+  phone.userData.show(t < 9.5 ? 0 : t < 10.0 ? 1 : t < 10.5 ? 2 : 3);
+  const ck = prog(t, 10.4, 11.0);
+  coin.visible = ck > 0 && ck < 1;
+  coin.position.set(lerp(0.9, -0.95, ck), lerp(1.3, 0.7, ck) + Math.sin(ck * Math.PI) * 1.3, lerp(1.0, 1.35, ck)); coin.rotation.y = ck * 16;
+  jar.userData.fill(t < 11.0 ? 2 : 3);
+
+  // The artist: dizzy at the idea, then proud.
+  const dizzy = t > 3.0 && t < 5.4;
+  const cheer = E.back(prog(t, 13.3, 13.6)) * (1 - prog(t, 15.3, 15.6));
+  A.pose({ blink: blinkAt(t, 0.6), mouth: dizzy ? "o" : "smile", lookX: dizzy ? Math.sin(t * 8) * 0.8 : 0.8, lookY: dizzy ? Math.cos(t * 8) * 0.5 : 0, headTilt: dizzy ? Math.sin(t * 4) * 0.12 : 0,
+    armL: 0.15 + cheer * 2.4, armR: 0.15 + cheer * 2.4 });
+
+  // Lockie reassembles the design and shows the real service length.
+  const drop = prog(t, 5.1, 5.45);
+  L.root.visible = t > 5.1;
+  const landK = t > 5.45 ? Math.exp(-(t - 5.45) * 6) * Math.cos((t - 5.45) * 18) : 0;
+  const signUp = E.back(prog(t, 6.1, 6.45)) * (1 - E.inOut(prog(t, 8.5, 8.8)));
+  const point = E.back(prog(t, 5.5, 5.7)) * (1 - prog(t, 6.0, 6.2));
+  const click = t > 11.1 ? Math.exp(-(t - 11.1) * 7) : 0;
+  L.root.position.set(0.0, (1 - E.out(drop)) * 4.5 + party * Math.abs(Math.sin(t * 9 + 1)) * 0.18, 1.0);
+  L.pose({ squash: landK * 0.8 + click * 0.5, open: t < 11.1 ? 1 : 1 - E.out(prog(t, 11.1, 11.25)), armR: 0.25 + signUp * 2.3 + party * 2, armL: 0.25 + point * 2.4 + party * 2,
+    lookY: point > 0.3 ? 0.7 : 0, blink: blinkAt(t, 1.2), lookX: 0.6, mouth: click > 0.3 ? "o" : "smile", tilt: party * Math.sin(t * 9) * 0.15 });
+  poof.position.set(0.0, 1.0, 1.1); poof.userData.at(prog(t, 5.2, 6.0));
+  sign.visible = signUp > 0.01;
+  sign.position.set(0.15, 1.45, 1.2); sign.scale.setScalar(0.64 * signUp); sign.rotation.z = -0.06 + Math.sin(t * 3) * 0.03;
+
+  confetti.position.set(0, 1.6, 0.6); confetti.userData.at(t - 13.3);
+  showBubbles(t, bub, S.toScreen);
+  outro(t, 15.6, { h: "One back piece.<br>One real session.", p: "Booking + deposits for tattoo artists.<br>Free for founding artists." });
+  S.frame();
+};
+render(0);
+window.READY = true;
+</script></body></html>

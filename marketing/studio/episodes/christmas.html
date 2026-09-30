@@ -1,0 +1,135 @@
+<!doctype html><html data-look="blush"><head><meta charset="utf-8"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/lib.css"><link rel="stylesheet" href="/ui.css"><script src="/lib.js"></script>
+<script type="importmap">{ "imports": { "three": "/three.js", "three/addons/": "/addons/" } }</script>
+<style>
+  /* Blush palette for beauty episodes. */
+  body { background: #fff5f7; color: #3d1f2c; }
+  .glow { background: radial-gradient(60% 38% at 82% 8%, rgba(255,150,190,.55), transparent 70%), radial-gradient(55% 35% at 0% 100%, rgba(255,200,220,.6), transparent 70%); }
+  #cap { font: 700 84px/1.04 "Fraunces", Georgia, serif; letter-spacing: -.03em; color: #3d1f2c; }
+  em { color: #d63a70; font-style: italic; }
+  #foot { color: #a57f8f; }
+  .bub { box-shadow: 0 16px 40px -14px rgba(170,60,105,.5); border: 3px solid #f6cfdc; }
+  .bub::after { border-right: 3px solid #f6cfdc; border-bottom: 3px solid #f6cfdc; }
+  .bub.accent { background: linear-gradient(180deg, #f58ab2, #e0457f); color: #fff; border-color: transparent; } .bub.accent::after { background: #e24f86; border-color: transparent; }
+  .bub.dark { background: #3d1f2c; color: #fff5f7; border-color: #3d1f2c; } .bub.dark::after { background: #3d1f2c; border-color: #3d1f2c; }
+  .sfx { color: #fff; -webkit-text-stroke: 4px #7a1d45; }
+  #outro { background: radial-gradient(60% 40% at 50% 30%, rgba(255,150,190,.55), transparent 70%), #fff5f7; }
+  #outro h2 { font: italic 700 100px/1.02 "Fraunces", Georgia, serif; letter-spacing: -.03em; color: #3d1f2c; }
+  #outro p { color: #6e4b5b; }
+  #outro .cta { background: linear-gradient(180deg, #f58ab2, #e0457f); color: #fff; }
+  #outro .wordmark, #foot .wordmark { color: #3d1f2c; }
+</style>
+</head><body><div id="gl"></div><div id="bubbles"></div>
+<script type="module">
+import { THREE, setup, mesh, toon, flat, makeLockie, makeTech, makeNailTable, makeBlob, makeCoin, makeJar, makeLabel, makeCup, makePartyHat, makeConfetti, makePoof, blinkAt, rng } from "/kit.js";
+import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+import { bubbles, showBubbles } from "/ui.js";
+base();
+await document.fonts.load("900 40px 'Bricolage Grotesque'"); await document.fonts.load("700 40px 'Inter'");
+await document.fonts.load("600 40px 'Fraunces'"); await document.fonts.load("italic 600 40px 'Fraunces'");
+const S = setup({ camPos: [0, 2.3, 10.5], look: [0, 1.75, 0], palette: "blush" });
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+
+const T = makeTech({ skin: 0xe8b48f, hair: 0x2a1a12, smock: 0xff9ec0 }); T.root.position.set(-0.7, 0, -0.35); S.scene.add(T.root);
+const santa = () => { const h = makePartyHat(0xd9343a, 0xd9343a); h.children[1].material = toon(0xffffff); const brim = mesh(new THREE.TorusGeometry(0.2, 0.05, 8, 24), toon(0xffffff), 0.01); brim.rotation.x = Math.PI / 2; h.add(brim); return h; };
+const tHat = santa(); tHat.scale.setScalar(1.1); tHat.position.set(0.12, 0.44, -0.05); tHat.rotation.z = -0.5; T.head.add(tHat);
+const table = makeNailTable(); table.position.set(0, 0, 0.35); S.scene.add(table);
+const jar = makeJar("DEPOSITS"); jar.position.set(0.05, 0.95, 0.6); jar.scale.setScalar(0.9); S.scene.add(jar);
+const L = makeLockie({ color: 0xff7aa8, feet: 0xe0457f, key: 0x7a1d45 }); L.root.scale.setScalar(0.62); S.scene.add(L.root);
+const lHat = santa(); lHat.scale.setScalar(1.3); lHat.position.set(0.1, 0.45, 0); lHat.rotation.z = -0.35; L.shackle.add(lHat);
+const cocoa = makeCup(0x8a5a3a); cocoa.scale.setScalar(0.9); cocoa.position.set(0, -0.05, 0.1); T.arms[1].userData.hand.add(cocoa);
+const poof = makePoof(14, 111); S.scene.add(poof);
+const confetti = makeConfetti(90, 113); S.scene.add(confetti);
+const PINKS = [0xe0457f, 0xff8fb1, 0xffffff, 0xd7a6ff, 0xffc4d8, 0xf3c6b0];
+confetti.children.forEach((m, i) => { m.material = flat(PINKS[i % PINKS.length], { side: THREE.DoubleSide }); });
+const phone = new THREE.Group(); phone.position.set(-0.4, 0.99, 0.6); phone.rotation.x = -Math.PI / 2 + 0.35; S.scene.add(phone);
+phone.add(mesh(new RoundedBoxGeometry(0.3, 0.52, 0.05, 3, 0.05), toon(0x3d1f2c), 0.015));
+const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.25, 0.44), flat(0xffd6e5)); screen.position.z = 0.027; phone.add(screen);
+
+// The December calendar on the wall.
+const head = makeLabel(["DECEMBER"], { w: 1.6, h: 0.3, bg: null, color: "#3d1f2c" }); head.position.set(0, 3.45, -1.2); S.scene.add(head);
+const DAYS = ["23", "24", "25", "26"];
+const cal = DAYS.map((d, i) => {
+  const x = -0.93 + i * 0.62;
+  const mk = (l2, bg, color) => { const m = makeLabel([d, l2], { w: 0.56, h: 0.56, bg, color }); m.position.set(x, 2.98, -1.2); S.scene.add(m); return m; };
+  return { open: mk("OPEN", "#ffffff", "#b58a9b"), booked: mk("BOOKED", "#e0457f", "#ffffff"), closed: mk("CLOSED", "#3d1f2c", "#ffffff") };
+});
+const clients = [0xd7a6ff, 0x9fd8a8].map((c) => { const b = makeBlob(c, 0.62); S.scene.add(b.root); return b; });
+const coins = [0, 1].map(() => { const c = makeCoin(); c.scale.setScalar(0.55); S.scene.add(c); return c; });
+const PAY = [9.6, 10.6], CXS = [0.35, 0.9];
+// Snow for Christmas Day.
+const r = rng(7);
+const snow = [...Array(70)].map(() => { const m = new THREE.Mesh(new THREE.SphereGeometry(0.055, 8, 6), flat(0xcfe3ff)); m.userData = { x: (r() - 0.5) * 4, z: (r() - 0.5) * 2, o: r() * 4, s: 0.5 + r() * 0.5 }; S.scene.add(m); return m; });
+
+const DMS = ["open on christmas?? 🎄", "u working the 25th?", "xmas eve?? pls 🥺", "christmas morning nails?", "hello?? 🎅"];
+const bub = bubbles([
+  ...DMS.map((text, i) => ({ t0: 0.4 + i * 0.45, t1: 5.2, text, cls: i % 2 ? "dark" : "", anchor: () => V(i % 2 ? 0.55 : 0.15, 1.05 + i * 0.32, 0.9), align: 0.5, rot: (i % 2 ? 1 : -1) * 3 })),
+  { t0: 5.3, t1: 6.0, sfx: true, text: "POOF!", anchor: () => V(0.75, 1.9, 0.8), rot: 8 },
+  { t0: 6.9, t1: 7.6, sfx: true, text: "STAMP!", anchor: () => V(0.5, 2.25, -0.8), rot: -8 },
+  { t0: 12.3, t1: 13.6, sfx: true, text: "DEC 25 🎄", anchor: () => V(0.85, 2.3, 0.6), rot: -4 },
+]);
+
+window.DUR = 18.8;
+window.render = (t) => {
+  captions(t, [
+    { t0: 0, t1: 2.6, html: "December. <em>“Are you open on Christmas?”</em>" },
+    { t0: 2.6, t1: 5.3, html: "×20. You'd like to <em>see your family.</em>" },
+    { t0: 5.5, t1: 8.8, html: "Block the day. <em>Your page skips it.</em>" },
+    { t0: 8.8, t1: 12.1, html: "They book the 23rd and 24th. <em>Deposits in.</em>" },
+    { t0: 12.1, t1: 15.6, html: "Christmas: <em>cocoa, not cuticles.</em> ☕" },
+  ]);
+  S.aim(V(0, 2.3, 10.5), V(0, 1.75, 0));
+  phone.position.x = -0.4 + (t > 0.4 && t < 5.2 && Math.floor(t * 14) % 2 ? 0.012 : 0);
+  screen.material.color.setHex(t > 0.4 && t < 5.2 && Math.floor(t * 6) % 2 === 0 ? 0xffffff : 0xffc4d8);
+
+  // The calendar: 25 gets blocked, 23 and 24 get booked.
+  cal.forEach((c, i) => {
+    const bookAt = i < 2 ? PAY[i] + 0.4 : 99, closeAt = i === 2 ? 6.9 : 99;
+    c.booked.visible = t > bookAt; c.booked.scale.setScalar(Math.max(0.01, E.back(prog(t, bookAt, bookAt + 0.3))));
+    c.closed.visible = t > closeAt; c.closed.scale.setScalar(t > closeAt ? 1 + 0.5 * Math.exp(-(t - closeAt) * 12) : 1);
+    c.open.visible = !c.booked.visible && !c.closed.visible;
+  });
+
+  // The tech: buried in DMs, then on Christmas Day with cocoa in the snow.
+  const flooded = t > 1.2 && t < 5.4;
+  const xmas = t > 12.1;
+  const cheer = E.back(prog(t, 9.9, 10.2)) * (1 - prog(t, 11.4, 11.7));
+  const sip = xmas ? E.inOut(prog((t - 12.1) % 2.4, 0.4, 0.8)) * (1 - E.inOut(prog((t - 12.1) % 2.4, 1.4, 1.8))) : 0;
+  cocoa.visible = xmas;
+  T.pose({ blink: xmas ? (sip > 0.3 ? 1 : blinkAt(t, 0.8)) : blinkAt(t, 0.8), lookX: 0.4, lookY: flooded ? -0.6 : 0, mouth: flooded ? "o" : "smile", sweat: t > 2.6 && t < 5.4, slump: flooded ? 0.6 : 0,
+    armL: 0.1 + cheer * 2.5, armLx: cheer > 0.1 ? 0 : -0.9, armR: xmas ? 0.4 + sip * 1.3 : 0.1 + cheer * 2.5, armRx: xmas ? -0.6 - sip * 0.6 : cheer > 0.1 ? 0 : -0.9 });
+  snow.forEach((m) => { const u = m.userData; m.visible = xmas; const y = 4.2 - (((t - 12.1) * u.s + u.o) % 4.2); m.position.set(u.x + Math.sin(t + u.o) * 0.1, y, u.z); });
+
+  // Pink Lockie in a Santa hat blocks the 25th.
+  const drop = prog(t, 5.1, 5.45);
+  L.root.visible = t > 5.1;
+  const landK = t > 5.45 ? Math.exp(-(t - 5.45) * 6) * Math.cos((t - 5.45) * 18) : 0;
+  const point = E.back(prog(t, 6.5, 6.8)) * (1 - prog(t, 8.4, 8.7));
+  const dance = prog(t, 12.2, 12.4) * (1 - prog(t, 15.4, 15.6));
+  L.root.position.set(0.72, 0.95 + (1 - E.out(drop)) * 3.5 + dance * Math.abs(Math.sin(t * 9)) * 0.2, 0.45);
+  L.pose({ squash: landK * 0.7, open: 0, armL: 0.25 + point * 2.4 + dance * 2, armR: 0.25 + dance * 2, lookY: point > 0.3 ? 0.7 : 0, lookX: point > 0.3 ? -0.3 : 0.4, blink: blinkAt(t, 1.4), tilt: dance * Math.sin(t * 9) * 0.15 });
+  poof.position.set(0.72, 1.4, 0.7); poof.userData.at(prog(t, 5.2, 6.0));
+
+  // Two clients book the days that are open.
+  let landed = 0;
+  clients.forEach((b, i) => {
+    const at = 8.8 + i * 0.4, k = E.out(prog(t, at, at + 0.45));
+    const gone = E.inOut(prog(t, 11.7, 12.1));
+    b.root.visible = t > at && gone < 1;
+    const hop = t > PAY[i] - 0.3 && t < PAY[i] + 0.1 ? Math.sin(prog(t, PAY[i] - 0.3, PAY[i] + 0.1) * Math.PI) * 0.22 : 0;
+    b.root.position.set(lerp(3.0, CXS[i], k) + gone * 2.6, (k < 1 ? Math.abs(Math.sin(t * 11 + i)) * 0.15 : 0) + hop + dance * Math.abs(Math.sin(t * 9 + i)) * 0.15, 1.0);
+    b.pose({ blink: blinkAt(t, i * 0.6), lookX: -0.6, lookY: 0.3, mouth: "smile", armL: 0.3 + (hop > 0.05 ? 1.4 : 0) + dance * 1.5, armR: 0.3 + dance * 1.5 });
+    const ck = prog(t, PAY[i], PAY[i] + 0.5), c = coins[i];
+    c.visible = ck > 0 && ck < 1;
+    c.position.set(lerp(CXS[i], 0.05, ck), lerp(0.7, 1.35, ck) + Math.sin(ck * Math.PI) * 0.9, lerp(1.0, 0.6, ck)); c.rotation.y = ck * 16;
+    if (t > PAY[i] + 0.5) landed++;
+  });
+  jar.userData.fill(landed);
+
+  confetti.position.set(0.3, 0.9, 0.9); confetti.userData.at(t - 10.0);
+  showBubbles(t, bub, S.toScreen);
+  outro(t, 15.6, { h: "Block the day.<br>Keep the holiday.", p: "Booking + deposits for nail techs,<br>lash artists & beauty pros." });
+  S.frame();
+};
+render(0);
+window.READY = true;
+</script></body></html>

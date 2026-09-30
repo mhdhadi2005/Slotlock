@@ -69,6 +69,11 @@ Add every new episode here so ideas never repeat.
 | 2026-09-23 | ghosted | No-deposit client vanishes at 2pm; Lockie's "DEPOSIT FIRST" sign scares the ghost off | Ghost-proof your books. |
 | 2026-09-23 | bouncer | Lockie bounces "I'll pay later" at the calendar's velvet rope | Hire the bouncer. |
 | 2026-09-23 | flood | DM bubbles bury the artist; Lockie bursts out with one link | One link. Zero chaos. |
+| 2026-09-30 | paymethods | "Can I pay the deposit with… him? 🐐", then an IOU and a meme coin; Lockie shows the artist's Venmo / Cash App / Zelle, they pay, the artist confirms, the goat stays | Deposits: yes. Goats: no. |
+| 2026-09-30 | christmas | December DMs: "open on christmas??" ×20; pink Lockie in a Santa hat blocks Dec 25, clients book the 23rd and 24th, then cocoa in the snow | Block the day. Keep the holiday. |
+| 2026-09-30 | nightowl | 11:47 PM, a night owl wants 2 AM; the yawning artist's page only shows 11 AM–7 PM, they book Sat 6 PM and show up in shades | Your hours. Not 2 AM. |
+| 2026-09-30 | sleepylash | "I won't fall asleep this time" → asleep instantly, lashes grow over 2 hours; wakes obsessed and books the fill before leaving | Book the fill before they leave. |
+| 2026-09-30 | splitsession | Client wants a back piece in twelve 30-min lunch-break chunks; the dragon poster cracks into 12 tiles, Lockie snaps it back with BACK PIECE · 6 HRS, they book the full day | One back piece. One real session. |
 | 2026-09-29 | holdexpire | "Hold Saturday? I get paid Friday"; the hold's hourglass runs out while Jay goes shopping, the slot reopens and the next client books with a deposit | Holds expire. Deposits don't. |
 | 2026-09-29 | forgot | 2 PM lash fill, nobody shows ("omg i totally forgot"); REWIND, pink Lockie's day-before reminder email, the client arrives right on time | They forget. Slotlock doesn't. |
 | 2026-09-29 | influencer | "Free tattoo for a shoutout? I have 900 followers"; bouncer Lockie's EXPOSURE ≠ DEPOSIT, they pay, then post about it anyway | Exposure's cute. Deposits pay rent. |
@@ -100,6 +105,6 @@ Add every new episode here so ideas never repeat.
 ## Idea backlog
 
 - Client asks to move the appointment 6 times
-- The client who wants to split a 6-hour session into twelve 30-minute ones
-- Lash client who falls asleep on the bed and wakes up asking for the next slot
-- "Are you open on Christmas?" ×20 in December; the page only shows days you actually have open
+- The client who brings their whole group chat's opinions on the design, live on FaceTime
+- "My mom is paying" — the mom books and pays the deposit from her own phone
+- Beauty: the brow client who wants "Instagram brows" from a filtered photo; consult form with a real photo first
