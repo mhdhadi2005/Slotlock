@@ -1,0 +1,115 @@
+<!doctype html><html data-look="blush"><head><meta charset="utf-8"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/lib.css"><link rel="stylesheet" href="/ui.css"><script src="/lib.js"></script>
+<script type="importmap">{ "imports": { "three": "/three.js", "three/addons/": "/addons/" } }</script>
+<style>
+  /* Blush palette for beauty episodes. */
+  body { background: #fff5f7; color: #3d1f2c; }
+  .glow { background: radial-gradient(60% 38% at 82% 8%, rgba(255,150,190,.55), transparent 70%), radial-gradient(55% 35% at 0% 100%, rgba(255,200,220,.6), transparent 70%); }
+  #cap { font: 700 84px/1.04 "Fraunces", Georgia, serif; letter-spacing: -.03em; color: #3d1f2c; }
+  em { color: #d63a70; font-style: italic; }
+  #foot { color: #a57f8f; }
+  .bub { box-shadow: 0 16px 40px -14px rgba(170,60,105,.5); border: 3px solid #f6cfdc; }
+  .bub::after { border-right: 3px solid #f6cfdc; border-bottom: 3px solid #f6cfdc; }
+  .bub.accent { background: linear-gradient(180deg, #f58ab2, #e0457f); color: #fff; border-color: transparent; } .bub.accent::after { background: #e24f86; border-color: transparent; }
+  .bub.dark { background: #3d1f2c; color: #fff5f7; border-color: #3d1f2c; } .bub.dark::after { background: #3d1f2c; border-color: #3d1f2c; }
+  .sfx { color: #fff; -webkit-text-stroke: 4px #7a1d45; }
+  #outro { background: radial-gradient(60% 40% at 50% 30%, rgba(255,150,190,.55), transparent 70%), #fff5f7; }
+  #outro h2 { font: italic 700 100px/1.02 "Fraunces", Georgia, serif; letter-spacing: -.03em; color: #3d1f2c; }
+  #outro p { color: #6e4b5b; }
+  #outro .cta { background: linear-gradient(180deg, #f58ab2, #e0457f); color: #fff; }
+  #outro .wordmark, #foot .wordmark { color: #3d1f2c; }
+</style>
+</head><body><div id="gl"></div><div id="bubbles"></div>
+<script type="module">
+import { THREE, setup, mesh, toon, flat, makeLockie, makeTech, makeNailTable, makeBlob, makeCoin, makeSign, makeJar, makePhone, makeLabel, makeMagnifier, makeConfetti, makePoof, blinkAt } from "/kit.js";
+import { bubbles, showBubbles } from "/ui.js";
+base();
+await document.fonts.load("900 40px 'Bricolage Grotesque'"); await document.fonts.load("700 40px 'Inter'");
+await document.fonts.load("600 40px 'Fraunces'"); await document.fonts.load("italic 600 40px 'Fraunces'");
+const S = setup({ camPos: [0, 2.3, 10.5], look: [0, 1.75, 0], palette: "blush" });
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+
+const T = makeTech({ skin: 0xe8b48f, hair: 0x5a3a22, smock: 0xff9ec0 }); T.root.position.set(-0.7, 0, -0.35); S.scene.add(T.root);
+const mag = makeMagnifier(); mag.scale.setScalar(0.8); S.scene.add(mag);
+const table = makeNailTable(); table.position.set(0, 0, 0.35); S.scene.add(table);
+const jar = makeJar("DEPOSITS"); jar.position.set(0.05, 0.95, 0.6); jar.scale.setScalar(0.9); jar.userData.fill(2); S.scene.add(jar);
+const L = makeLockie({ color: 0xff7aa8, feet: 0xe0457f, key: 0x7a1d45 }); L.root.scale.setScalar(0.62); S.scene.add(L.root);
+const C = makeBlob(0xf3c6b0, 0.85); S.scene.add(C.root);
+// Brows: thin at first, full and fluffy after.
+const brows = [-1, 1].map((s) => { const b = mesh(new THREE.CapsuleGeometry(0.016, 0.13, 4, 8), toon(0x4a2e1c), 0.004); b.rotation.z = Math.PI / 2 - s * 0.2; b.position.set(s * 0.16, 0.8, 0.4); C.body.add(b); return b; });
+const selfie = makePhone([{ lines: ["BROW", "GOALS"], bg: "#ffffff", color: "#3d1f2c" }, { lines: ["FILTER:", "GLAM 3000"], bg: "#3d1f2c", color: "#ffffff" }]); S.scene.add(selfie);
+const sign = makeSign(["CONSULT FIRST:", "NO-FILTER PHOTO"], { w: 1.8, h: 0.9, bg: "#ffffff", color: "#e0457f" }); S.scene.add(sign);
+const form = makePhone([{ lines: ["PHOTO", "NO FILTER ✓"] }, { lines: ["QUOTE", "$85"] }, { lines: ["$25", "DEPOSIT"] }, { lines: ["BOOKED", "✓"], bg: "#fff0f5", color: "#e0457f" }]); S.scene.add(form);
+const coin = makeCoin(); coin.scale.setScalar(0.6); S.scene.add(coin);
+const poof = makePoof(14, 181); S.scene.add(poof);
+const confetti = makeConfetti(90, 183); S.scene.add(confetti);
+const PINKS = [0xe0457f, 0xff8fb1, 0xffffff, 0xd7a6ff, 0xffc4d8, 0xf3c6b0];
+confetti.children.forEach((m, i) => { m.material = flat(PINKS[i % PINKS.length], { side: THREE.DoubleSide }); });
+const CX = 0.72;
+
+const bub = bubbles([
+  { t0: 0.5, t1: 2.5, text: "i want THESE brows 😍", anchor: () => V(CX, 1.3, 1.0), align: 0.75, tail: "75%" },
+  { t0: 2.9, t1: 3.6, sfx: true, text: "ZOOM", anchor: () => V(0.2, 2.3, 0.8), rot: -8 },
+  { t0: 3.6, t1: 5.2, text: "babe… that's a filter 😭", cls: "dark", anchor: () => V(-0.7, 2.3, -0.35), align: 0.3, tail: "30%" },
+  { t0: 5.3, t1: 6.0, sfx: true, text: "POOF!", anchor: () => V(0.72, 1.9, 0.8), rot: 8 },
+  { t0: 11.0, t1: 11.7, sfx: true, text: "CLICK!", anchor: () => V(0.72, 1.9, 0.8), rot: -6 },
+  { t0: 12.4, t1: 13.2, sfx: true, text: "FLUFF!", anchor: () => V(CX, 1.9, 1.0), rot: -6 },
+  { t0: 13.2, t1: 15.2, text: "ok these are better than the filter 😳", anchor: () => V(CX, 1.3, 1.0), align: 0.75, tail: "75%" },
+]);
+
+window.DUR = 18.8;
+window.render = (t) => {
+  captions(t, [
+    { t0: 0, t1: 2.6, html: "“I want <em>these</em> brows.” 📸✨" },
+    { t0: 2.6, t1: 5.3, html: "The brows are <em>a filter.</em>" },
+    { t0: 5.5, t1: 8.6, html: "Consult first, with <em>a real photo.</em>" },
+    { t0: 8.6, t1: 11.8, html: "You quote what's real. <em>They book it.</em>" },
+    { t0: 11.8, t1: 15.6, html: "Real brows. <em>Better than the filter.</em>" },
+  ]);
+  S.aim(V(0, 2.3, 10.5), V(0, 1.75, 0));
+
+  // The client with the filtered selfie.
+  const cin = E.out(prog(t, 0.1, 0.6));
+  const dance = prog(t, 13.2, 13.4) * (1 - prog(t, 15.4, 15.6));
+  C.root.position.set(lerp(3.2, CX, cin), (cin < 1 ? Math.abs(Math.sin(t * 11)) * 0.14 : 0) + dance * Math.abs(Math.sin(t * 9)) * 0.16, 1.0);
+  const tapping = t > 8.8 && t < 10.8;
+  C.pose({ blink: blinkAt(t, 1.9), lookX: -0.6, mouth: t > 3.6 && t < 5.4 ? "o" : "smile", armL: 0.3 + (t < 5.3 ? 1.4 : 0) + (tapping ? 1.1 + Math.abs(Math.sin(t * 20)) * 0.2 : 0) + dance * 1.5, armR: 0.3 + dance * 1.5 });
+  const fluff = E.back(prog(t, 12.4, 12.8));
+  brows.forEach((b) => { b.scale.set(1 + fluff * 1.6, 1 + fluff * 0.25, 1 + fluff * 1.2); b.position.y = 0.8 + fluff * 0.01; });
+  const sk = E.out(prog(t, 0.4, 0.7)) * (1 - prog(t, 5.2, 5.5));
+  selfie.visible = sk > 0.01; selfie.position.set(CX - 0.55, 1.55 + Math.sin(t * 3) * 0.02, 1.25); selfie.scale.setScalar(1.15 * sk); selfie.rotation.set(-0.1, -0.2, 0.05);
+  selfie.userData.show(t < 3.3 ? 0 : 1);
+  const fk = E.out(prog(t, 8.6, 8.9)) * (1 - prog(t, 10.8, 11.0));
+  form.visible = fk > 0.01; form.position.set(CX - 0.55, 1.6, 1.25); form.scale.setScalar(1.1 * fk); form.rotation.set(-0.1, -0.2, 0);
+  form.userData.show(t < 9.3 ? 0 : t < 9.8 ? 1 : t < 10.3 ? 2 : 3);
+  const ck = prog(t, 10.2, 10.7);
+  coin.visible = ck > 0 && ck < 1;
+  coin.position.set(lerp(0.6, 0.05, ck), lerp(1.2, 1.35, ck) + Math.sin(ck * Math.PI) * 0.9, lerp(1.1, 0.6, ck)); coin.rotation.y = ck * 16;
+  jar.userData.fill(t < 10.7 ? 2 : 3);
+
+  // The tech zooms in with a magnifier, then cheers.
+  const zoom = E.back(prog(t, 2.8, 3.1)) * (1 - E.inOut(prog(t, 5.0, 5.3)));
+  mag.visible = zoom > 0.01; mag.position.set(lerp(-0.4, 0.0, zoom), lerp(1.0, 1.15, zoom), 1.45); mag.rotation.z = -0.5; mag.scale.setScalar(0.8 * zoom);
+  const cheer = E.back(prog(t, 13.2, 13.5)) * (1 - prog(t, 15.3, 15.6));
+  T.pose({ blink: blinkAt(t, 0.8), lookX: 0.6, mouth: t > 3.6 && t < 5.3 ? "o" : "smile", headTilt: t > 3.6 && t < 5.3 ? 0.12 : 0,
+    armL: 0.1 + cheer * 2.5, armLx: cheer > 0.1 ? 0 : -0.9, armR: 0.1 + zoom * 0.6 + cheer * 2.5, armRx: cheer > 0.1 ? 0 : -0.9 - zoom * 0.3 });
+
+  // Pink Lockie: consult first.
+  const drop = prog(t, 5.1, 5.45);
+  L.root.visible = t > 5.1;
+  const landK = t > 5.45 ? Math.exp(-(t - 5.45) * 6) * Math.cos((t - 5.45) * 18) : 0;
+  const signUp = E.back(prog(t, 5.7, 6.05)) * (1 - E.inOut(prog(t, 8.4, 8.7)));
+  const click = t > 11.0 ? Math.exp(-(t - 11.0) * 7) : 0;
+  L.root.position.set(0.72, 0.95 + (1 - E.out(drop)) * 3.5 + dance * Math.abs(Math.sin(t * 9)) * 0.2, 0.45);
+  L.pose({ squash: landK * 0.7 + click * 0.5, open: t < 11.0 ? 1 : 1 - E.out(prog(t, 11.0, 11.15)), armR: 0.25 + signUp * 1.2 + dance * 2, armL: 0.25 + dance * 2, blink: blinkAt(t, 1.4), lookX: 0.4, tilt: dance * Math.sin(t * 9) * 0.15, mouth: click > 0.3 ? "o" : "smile" });
+  poof.position.set(0.72, 1.4, 0.7); poof.userData.at(prog(t, 5.2, 6.0));
+  sign.visible = signUp > 0.01;
+  sign.position.set(0.55, 1.75, 0.9); sign.scale.setScalar(0.5 * signUp); sign.rotation.z = -0.06 + Math.sin(t * 3) * 0.03;
+
+  confetti.position.set(0, 1.4, 0.6); confetti.userData.at(t - 13.2);
+  showBubbles(t, bub, S.toScreen);
+  outro(t, 15.6, { h: "No filter.<br>Real booking.", p: "Booking + deposits for nail techs,<br>lash artists & beauty pros." });
+  S.frame();
+};
+render(0);
+window.READY = true;
+</script></body></html>

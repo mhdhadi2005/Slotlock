@@ -1,0 +1,109 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/lib.css"><link rel="stylesheet" href="/ui.css"><script src="/lib.js"></script>
+<script type="importmap">{ "imports": { "three": "/three.js", "three/addons/": "/addons/" } }</script>
+</head><body><div id="gl"></div><div id="bubbles"></div>
+<script type="module">
+import { THREE, setup, mesh, toon, flat, makeLockie, makeArtist, makeBlob, makeCoin, makeJar, makePhone, makeSign, makeLabel, makeConfetti, makePoof, blinkAt, BLOB_COLORS } from "/kit.js";
+import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+import { bubbles, showBubbles } from "/ui.js";
+base();
+await document.fonts.load("900 40px 'Bricolage Grotesque'"); await document.fonts.load("700 40px 'Inter'");
+const S = setup({ camPos: [0, 2.6, 13], look: [0, 1.95, 0] });
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+
+const A = makeArtist(); A.root.position.set(-1.25, 0, 0.1); S.scene.add(A.root);
+const C = makeBlob(BLOB_COLORS[4], 0.85); S.scene.add(C.root);
+// The group FaceTime: four little faces on one phone.
+const ft = new THREE.Group(); S.scene.add(ft);
+ft.add(mesh(new RoundedBoxGeometry(0.62, 0.95, 0.06, 3, 0.07), toon(0x1b1816), 0.015));
+const FACE_COLS = [0x8fc1ff, 0x9fd8a8, 0xffc56b, 0xd7a6ff];
+const faces = FACE_COLS.map((c, i) => {
+  const g = new THREE.Group(); g.position.set((i % 2 ? 1 : -1) * 0.135, (i < 2 ? 1 : -1) * 0.21, 0.035); ft.add(g);
+  g.add(new THREE.Mesh(new THREE.PlaneGeometry(0.25, 0.4), flat(c)));
+  for (const s of [-1, 1]) { const e = new THREE.Mesh(new THREE.CircleGeometry(0.025, 12), flat(0x16100c)); e.position.set(s * 0.05, 0.03, 0.002); g.add(e); }
+  const m = new THREE.Mesh(new THREE.CircleGeometry(0.03, 12, Math.PI, Math.PI), flat(0x16100c)); m.position.set(0, -0.04, 0.002); g.add(m);
+  return g;
+});
+const L = makeLockie(); L.root.scale.setScalar(0.8); S.scene.add(L.root);
+const jar = makeJar("DEPOSITS"); jar.position.set(-0.95, 0, 1.35); jar.scale.setScalar(0.7); jar.userData.fill(2); S.scene.add(jar);
+// The design on the wall, mutating with every opinion.
+const DESIGNS = [["🌹"], ["🌹🐺"], ["🐺🌹🐺"], ["💗🐺💗"], ["🌹"]];
+const DESIGN_AT = [0, 2.9, 3.6, 4.3, 9.0];
+const posters = DESIGNS.map((lines) => { const m = makeLabel(lines, { w: 1.3, h: 0.9, bg: "#fbf5ea", color: "#1a0905", font: "900 120px 'Bricolage Grotesque'" }); m.position.set(-0.6, 3.0, -1.6); S.scene.add(m); return m; });
+const quote = makeLabel(["QUOTE · $250"], { w: 1.1, h: 0.28, bg: "#ff5c39", color: "#ffffff" }); quote.position.set(-0.6, 2.4, -1.5); S.scene.add(quote);
+const sign = makeSign(["IDEA + REFS", "FIRST"], { w: 1.6, h: 0.95 }); S.scene.add(sign);
+const form = makePhone([{ lines: ["IDEA:", "ONE ROSE"] }, { lines: ["REFS", "✓"] }, { lines: ["QUOTE", "$250"] }, { lines: ["$50", "DEPOSIT"] }, { lines: ["BOOKED", "✓"], bg: "#e6fff1", color: "#128a52" }]); S.scene.add(form);
+const coin = makeCoin(); coin.scale.setScalar(0.7); S.scene.add(coin);
+const poof = makePoof(14, 171); S.scene.add(poof);
+const confetti = makeConfetti(90, 173); S.scene.add(confetti);
+const CX = 1.05, PX = CX - 0.55, PY = 1.75;
+
+const FT = (i) => () => V(PX + 0.35 + (i % 2 ? 0.3 : -0.1), PY + 0.55 + i * 0.4, 1.2);
+const bub = bubbles([
+  { t0: 0.5, t1: 2.5, text: "the group chat wanted to be here 📱", anchor: () => V(CX, 1.35, 0.8), align: 0.75, tail: "75%" },
+  { t0: 2.7, t1: 5.2, text: "BIGGER", anchor: FT(0), align: 0.5, rot: -4 },
+  { t0: 3.2, t1: 5.2, text: "smaller??", cls: "dark", anchor: FT(1), align: 0.5, rot: 4 },
+  { t0: 3.7, t1: 5.2, text: "add a wolf 🐺", anchor: FT(2), align: 0.5, rot: -3 },
+  { t0: 4.2, t1: 5.2, text: "make it pink 💗", cls: "dark", anchor: FT(3), align: 0.5, rot: 3 },
+  { t0: 5.3, t1: 6.0, sfx: true, text: "POOF!", anchor: () => V(-0.05, 1.9, 1.0), rot: 8 },
+  { t0: 11.1, t1: 11.8, sfx: true, text: "CLICK!", anchor: () => V(-0.05, 1.9, 1.0), rot: -6 },
+  { t0: 12.0, t1: 14.8, text: "it's perfect 😭😭😭😭", anchor: FT(0), align: 0.5 },
+]);
+
+window.DUR = 18.8;
+window.render = (t) => {
+  captions(t, [
+    { t0: 0, t1: 2.6, html: "Consult day. They brought <em>the group chat.</em> 📱" },
+    { t0: 2.6, t1: 5.3, html: "Bigger. Smaller. <em>Add a wolf.</em> 🐺" },
+    { t0: 5.5, t1: 8.6, html: "Idea and refs go in the <em>consult form first.</em>" },
+    { t0: 8.6, t1: 11.8, html: "You quote it. <em>They book the quote.</em>" },
+    { t0: 11.8, t1: 15.6, html: "One rose. <em>Group chat approved.</em> 🌹" },
+  ]);
+  S.aim(V(0, 2.6, 13), V(0, 1.95, 0));
+  let st = 0; DESIGN_AT.forEach((a, i) => { if (t >= a) st = i; });
+  posters.forEach((m, i) => { m.visible = i === st; m.scale.setScalar(i === st && i > 0 ? E.back(prog(t, DESIGN_AT[i], DESIGN_AT[i] + 0.25)) : 1); m.rotation.z = i === st && st > 0 && st < 4 ? Math.sin(t * 9) * 0.04 : 0; });
+  quote.visible = t > 9.6; quote.scale.setScalar(Math.max(0.01, E.back(prog(t, 9.6, 9.9))));
+
+  // The client and the FaceTime crowd.
+  const cin = E.out(prog(t, 0.1, 0.6));
+  const party = prog(t, 12.0, 12.2) * (1 - prog(t, 15.3, 15.5));
+  C.root.position.set(lerp(3.2, CX, cin), (cin < 1 ? Math.abs(Math.sin(t * 11)) * 0.15 : 0) + party * Math.abs(Math.sin(t * 9)) * 0.16, 0.8);
+  const formTime = t > 8.6 && t < 11.0;
+  C.pose({ blink: blinkAt(t, 1.7), lookX: -0.6, mouth: t > 2.7 && t < 5.3 ? "o" : "smile", armL: 0.3 + (formTime ? 1.1 + Math.abs(Math.sin(t * 20)) * 0.2 : 1.4) + party * 0.5, armR: 0.3 + party * 1.5 });
+  const fk = E.out(prog(t, 0.6, 0.9));
+  ft.visible = fk > 0.01 && !formTime && !(t > 5.3 && t < 8.6);
+  ft.position.set(PX, PY + (t > 2.7 && t < 5.3 ? Math.sin(t * 30) * 0.02 : 0), 1.15); ft.scale.setScalar(fk); ft.rotation.set(-0.05, 0.2, 0.06);
+  faces.forEach((f, i) => { f.position.y = (i < 2 ? 1 : -1) * 0.21 + ((t > 2.7 && t < 5.3) || party > 0 ? Math.abs(Math.sin(t * 12 + i * 1.7)) * 0.02 : 0); });
+  const pk = E.out(prog(t, 8.6, 8.9)) * (1 - prog(t, 10.9, 11.1));
+  form.visible = pk > 0.01; form.position.set(PX + 0.05, PY + 0.2, 1.15); form.scale.setScalar(1.25 * pk); form.rotation.set(-0.1, -0.2, 0);
+  form.userData.show(t < 9.1 ? 0 : t < 9.6 ? 1 : t < 10.1 ? 2 : t < 10.6 ? 3 : 4);
+  const ck = prog(t, 10.5, 11.0);
+  coin.visible = ck > 0 && ck < 1;
+  coin.position.set(lerp(0.6, -0.95, ck), lerp(1.4, 0.7, ck) + Math.sin(ck * Math.PI) * 1.3, lerp(1.1, 1.35, ck)); coin.rotation.y = ck * 16;
+  jar.userData.fill(t < 11.0 ? 2 : 3);
+
+  // The artist: spinning from the opinions, then happy.
+  const dizzy = t > 2.9 && t < 5.4;
+  const cheer = E.back(prog(t, 12.1, 12.4)) * (1 - prog(t, 15.3, 15.6));
+  A.pose({ blink: blinkAt(t, 0.6), mouth: dizzy ? "o" : "smile", lookX: dizzy ? Math.sin(t * 8) * 0.8 : 0.8, lookY: dizzy ? Math.cos(t * 8) * 0.5 : 0, headTilt: dizzy ? Math.sin(t * 4) * 0.12 : 0, armL: 0.15 + cheer * 2.4, armR: 0.15 + cheer * 2.4 });
+
+  // Lockie with the consult rule.
+  const drop = prog(t, 5.1, 5.45);
+  L.root.visible = t > 5.1;
+  const landK = t > 5.45 ? Math.exp(-(t - 5.45) * 6) * Math.cos((t - 5.45) * 18) : 0;
+  const signUp = E.back(prog(t, 5.7, 6.05)) * (1 - E.inOut(prog(t, 8.4, 8.7)));
+  const click = t > 11.1 ? Math.exp(-(t - 11.1) * 7) : 0;
+  L.root.position.set(-0.05, (1 - E.out(drop)) * 4.5 + party * Math.abs(Math.sin(t * 9 + 1)) * 0.18, 1.0);
+  L.pose({ squash: landK * 0.8 + click * 0.5, open: t < 11.1 ? 1 : 1 - E.out(prog(t, 11.1, 11.25)), armR: 0.25 + signUp * 2.3 + party * 2, armL: 0.25 + party * 2,
+    blink: blinkAt(t, 1.2), lookX: 0.6, mouth: click > 0.3 ? "o" : "smile", tilt: party * Math.sin(t * 9) * 0.15 });
+  poof.position.set(-0.05, 1.0, 1.1); poof.userData.at(prog(t, 5.2, 6.0));
+  sign.visible = signUp > 0.01;
+  sign.position.set(0.1, 1.45, 1.2); sign.scale.setScalar(0.64 * signUp); sign.rotation.z = -0.06 + Math.sin(t * 3) * 0.03;
+
+  confetti.position.set(0, 1.6, 0.6); confetti.userData.at(t - 12.1);
+  showBubbles(t, bub, S.toScreen);
+  outro(t, 15.6, { h: "One idea.<br>Not twelve opinions.", p: "Booking + deposits for tattoo artists.<br>Free for founding artists." });
+  S.frame();
+};
+render(0);
+window.READY = true;
+</script></body></html>

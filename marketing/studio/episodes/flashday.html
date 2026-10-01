@@ -1,0 +1,100 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/lib.css"><link rel="stylesheet" href="/ui.css"><script src="/lib.js"></script>
+<script type="importmap">{ "imports": { "three": "/three.js", "three/addons/": "/addons/" } }</script>
+</head><body><div id="gl"></div><div id="bubbles"></div>
+<script type="module">
+import { THREE, setup, mesh, toon, flat, makeLockie, makeArtist, makeBlob, makeCoin, makeJar, makeSign, makeLabel, makeConfetti, makePoof, blinkAt, BLOB_COLORS } from "/kit.js";
+import { bubbles, showBubbles } from "/ui.js";
+base();
+await document.fonts.load("900 40px 'Bricolage Grotesque'"); await document.fonts.load("700 40px 'Inter'");
+const S = setup({ camPos: [0, 2.6, 13], look: [0, 1.95, 0] });
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+
+const A = makeArtist(); A.root.position.set(-1.25, 0, 0.1); S.scene.add(A.root);
+const L = makeLockie(); L.root.scale.setScalar(0.62); S.scene.add(L.root);
+const jar = makeJar("DEPOSITS"); jar.position.set(-0.95, 0, 1.35); jar.scale.setScalar(0.7); S.scene.add(jar);
+const banner = makeLabel(["FLASH DAY · $100"], { w: 2.4, h: 0.36, bg: "#ffc53d", color: "#1a0905" }); banner.position.set(0, 3.7, -1.6); S.scene.add(banner);
+const sign = makeSign(["PICK A", "FLASH SLOT"], { w: 1.5, h: 0.9 }); S.scene.add(sign);
+// The line: six clients stretching off-screen, each gets a time.
+const TIMES = ["12:00", "12:30", "1:00", "1:30", "2:00", "2:30"];
+const line = TIMES.map((tm, i) => { const b = makeBlob(BLOB_COLORS[i % BLOB_COLORS.length], 0.72); S.scene.add(b.root); return b; });
+const slots = TIMES.map((tm, i) => {
+  const x = -0.9 + (i % 3) * 0.9, y = 3.05 - Math.floor(i / 3) * 0.55;
+  const open = makeLabel([tm, "OPEN"], { w: 0.8, h: 0.46, bg: "#ffffff", color: "#1a0905" });
+  const booked = makeLabel([tm, "BOOKED ✓"], { w: 0.8, h: 0.46, bg: "#ff5c39", color: "#ffffff" });
+  open.position.set(x, y, -1.6); booked.position.set(x, y, -1.58); S.scene.add(open, booked); return { open, booked };
+});
+const tickets = TIMES.map((tm) => { const m = makeLabel([tm], { w: 0.42, h: 0.22, bg: "#ffffff", color: "#ff5c39" }); S.scene.add(m); return m; });
+const coins = TIMES.map(() => { const c = makeCoin(); c.scale.setScalar(0.5); S.scene.add(c); return c; });
+const PAY = (i) => 8.2 + i * 0.45;
+const LX = (i) => 0.4 + i * 0.62, LZ = (i) => 0.9 - i * 0.35;
+const poof = makePoof(14, 191); S.scene.add(poof);
+const confetti = makeConfetti(90, 193); S.scene.add(confetti);
+
+const bub = bubbles([
+  { t0: 0.9, t1: 2.1, text: "how long is the wait?? 😩", anchor: () => V(LX(1), 1.1, LZ(1)), align: 0.6, tail: "60%" },
+  { t0: 2.1, t1: 3.5, text: "been here since 6am", cls: "dark", anchor: () => V(LX(2), 1.1, LZ(2)), align: 0.6, tail: "60%" },
+  { t0: 3.6, t1: 5.2, text: "i can't do 40 people at once 😵", cls: "dark", anchor: () => V(-1.25, 2.55, 0.1), align: 0.25, tail: "25%" },
+  { t0: 5.2, t1: 5.9, sfx: true, text: "POOF!", anchor: () => V(-0.45, 1.8, 1.3), rot: 8 },
+  { t0: 11.3, t1: 12.0, sfx: true, text: "CLICK!", anchor: () => V(-0.45, 1.8, 1.3), rot: -6 },
+  { t0: 12.2, t1: 14.6, text: "12:00? that's me! 🙌", anchor: () => V(LX(0), 1.1, LZ(0)), align: 0.5 },
+]);
+
+window.DUR = 18.8;
+window.render = (t) => {
+  captions(t, [
+    { t0: 0, t1: 2.6, html: "Flash day. <em>The line is around the block.</em>" },
+    { t0: 2.6, t1: 5.2, html: "Hours of standing. <em>Half of them give up.</em>" },
+    { t0: 5.4, t1: 8.0, html: "Put the flash slots <em>on your page.</em>" },
+    { t0: 8.0, t1: 11.6, html: "Everyone books a time <em>and pays the deposit.</em>" },
+    { t0: 11.6, t1: 15.6, html: "Flash day. <em>Fully booked. Zero line.</em>" },
+  ]);
+  S.aim(V(0, 2.6, 13), V(0, 1.95, 0));
+
+  let landed = 0;
+  const party = prog(t, 12.0, 12.2) * (1 - prog(t, 15.3, 15.5));
+  line.forEach((b, i) => {
+    const at = 0.1 + i * 0.18, k = E.out(prog(t, at, at + 0.5));
+    const pay = PAY(i), leave = i === 0 ? 0 : E.inOut(prog(t, pay + 0.6, pay + 1.1));
+    b.root.visible = leave < 1;
+    const hop = t > pay - 0.25 && t < pay + 0.1 ? Math.sin(prog(t, pay - 0.25, pay + 0.1) * Math.PI) * 0.22 : 0;
+    const tired = t > 2.6 && t < 5.4;
+    b.root.position.set(lerp(4.5 + i * 0.4, LX(i), k) + leave * 3, (k < 1 || (leave > 0 && leave < 1) ? Math.abs(Math.sin(t * 11 + i)) * 0.14 : 0) + hop + (i === 0 ? party * Math.abs(Math.sin(t * 9)) * 0.16 : 0), LZ(i));
+    b.pose({ blink: tired ? 0.55 : blinkAt(t, i * 0.4), lookX: -0.7, mouth: tired ? "flat" : "smile", squash: tired ? 0.08 : 0, armL: 0.3 + (hop > 0.05 ? 1.4 : 0) + (i === 0 ? party * 1.5 : 0), armR: 0.3 + (i === 0 ? party * 1.5 : 0) });
+    const tk = E.back(prog(t, pay + 0.2, pay + 0.45));
+    tickets[i].visible = t > pay + 0.2 && leave < 1 && t < 15.4; tickets[i].scale.setScalar(Math.max(0.01, tk));
+    tickets[i].position.copy(b.root.position).add(V(0, 0.95, 0.1));
+    const sk = E.back(prog(t, pay + 0.3, pay + 0.55));
+    slots[i].booked.visible = t > pay + 0.3; slots[i].booked.scale.setScalar(Math.max(0.01, sk)); slots[i].open.visible = sk < 0.5;
+    const ck = prog(t, pay, pay + 0.5), c = coins[i];
+    c.visible = ck > 0 && ck < 1;
+    c.position.set(lerp(LX(i), -0.95, ck), lerp(0.8, 0.7, ck) + Math.sin(ck * Math.PI) * 1.3, lerp(LZ(i), 1.35, ck)); c.rotation.y = ck * 16;
+    if (t > pay + 0.5) landed++;
+  });
+  jar.userData.fill(landed);
+
+  // The artist: overwhelmed, then cheering.
+  const panic = t > 2.6 && t < 5.4;
+  const cheer = E.back(prog(t, 12.0, 12.3)) * (1 - prog(t, 15.3, 15.6));
+  A.pose({ blink: blinkAt(t, 0.6), mouth: panic ? "o" : "smile", lookX: 0.8, slump: panic ? 0.4 : 0, armL: 0.15 + (panic ? 1.0 : 0) + cheer * 2.4, armLx: panic ? -1.2 : 0, armR: 0.15 + (panic ? 1.0 : 0) + cheer * 2.4, armRx: panic ? -1.2 : 0 });
+
+  // Lockie hands out times.
+  const drop = prog(t, 5.0, 5.35);
+  L.root.visible = t > 5.0;
+  const landK = t > 5.35 ? Math.exp(-(t - 5.35) * 6) * Math.cos((t - 5.35) * 18) : 0;
+  const signUp = E.back(prog(t, 5.6, 5.95)) * (1 - E.inOut(prog(t, 7.9, 8.2)));
+  const click = t > 11.3 ? Math.exp(-(t - 11.3) * 7) : 0;
+  L.root.position.set(-0.45, (1 - E.out(drop)) * 4.5 + party * Math.abs(Math.sin(t * 9 + 1)) * 0.18, 1.3);
+  L.pose({ squash: landK * 0.8 + click * 0.5, open: t < 11.3 ? 1 : 1 - E.out(prog(t, 11.3, 11.45)), armR: 0.25 + signUp * 2.3 + party * 2, armL: 0.25 + party * 2,
+    blink: blinkAt(t, 1.2), lookX: 0.6, mouth: click > 0.3 ? "o" : "smile", tilt: party * Math.sin(t * 9) * 0.15 });
+  poof.position.set(-0.45, 1.0, 1.5); poof.userData.at(prog(t, 5.1, 5.9));
+  sign.visible = signUp > 0.01;
+  sign.position.set(-0.3, 1.3, 1.6); sign.scale.setScalar(0.6 * signUp); sign.rotation.z = -0.06 + Math.sin(t * 3) * 0.03;
+
+  confetti.position.set(0, 1.6, 0.6); confetti.userData.at(t - 12.0);
+  showBubbles(t, bub, S.toScreen);
+  outro(t, 15.6, { h: "Flash day.<br>No line.", p: "Booking + deposits for tattoo artists.<br>Free for founding artists." });
+  S.frame();
+};
+render(0);
+window.READY = true;
+</script></body></html>

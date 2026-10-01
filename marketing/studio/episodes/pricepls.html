@@ -1,0 +1,117 @@
+<!doctype html><html data-look="blush"><head><meta charset="utf-8"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/lib.css"><link rel="stylesheet" href="/ui.css"><script src="/lib.js"></script>
+<script type="importmap">{ "imports": { "three": "/three.js", "three/addons/": "/addons/" } }</script>
+<style>
+  /* Blush palette for beauty episodes. */
+  body { background: #fff5f7; color: #3d1f2c; }
+  .glow { background: radial-gradient(60% 38% at 82% 8%, rgba(255,150,190,.55), transparent 70%), radial-gradient(55% 35% at 0% 100%, rgba(255,200,220,.6), transparent 70%); }
+  #cap { font: 700 84px/1.04 "Fraunces", Georgia, serif; letter-spacing: -.03em; color: #3d1f2c; }
+  em { color: #d63a70; font-style: italic; }
+  #foot { color: #a57f8f; }
+  .bub { box-shadow: 0 16px 40px -14px rgba(170,60,105,.5); border: 3px solid #f6cfdc; }
+  .bub::after { border-right: 3px solid #f6cfdc; border-bottom: 3px solid #f6cfdc; }
+  .bub.accent { background: linear-gradient(180deg, #f58ab2, #e0457f); color: #fff; border-color: transparent; } .bub.accent::after { background: #e24f86; border-color: transparent; }
+  .bub.dark { background: #3d1f2c; color: #fff5f7; border-color: #3d1f2c; } .bub.dark::after { background: #3d1f2c; border-color: #3d1f2c; }
+  .sfx { color: #fff; -webkit-text-stroke: 4px #7a1d45; }
+  #outro { background: radial-gradient(60% 40% at 50% 30%, rgba(255,150,190,.55), transparent 70%), #fff5f7; }
+  #outro h2 { font: italic 700 100px/1.02 "Fraunces", Georgia, serif; letter-spacing: -.03em; color: #3d1f2c; }
+  #outro p { color: #6e4b5b; }
+  #outro .cta { background: linear-gradient(180deg, #f58ab2, #e0457f); color: #fff; }
+  #outro .wordmark, #foot .wordmark { color: #3d1f2c; }
+</style>
+</head><body><div id="gl"></div><div id="bubbles"></div>
+<script type="module">
+import { THREE, setup, mesh, toon, flat, makeLockie, makeTech, makeNailTable, makeBlob, makeCoin, makeSign, makeJar, makePhone, makeConfetti, makePoof, blinkAt, rng } from "/kit.js";
+import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+import { bubbles, showBubbles } from "/ui.js";
+base();
+await document.fonts.load("900 40px 'Bricolage Grotesque'"); await document.fonts.load("700 40px 'Inter'");
+await document.fonts.load("600 40px 'Fraunces'"); await document.fonts.load("italic 600 40px 'Fraunces'");
+const S = setup({ camPos: [0, 2.3, 10.5], look: [0, 1.75, 0], palette: "blush" });
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+
+const T = makeTech({ skin: 0x8d5a3b, hair: 0x1a1210, smock: 0xff9ec0 }); T.root.position.set(-0.7, 0, -0.35); S.scene.add(T.root);
+const table = makeNailTable(); table.position.set(0, 0, 0.35); S.scene.add(table);
+const jar = makeJar("DEPOSITS"); jar.position.set(0.05, 0.95, 0.6); jar.scale.setScalar(0.9); jar.userData.fill(1); S.scene.add(jar);
+const L = makeLockie({ color: 0xff7aa8, feet: 0xe0457f, key: 0x7a1d45 }); L.root.scale.setScalar(0.62); S.scene.add(L.root);
+const tphone = new THREE.Group(); tphone.position.set(-0.4, 0.99, 0.6); tphone.rotation.x = -Math.PI / 2 + 0.35; S.scene.add(tphone);
+tphone.add(mesh(new RoundedBoxGeometry(0.3, 0.52, 0.05, 3, 0.05), toon(0x3d1f2c), 0.015));
+const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.25, 0.44), flat(0xffd6e5)); screen.position.z = 0.027; tphone.add(screen);
+const sign = makeSign(["PRICES", "LINK IN BIO ✨"], { w: 1.6, h: 0.9, bg: "#ffffff", color: "#e0457f" }); S.scene.add(sign);
+const clients = [0x8fc1ff, 0xffc56b].map((c) => { const b = makeBlob(c, 0.62); S.scene.add(b.root); return b; });
+const phones = [0, 1].map(() => { const p = makePhone([{ lines: ["FULL SET", "$65"] }, { lines: ["$20", "DEPOSIT"] }, { lines: ["BOOKED", "✓"], bg: "#fff0f5", color: "#e0457f" }]); S.scene.add(p); return p; });
+const coins = [0, 1].map(() => { const c = makeCoin(); c.scale.setScalar(0.55); S.scene.add(c); return c; });
+const CXS = [0.4, 0.9], ARR = [7.4, 7.9], PAY = [9.6, 10.4];
+const poof = makePoof(14, 161); S.scene.add(poof);
+const confetti = makeConfetti(90, 163); S.scene.add(confetti);
+const PINKS = [0xe0457f, 0xff8fb1, 0xffffff, 0xd7a6ff, 0xffc4d8, 0xf3c6b0];
+confetti.children.forEach((m, i) => { m.material = flat(PINKS[i % PINKS.length], { side: THREE.DoubleSide }); });
+
+const r = rng(17);
+const PP = ["pp?", "pp", "pp??", "price pls 💅", "pp", "how much", "pp?", "pp 🥺"];
+const bub = bubbles([
+  ...PP.map((text, i) => ({ t0: 0.3 + i * 0.28, t1: 2.6, text, cls: i % 3 === 1 ? "dark" : "", anchor: () => V(-0.6 + (i % 4) * 0.55, 1.2 + Math.floor(i / 4) * 0.55 + (i % 2) * 0.12, 0.9), align: 0.5, rot: (r() - 0.5) * 10 })),
+  { t0: 2.7, t1: 5.2, text: "full set $65, infill $45, removal $15…", cls: "dark", anchor: () => V(-0.7, 2.25, -0.35), align: 0.3, tail: "30%" },
+  { t0: 4.2, t1: 5.2, sfx: true, text: "pp?", anchor: () => V(0.7, 1.6, 0.8), rot: 10 },
+  { t0: 5.3, t1: 6.0, sfx: true, text: "POOF!", anchor: () => V(0.75, 1.9, 0.8), rot: 8 },
+  { t0: 12.2, t1: 13.1, sfx: true, text: "pp?", anchor: () => V(-0.2, 1.3, 0.8), rot: -8 },
+  { t0: 13.1, t1: 15.0, text: "link in bio babe 💅✨", anchor: () => V(-0.7, 2.25, -0.35), align: 0.3, tail: "30%" },
+]);
+
+window.DUR = 18.8;
+window.render = (t) => {
+  captions(t, [
+    { t0: 0, t1: 2.6, html: "Your DMs: <em>“pp?”</em> ×47" },
+    { t0: 2.6, t1: 5.3, html: "You type the whole price list. <em>Again.</em>" },
+    { t0: 5.5, t1: 7.4, html: "Put your prices <em>on your page.</em>" },
+    { t0: 7.4, t1: 12.0, html: "They see the price, pick a time, <em>pay the deposit.</em>" },
+    { t0: 12.0, t1: 15.6, html: "Next “pp?” → <em>link in bio.</em> 💅" },
+  ]);
+  S.aim(V(0, 2.3, 10.5), V(0, 1.75, 0));
+  const buzz = (t > 0.3 && t < 2.6) || (t > 4.2 && t < 5.2) || (t > 12.2 && t < 13.1);
+  tphone.position.x = -0.4 + (buzz && Math.floor(t * 14) % 2 ? 0.012 : 0);
+  screen.material.color.setHex(buzz && Math.floor(t * 6) % 2 === 0 ? 0xffffff : 0xffc4d8);
+
+  // The tech: typing the list for the 47th time, then relaxed.
+  const typing = t > 2.6 && t < 5.3;
+  const cheer = E.back(prog(t, 13.2, 13.5)) * (1 - prog(t, 15.3, 15.6));
+  T.pose({ blink: blinkAt(t, 0.8), lookX: 0.3, lookY: typing || t < 2.6 ? -0.6 : 0, mouth: typing ? "o" : "smile", sweat: typing, slump: typing ? 0.5 : 0,
+    armL: 0.1 + (typing ? 0.25 + Math.abs(Math.sin(t * 25)) * 0.1 : 0) + cheer * 2.5, armLx: cheer > 0.1 ? 0 : -0.9, armR: 0.1 + (typing ? 0.25 + Math.abs(Math.cos(t * 25)) * 0.1 : 0) + cheer * 2.5, armRx: cheer > 0.1 ? 0 : -0.9 });
+
+  // Pink Lockie: prices on the page.
+  const drop = prog(t, 5.1, 5.45);
+  L.root.visible = t > 5.1;
+  const landK = t > 5.45 ? Math.exp(-(t - 5.45) * 6) * Math.cos((t - 5.45) * 18) : 0;
+  const signUp = E.back(prog(t, 5.7, 6.05)) * (1 - E.inOut(prog(t, 7.2, 7.5))) + E.back(prog(t, 12.6, 12.9)) * (1 - E.inOut(prog(t, 15.0, 15.3)));
+  const dance = prog(t, 13.2, 13.4) * (1 - prog(t, 15.4, 15.6));
+  L.root.position.set(0.72, 0.95 + (1 - E.out(drop)) * 3.5 + dance * Math.abs(Math.sin(t * 9)) * 0.2, 0.45);
+  L.pose({ squash: landK * 0.7, open: 0, armR: 0.25 + signUp * 1.2 + dance * 2, armL: 0.25 + dance * 2, blink: blinkAt(t, 1.4), lookX: 0.4, tilt: dance * Math.sin(t * 9) * 0.15 });
+  poof.position.set(0.72, 1.4, 0.7); poof.userData.at(prog(t, 5.2, 6.0));
+  sign.visible = signUp > 0.01;
+  sign.position.set(0.85, 1.45, 0.95); sign.scale.setScalar(0.5 * Math.min(1, signUp)); sign.rotation.z = -0.08 + Math.sin(t * 3) * 0.03;
+
+  // Two clients see the price and book.
+  let landed = 0;
+  clients.forEach((b, i) => {
+    const k = E.out(prog(t, ARR[i], ARR[i] + 0.45)), gone = E.inOut(prog(t, 11.6, 12.0));
+    b.root.visible = t > ARR[i] && gone < 1;
+    b.root.position.set(lerp(3.0, CXS[i], k) + gone * 2.6, k < 1 || (gone > 0 && gone < 1) ? Math.abs(Math.sin(t * 11 + i)) * 0.14 : 0, 1.1);
+    const tapping = t > PAY[i] - 1.0 && t < PAY[i];
+    b.pose({ blink: blinkAt(t, i * 0.6), lookX: -0.4, lookY: 0.3, mouth: "smile", armL: 0.3 + (tapping ? 1.1 + Math.abs(Math.sin(t * 20 + i)) * 0.2 : 0), armR: 0.3 });
+    const pk = E.out(prog(t, ARR[i] + 0.5, ARR[i] + 0.8)) * (1 - prog(t, PAY[i] + 0.6, PAY[i] + 0.8));
+    const p = phones[i]; p.visible = pk > 0.01; p.position.set(CXS[i] - 0.05, 1.0 + i * 0.05, 1.4); p.scale.setScalar(0.7 * pk); p.rotation.set(-0.1, -0.2, 0);
+    p.userData.show(t < PAY[i] - 0.6 ? 0 : t < PAY[i] ? 1 : 2);
+    const ck = prog(t, PAY[i], PAY[i] + 0.5), c = coins[i];
+    c.visible = ck > 0 && ck < 1;
+    c.position.set(lerp(CXS[i], 0.05, ck), lerp(0.8, 1.35, ck) + Math.sin(ck * Math.PI) * 0.9, lerp(1.1, 0.6, ck)); c.rotation.y = ck * 16;
+    if (t > PAY[i] + 0.5) landed++;
+  });
+  jar.userData.fill(1 + landed);
+
+  confetti.position.set(0, 1.4, 0.6); confetti.userData.at(t - 13.2);
+  showBubbles(t, bub, S.toScreen);
+  outro(t, 15.6, { h: "“pp?”<br>Link in bio.", p: "Booking + deposits for nail techs,<br>lash artists & beauty pros." });
+  S.frame();
+};
+render(0);
+window.READY = true;
+</script></body></html>

@@ -69,6 +69,11 @@ Add every new episode here so ideas never repeat.
 | 2026-09-23 | ghosted | No-deposit client vanishes at 2pm; Lockie's "DEPOSIT FIRST" sign scares the ghost off | Ghost-proof your books. |
 | 2026-09-23 | bouncer | Lockie bounces "I'll pay later" at the calendar's velvet rope | Hire the bouncer. |
 | 2026-09-23 | flood | DM bubbles bury the artist; Lockie bursts out with one link | One link. Zero chaos. |
+| 2026-10-01 | mompays | Tough guy wants a giant skull, "my mom's paying"; mom squints at the phone, Lockie points her to the deposit, she sends it and gives Lockie a cookie | Anyone can pay. Everyone pays first. |
+| 2026-10-01 | pricepls | DMs full of "pp?" ×47; the tech types the price list again; pink Lockie puts prices on the page, clients book with deposits; next "pp?" gets "link in bio" | "pp?" Link in bio. |
+| 2026-10-01 | facetime | Consult day with the group chat on FaceTime ("BIGGER", "add a wolf", "make it pink"); Lockie's IDEA + REFS FIRST, consult form, quote, deposit; one rose, group chat approved | One idea. Not twelve opinions. |
+| 2026-10-01 | instabrows | "I want THESE brows" from a filtered selfie; magnifier reveals FILTER: GLAM 3000; pink Lockie's consult with a no-filter photo, quote, deposit; real fluffy brows | No filter. Real booking. |
+| 2026-10-01 | flashday | Flash day line around the block; Lockie puts flash slots on the page, everyone books a time with a deposit and leaves, the 12:00 client stays | Flash day. No line. |
 | 2026-09-30 | paymethods | "Can I pay the deposit with… him? 🐐", then an IOU and a meme coin; Lockie shows the artist's Venmo / Cash App / Zelle, they pay, the artist confirms, the goat stays | Deposits: yes. Goats: no. |
 | 2026-09-30 | christmas | December DMs: "open on christmas??" ×20; pink Lockie in a Santa hat blocks Dec 25, clients book the 23rd and 24th, then cocoa in the snow | Block the day. Keep the holiday. |
 | 2026-09-30 | nightowl | 11:47 PM, a night owl wants 2 AM; the yawning artist's page only shows 11 AM–7 PM, they book Sat 6 PM and show up in shades | Your hours. Not 2 AM. |
@@ -105,6 +110,6 @@ Add every new episode here so ideas never repeat.
 ## Idea backlog
 
 - Client asks to move the appointment 6 times
-- The client who brings their whole group chat's opinions on the design, live on FaceTime
-- "My mom is paying" — the mom books and pays the deposit from her own phone
-- Beauty: the brow client who wants "Instagram brows" from a filtered photo; consult form with a real photo first
+- The client who asks "can I bring my dog?" and the dog books its own slot (pet portrait tattoo)
+- Beauty: bridal trial vs. wedding day, both booked in one go
+- Lockie's birthday: every client brings a deposit instead of a present
