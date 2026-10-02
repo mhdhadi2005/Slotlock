@@ -1,0 +1,90 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/lib.css"><link rel="stylesheet" href="/ui.css"><script src="/lib.js"></script>
+<script type="importmap">{ "imports": { "three": "/three.js", "three/addons/": "/addons/" } }</script>
+</head><body><div id="gl"></div><div id="bubbles"></div>
+<script type="module">
+import { THREE, setup, mesh, toon, flat, makeLockie, makeArtist, makeBlob, makeCoin, makeJar, makePhone, makeSign, makeConfetti, makePoof, blinkAt, rng, BLOB_COLORS } from "/kit.js";
+import { bubbles, showBubbles } from "/ui.js";
+base();
+await document.fonts.load("900 40px 'Bricolage Grotesque'"); await document.fonts.load("700 40px 'Inter'");
+const S = setup({ camPos: [0, 2.6, 13], look: [0, 1.95, 0] });
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+
+const A = makeArtist(); A.root.position.set(-1.25, 0, 0.1); S.scene.add(A.root);
+const C = makeBlob(BLOB_COLORS[1], 0.85); S.scene.add(C.root);
+const L = makeLockie(); L.root.scale.setScalar(0.8); S.scene.add(L.root);
+const jar = makeJar("DEPOSITS"); jar.position.set(-0.95, 0, 1.35); jar.scale.setScalar(0.7); jar.userData.fill(2); S.scene.add(jar);
+const sign = makeSign(["THEY TAP", "“I SENT IT”"], { w: 1.6, h: 0.95 }); S.scene.add(sign);
+const cphone = makePhone([{ lines: ["$50", "SENT ✓"], bg: "#e6fff1", color: "#128a52" }, { lines: ["I SENT", "IT ✓"] }, { lines: ["YOU'RE", "BOOKED ✓"], bg: "#e6fff1", color: "#128a52" }]); S.scene.add(cphone);
+const aphone = makePhone([{ lines: ["“I SENT", "IT” · $50"], bg: "#fff3d6" }, { lines: ["CONFIRM", "DEPOSIT ✓"], bg: "#ff5c39", color: "#ffffff" }]); S.scene.add(aphone);
+const coin = makeCoin(); coin.scale.setScalar(0.7); S.scene.add(coin);
+const poof = makePoof(14, 201); S.scene.add(poof);
+const confetti = makeConfetti(90, 203); S.scene.add(confetti);
+const CX = 1.0;
+
+const r = rng(21);
+const ASK = ["did u get it?", "did u get it??", "just checking 👀", "did it go through?", "hello??", "did u get my deposit 🥺"];
+const bub = bubbles([
+  { t0: 0.3, t1: 1.0, sfx: true, text: "SENT!", anchor: () => V(CX + 0.1, 1.5, 0.8), rot: -6 },
+  ...ASK.map((text, i) => ({ t0: 1.1 + i * 0.5, t1: 4.8, text, cls: i % 2 ? "dark" : "", anchor: () => V(0.2 + (i % 2) * 0.75, 1.15 + i * 0.32, 0.9), align: 0.5, rot: (r() - 0.5) * 8 })),
+  { t0: 4.9, t1: 5.5, sfx: true, text: "POOF!", anchor: () => V(0.0, 1.9, 1.0), rot: 8 },
+  { t0: 9.4, t1: 10.1, sfx: true, text: "TAP!", anchor: () => V(-0.4, 2.3, 1.2), rot: -6 },
+  { t0: 10.4, t1: 11.1, sfx: true, text: "CLICK!", anchor: () => V(0.0, 1.9, 1.0), rot: 6 },
+  { t0: 11.6, t1: 13.4, text: "omg it says i'm booked 🥹", anchor: () => V(CX, 1.35, 0.8), align: 0.75, tail: "75%" },
+]);
+
+window.DUR = 18.8;
+window.render = (t) => {
+  captions(t, [
+    { t0: 0, t1: 1.1, html: "Deposit sent. <em>Then…</em>" },
+    { t0: 1.1, t1: 4.9, html: "“did u get it?” <em>×6 in 4 minutes.</em>" },
+    { t0: 5.1, t1: 8.6, html: "They tap “I sent it”. <em>You get the email.</em>" },
+    { t0: 8.6, t1: 11.4, html: "You check, you confirm. <em>One tap.</em>" },
+    { t0: 11.4, t1: 15.6, html: "They get “You're booked.” <em>Done.</em>" },
+  ]);
+  S.aim(V(0, 2.6, 13), V(0, 1.95, 0));
+
+  // The client: sends the deposit, then panic-checks.
+  const cin = E.out(prog(t, 0.0, 0.3));
+  const party = prog(t, 11.6, 11.8) * (1 - prog(t, 15.3, 15.5));
+  const anxious = t > 1.1 && t < 4.9;
+  C.root.position.set(lerp(3.2, CX, cin), (anxious ? Math.abs(Math.sin(t * 14)) * 0.08 : 0) + party * Math.abs(Math.sin(t * 9)) * 0.16, 0.8);
+  C.pose({ blink: blinkAt(t, 1.7), lookX: anxious ? Math.sin(t * 6) * 0.5 : -0.6, mouth: anxious ? "o" : "smile", squash: anxious ? Math.sin(t * 20) * 0.04 : 0,
+    armL: 0.3 + (t < 4.9 || (t > 6.0 && t < 7.4) ? 1.3 : 0) + party * 1.5, armR: 0.3 + party * 1.5 });
+  const cpk = E.out(prog(t, 0.2, 0.4)) * (1 - prog(t, 4.8, 5.0)) + E.out(prog(t, 6.0, 6.3)) * (1 - prog(t, 7.4, 7.6)) + E.out(prog(t, 11.0, 11.3)) * (1 - prog(t, 13.4, 13.6));
+  cphone.visible = cpk > 0.01; cphone.position.set(CX - 0.5, 2.3, 1.1); cphone.scale.setScalar(1.25 * Math.min(1, cpk)); cphone.rotation.set(-0.1, -0.2, 0);
+  cphone.userData.show(t < 5.5 ? 0 : t < 10 ? 1 : 2);
+  const ck = prog(t, 0.4, 1.0);
+  coin.visible = ck > 0 && ck < 1;
+  coin.position.set(lerp(0.8, -0.95, ck), lerp(1.4, 0.7, ck) + Math.sin(ck * Math.PI) * 1.3, lerp(1.0, 1.35, ck)); coin.rotation.y = ck * 16;
+  jar.userData.fill(t < 1.0 ? 2 : 3);
+
+  // The artist: buzzing phone, then one email and one tap.
+  const flood = t > 1.1 && t < 4.9;
+  const apk = E.out(prog(t, 7.6, 7.9)) * (1 - prog(t, 10.6, 10.9));
+  aphone.visible = apk > 0.01; aphone.position.set(-0.55, 1.5, 1.4); aphone.scale.setScalar(1.15 * apk); aphone.rotation.set(-0.1, 0.25, 0);
+  aphone.userData.show(t < 9.4 ? 0 : 1);
+  const cheer = E.back(prog(t, 11.7, 12.0)) * (1 - prog(t, 15.3, 15.6));
+  A.pose({ blink: blinkAt(t, 0.6), mouth: flood ? "o" : "smile", lookX: flood ? 0.8 : 0.5, headTilt: flood ? Math.sin(t * 10) * 0.05 : 0, sweat: flood,
+    armL: 0.15 + cheer * 2.4, armR: 0.15 + (apk > 0.3 ? 1.2 : 0) + (t > 9.4 && t < 9.7 ? 0.3 : 0) + cheer * 2.4 });
+
+  // Lockie: the "I sent it" button.
+  const drop = prog(t, 4.7, 5.05);
+  L.root.visible = t > 4.7;
+  const landK = t > 5.05 ? Math.exp(-(t - 5.05) * 6) * Math.cos((t - 5.05) * 18) : 0;
+  const signUp = E.back(prog(t, 5.3, 5.65)) * (1 - E.inOut(prog(t, 7.3, 7.6)));
+  const click = t > 10.4 ? Math.exp(-(t - 10.4) * 7) : 0;
+  L.root.position.set(0.0, (1 - E.out(drop)) * 4.5 + party * Math.abs(Math.sin(t * 9 + 1)) * 0.18, 1.0);
+  L.pose({ squash: landK * 0.8 + click * 0.5, open: t < 10.4 ? 1 : 1 - E.out(prog(t, 10.4, 10.55)), armR: 0.25 + signUp * 2.3 + party * 2, armL: 0.25 + party * 2,
+    blink: blinkAt(t, 1.2), lookX: 0.6, mouth: click > 0.3 ? "o" : "smile", tilt: party * Math.sin(t * 9) * 0.15 });
+  poof.position.set(0.0, 1.0, 1.1); poof.userData.at(prog(t, 4.8, 5.6));
+  sign.visible = signUp > 0.01;
+  sign.position.set(-0.2, 1.3, 1.3); sign.scale.setScalar(0.58 * signUp); sign.rotation.z = -0.06 + Math.sin(t * 3) * 0.03;
+
+  confetti.position.set(0, 1.6, 0.6); confetti.userData.at(t - 11.7);
+  showBubbles(t, bub, S.toScreen);
+  outro(t, 15.6, { h: "“Did you get it?”<br>Yes. Booked.", p: "Booking + deposits for tattoo artists.<br>Free for founding artists." });
+  S.frame();
+};
+render(0);
+window.READY = true;
+</script></body></html>

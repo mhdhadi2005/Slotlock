@@ -1,0 +1,99 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/lib.css"><link rel="stylesheet" href="/ui.css"><script src="/lib.js"></script>
+<script type="importmap">{ "imports": { "three": "/three.js", "three/addons/": "/addons/" } }</script>
+</head><body><div id="gl"></div><div id="bubbles"></div>
+<script type="module">
+import { THREE, setup, mesh, toon, flat, makeLockie, makeArtist, makePhone, makeSign, makeLabel, makeCup, makeConfetti, makePoof, blinkAt } from "/kit.js";
+import { bubbles, showBubbles } from "/ui.js";
+base();
+await document.fonts.load("900 40px 'Bricolage Grotesque'"); await document.fonts.load("700 40px 'Inter'");
+const S = setup({ camPos: [0, 2.6, 13], look: [0, 1.95, 0] });
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+
+const A = makeArtist(); A.root.position.set(-0.75, 0, 0.3); S.scene.add(A.root);
+// Sick extras: a thermometer, a scarf and a mug of soup.
+const therm = mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.32, 8), toon(0xffffff), 0.006); therm.rotation.z = Math.PI / 2 - 0.3; therm.position.set(0.18, -0.2, 0.5); A.head.add(therm);
+const bulb = mesh(new THREE.SphereGeometry(0.035, 8, 6), toon(0xe0453a), 0.004); bulb.position.y = -0.16; therm.add(bulb);
+const scarf = mesh(new THREE.TorusGeometry(0.33, 0.09, 10, 24), toon(0x5aa0d8), 0.012); scarf.rotation.x = Math.PI / 2; scarf.position.y = 1.18; A.body.add(scarf);
+const soup = makeCup(0xfff3d6); soup.scale.setScalar(1.0); soup.position.set(0, -0.05, 0.1); A.arms[0].userData.hand.add(soup);
+const L = makeLockie(); L.root.scale.setScalar(0.8); S.scene.add(L.root);
+const head = [makeLabel(["TOMORROW"], { w: 1.4, h: 0.3, bg: null, color: "#f6f2eb" }), makeLabel(["NEXT WEEK"], { w: 1.4, h: 0.3, bg: null, color: "#ffc53d" })];
+head.forEach((h) => { h.position.set(0, 3.75, -1.6); S.scene.add(h); });
+const NAMES = ["10 AM · SAM", "12 PM · JO", "2 PM · RIA", "4 PM · MAX"];
+const tiles = NAMES.map((n, i) => {
+  const x = -0.68 + (i % 2) * 1.36, y = 3.3 - Math.floor(i / 2) * 0.55;
+  const mk = (l, bg, color) => { const m = makeLabel(l, { w: 1.25, h: 0.46, bg, color }); m.position.set(x, y, -1.6); S.scene.add(m); return m; };
+  return { booked: mk([n], "#ff5c39", "#ffffff"), sent: mk([n.split(" · ")[1] + " · ✉️ SENT"], "#3a3330", "#f6f2eb"), rebooked: mk([n.split(" · ")[1] + " · REBOOKED ✓"], "#2fa37c", "#ffffff") };
+});
+const mails = NAMES.map(() => { const m = makeLabel(["✉️"], { w: 0.32, h: 0.24, bg: "#ffffff", color: "#1a0905" }); S.scene.add(m); return m; });
+const MAIL_AT = (i) => 9.0 + i * 0.35;
+const sign = makeSign(["CANCEL IN", "THE DASHBOARD"], { w: 1.7, h: 0.95 }); S.scene.add(sign);
+const phone = makePhone([{ lines: ["CANCEL 4", "BOOKINGS?"] }, { lines: ["NOTE:", "SICK 🤒"] }, { lines: ["4 EMAILS", "SENT ✓"], bg: "#e6fff1", color: "#128a52" }]); S.scene.add(phone);
+const poof = makePoof(14, 241); S.scene.add(poof);
+const confetti = makeConfetti(80, 243); S.scene.add(confetti);
+
+const bub = bubbles([
+  { t0: 0.3, t1: 1.0, sfx: true, text: "ACHOO!", anchor: () => V(-0.6, 2.6, 0.5), rot: -8 },
+  { t0: 1.2, t1: 2.9, text: "4 clients tomorrow… 🤒", anchor: () => V(-0.15, 1.35, 0.8), align: 0.2, tail: "15%" },
+  { t0: 3.0, t1: 5.3, text: "now i write 4 sorry DMs 😩", anchor: () => V(-0.15, 1.35, 0.8), align: 0.2, tail: "15%" },
+  { t0: 5.3, t1: 6.0, sfx: true, text: "POOF!", anchor: () => V(0.7, 1.9, 1.0), rot: 8 },
+  { t0: 8.9, t1: 9.7, sfx: true, text: "WHOOSH!", anchor: () => V(0.2, 2.6, 0.2), rot: -6 },
+  { t0: 11.3, t1: 12.0, sfx: true, text: "DING ×4", anchor: () => V(0, 3.0, -0.8), rot: 6 },
+  { t0: 12.4, t1: 14.6, text: "soup time 🍜", anchor: () => V(-0.15, 1.35, 0.8), align: 0.2, tail: "15%" },
+]);
+
+window.DUR = 18.8;
+window.render = (t) => {
+  captions(t, [
+    { t0: 0, t1: 2.9, html: "Sick. <em>Four clients tomorrow.</em> 🤒" },
+    { t0: 2.9, t1: 5.4, html: "Four awkward DMs. <em>Four refunds to explain.</em>" },
+    { t0: 5.6, t1: 8.8, html: "Cancel them from your dashboard, <em>add a note.</em>" },
+    { t0: 8.8, t1: 11.3, html: "Each client gets an email <em>and a link to rebook.</em>" },
+    { t0: 11.3, t1: 15.6, html: "They rebook next week. <em>You rest.</em> 🍜" },
+  ]);
+  S.aim(V(0, 2.6, 13), V(0, 1.95, 0));
+  const next = t > 11.2;
+  head[0].visible = !next; head[1].visible = next;
+  tiles.forEach((tl, i) => {
+    const sentAt = MAIL_AT(i) + 0.1, rebookAt = 11.4 + i * 0.3;
+    tl.booked.visible = t < sentAt; tl.sent.visible = t >= sentAt && !next; tl.rebooked.visible = t >= rebookAt;
+    tl.sent.scale.setScalar(Math.max(0.01, E.back(prog(t, sentAt, sentAt + 0.25))));
+    tl.rebooked.scale.setScalar(Math.max(0.01, E.back(prog(t, rebookAt, rebookAt + 0.3))));
+  });
+  mails.forEach((m, i) => {
+    const k = prog(t, MAIL_AT(i), MAIL_AT(i) + 0.8);
+    const tile = tiles[i].booked.position;
+    m.visible = k > 0 && k < 1;
+    m.position.set(tile.x + (i % 2 ? 1 : -1) * k * 2.4, tile.y + Math.sin(k * Math.PI) * 0.4, -1.4 + k * 0.8); m.rotation.z = k * (i % 2 ? -1 : 1);
+  });
+
+  // The artist: sneezing and miserable, then cosy with soup.
+  const sneeze = t > 0.2 && t < 0.6 ? Math.sin(prog(t, 0.2, 0.6) * Math.PI) : 0;
+  const cosy = t > 12.0;
+  const sip = cosy ? E.inOut(prog((t - 12.0) % 2.4, 0.4, 0.8)) * (1 - E.inOut(prog((t - 12.0) % 2.4, 1.4, 1.8))) : 0;
+  soup.visible = cosy; therm.visible = !cosy;
+  A.pose({ blink: t < 5.4 ? 0.5 : cosy && sip > 0.3 ? 1 : blinkAt(t, 0.6), mouth: t < 5.4 ? "o" : "smile", lookX: 0.4, slump: t < 11 ? 0.8 : 0.2, headNod: sneeze * 0.4, squash: sneeze * 0.15, sweat: t < 5.4,
+    armL: 0.15 + (cosy ? 0.9 + sip * 0.9 : 0), armLx: cosy ? -1.0 - sip * 0.4 : 0, armR: 0.15 + (t > 6.4 && t < 8.8 ? 1.2 : 0) });
+  const pk = E.out(prog(t, 6.3, 6.6)) * (1 - prog(t, 10.8, 11.0));
+  phone.visible = pk > 0.01; phone.position.set(-0.15, 1.9, 1.1); phone.scale.setScalar(1.15 * pk); phone.rotation.set(-0.1, 0.2, 0);
+  phone.userData.show(t < 7.4 ? 0 : t < 8.8 ? 1 : 2);
+
+  // Lockie: cancel in the dashboard.
+  const drop = prog(t, 5.1, 5.45);
+  L.root.visible = t > 5.1;
+  const landK = t > 5.45 ? Math.exp(-(t - 5.45) * 6) * Math.cos((t - 5.45) * 18) : 0;
+  const signUp = E.back(prog(t, 5.7, 6.05)) * (1 - E.inOut(prog(t, 8.4, 8.7)));
+  const party = prog(t, 11.4, 11.6) * (1 - prog(t, 15.3, 15.5));
+  L.root.position.set(0.75, (1 - E.out(drop)) * 4.5 + party * Math.abs(Math.sin(t * 9)) * 0.18, 1.0);
+  L.pose({ squash: landK * 0.8, open: 0, armR: 0.25 + signUp * 2.3 + party * 2, armL: 0.25 + party * 2, blink: blinkAt(t, 1.2), lookX: -0.5, tilt: party * Math.sin(t * 9) * 0.15 });
+  poof.position.set(0.75, 1.0, 1.1); poof.userData.at(prog(t, 5.2, 6.0));
+  sign.visible = signUp > 0.01;
+  sign.position.set(1.0, 1.45, 1.2); sign.scale.setScalar(0.6 * signUp); sign.rotation.z = -0.06 + Math.sin(t * 3) * 0.03;
+
+  confetti.position.set(0, 2.4, -0.6); confetti.userData.at(t - 11.4);
+  showBubbles(t, bub, S.toScreen);
+  outro(t, 15.6, { h: "Sick day?<br>Four clicks, not four DMs.", p: "Booking + deposits for tattoo artists.<br>Free for founding artists." });
+  S.frame();
+};
+render(0);
+window.READY = true;
+</script></body></html>

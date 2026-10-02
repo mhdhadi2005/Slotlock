@@ -1,0 +1,110 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/lib.css"><link rel="stylesheet" href="/ui.css"><script src="/lib.js"></script>
+<script type="importmap">{ "imports": { "three": "/three.js", "three/addons/": "/addons/" } }</script>
+</head><body><div id="gl"></div><div id="bubbles"></div>
+<script type="module">
+import { THREE, setup, mesh, toon, flat, makeLockie, makeArtist, makeBlob, makeCoin, makeJar, makePhone, makeSign, makeLabel, makeConfetti, makePoof, blinkAt, rng, BLOB_COLORS } from "/kit.js";
+import { bubbles, showBubbles } from "/ui.js";
+base();
+await document.fonts.load("900 40px 'Bricolage Grotesque'"); await document.fonts.load("700 40px 'Inter'");
+const S = setup({ camPos: [0, 2.6, 13], look: [0, 1.95, 0] });
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+
+const A = makeArtist(); A.root.position.set(-1.25, 0, 0.1); S.scene.add(A.root);
+const O = makeBlob(BLOB_COLORS[0], 0.85); S.scene.add(O.root);
+// Biscuit the dog: a golden gumdrop with floppy ears, a nose and a red bandana.
+const D = makeBlob(0xe0a861, 0.55); S.scene.add(D.root);
+for (const s of [-1, 1]) { const e = mesh(new THREE.SphereGeometry(0.16, 12, 10), toon(0x9a6a3a), 0.012); e.scale.set(0.7, 1.4, 0.5); e.position.set(s * 0.42, 0.62, 0.05); e.rotation.z = s * 0.35; D.body.add(e); }
+const nose = mesh(new THREE.SphereGeometry(0.07, 12, 10), toon(0x2a1a12), 0.008); nose.position.set(0, 0.47, 0.5); D.body.add(nose);
+const band = mesh(new THREE.ConeGeometry(0.22, 0.28, 3), toon(0xd9343a), 0.012); band.rotation.set(Math.PI, 0, 0); band.position.set(0, 0.2, 0.42); D.body.add(band);
+const L = makeLockie(); L.root.scale.setScalar(0.8); S.scene.add(L.root);
+const jar = makeJar("DEPOSITS"); jar.position.set(-0.95, 0, 1.35); jar.scale.setScalar(0.7); jar.userData.fill(2); S.scene.add(jar);
+const sign = makeSign(["UP TO 4", "REF PHOTOS"], { w: 1.5, h: 0.95 }); S.scene.add(sign);
+const form = makePhone([{ lines: ["📸📸", "📸📸"] }, { lines: ["QUOTE", "$300"] }, { lines: ["$60", "DEPOSIT"] }, { lines: ["BOOKED", "✓"], bg: "#e6fff1", color: "#128a52" }]); S.scene.add(form);
+const coin = makeCoin(); coin.scale.setScalar(0.7); S.scene.add(coin);
+const ink = makeLabel(["🐶"], { w: 0.55, h: 0.55, bg: null, color: "#1a0905", font: "900 160px 'Bricolage Grotesque'" }); ink.position.set(0.24, 0.3, 0.46); ink.rotation.y = 0.35; O.body.add(ink);
+const poof = makePoof(14, 221); S.scene.add(poof);
+const confetti = makeConfetti(90, 223); S.scene.add(confetti);
+// The photo avalanche: 26 little polaroids.
+const r = rng(31);
+const pics = [...Array(26)].map((_, i) => {
+  const m = makeLabel(["📸"], { w: 0.34, h: 0.4, bg: "#ffffff", color: "#1a0905", font: "900 120px 'Bricolage Grotesque'" });
+  m.userData = { x: -1.6 + r() * 1.5, y: 0.15 + r() * 1.5, z: 0.6 + r() * 0.9, rot: (r() - 0.5) * 1.2, at: 1.6 + i * 0.12 }; S.scene.add(m); return m;
+});
+const OX = 1.12, DX = 0.6;
+
+const bub = bubbles([
+  { t0: 0.5, t1: 1.8, text: "pet portrait of biscuit pls 🐶", anchor: () => V(OX, 1.45, 0.5), align: 0.6, tail: "60%" },
+  { t0: 1.3, t1: 1.9, sfx: true, text: "WOOF!", anchor: () => V(DX + 0.1, 0.9, 1.4), rot: 8 },
+  { t0: 1.9, t1: 4.9, text: "sending some refs!! (200)", anchor: () => V(OX, 1.45, 0.5), align: 0.6, tail: "60%" },
+  { t0: 4.9, t1: 5.5, sfx: true, text: "POOF!", anchor: () => V(-0.3, 1.9, 1.1), rot: 8 },
+  { t0: 11.0, t1: 11.7, sfx: true, text: "CLICK!", anchor: () => V(-0.3, 1.9, 1.1), rot: -6 },
+  { t0: 12.9, t1: 13.6, sfx: true, text: "WOOF WOOF!", anchor: () => V(DX + 0.1, 0.9, 1.4), rot: -8 },
+  { t0: 13.6, t1: 15.2, text: "he approves 🥹", anchor: () => V(OX, 1.45, 0.5), align: 0.6, tail: "60%" },
+]);
+
+window.DUR = 18.8;
+window.render = (t) => {
+  captions(t, [
+    { t0: 0, t1: 1.9, html: "“Pet portrait of <em>Biscuit</em> pls.” 🐶" },
+    { t0: 1.9, t1: 5.0, html: "Then: <em>200 photos of Biscuit.</em>" },
+    { t0: 5.2, t1: 8.6, html: "Your consult form takes <em>up to 4 refs.</em>" },
+    { t0: 8.6, t1: 11.7, html: "Best 4 in. You quote. <em>Deposit in.</em>" },
+    { t0: 11.7, t1: 15.6, html: "Biscuit, immortalized. <em>Biscuit approves.</em>" },
+  ]);
+  S.aim(V(0, 2.6, 13), V(0, 1.95, 0));
+
+  // Owner and dog trot in together.
+  const cin = E.out(prog(t, 0.1, 0.6));
+  const turn = E.inOut(prog(t, 12.0, 12.5)) * (1 - E.inOut(prog(t, 15.0, 15.4)));
+  const party = prog(t, 12.9, 13.1) * (1 - prog(t, 15.3, 15.5));
+  O.root.position.set(lerp(3.2, OX, cin), (cin < 1 ? Math.abs(Math.sin(t * 11)) * 0.15 : 0) + party * Math.abs(Math.sin(t * 9)) * 0.14, 0.5);
+  O.root.rotation.y = turn * 0;
+  ink.visible = t > 12.0; ink.scale.setScalar(Math.max(0.01, E.back(prog(t, 12.0, 12.4))));
+  const tapping = (t > 2.0 && t < 4.9) || (t > 8.8 && t < 10.6);
+  O.pose({ blink: blinkAt(t, 1.7), lookX: -0.6, mouth: "smile", armL: 0.3 + (tapping ? 1.1 + Math.abs(Math.sin(t * 20)) * 0.2 : 0) + party * 1.5, armR: 0.3 + party * 1.5 });
+  const bark = (t > 1.3 && t < 1.9) || (t > 12.9 && t < 13.6);
+  D.root.position.set(lerp(3.9, DX, cin), (cin < 1 ? Math.abs(Math.sin(t * 13 + 1)) * 0.15 : 0) + (bark ? Math.abs(Math.sin(t * 22)) * 0.1 : 0) + party * Math.abs(Math.sin(t * 9 + 2)) * 0.2, 1.35);
+  D.pose({ blink: blinkAt(t, 0.9), lookX: t > 12.0 ? -0.8 : -0.4, lookY: 0.3, mouth: bark ? "o" : "smile", armL: 0.3 + party * 1.2, armR: 0.3 + party * 1.2, tilt: Math.sin(t * 3) * 0.08 });
+
+  // The photo avalanche buries the artist, then poofs away.
+  const clear = prog(t, 5.0, 5.4);
+  pics.forEach((m) => {
+    const u = m.userData, k = E.out(prog(t, u.at, u.at + 0.35));
+    m.visible = k > 0 && clear < 1;
+    m.position.set(lerp(OX, u.x, k), lerp(1.4, u.y, k) + (1 - k) * 0.4, u.z); m.rotation.z = u.rot * k;
+    m.scale.setScalar(Math.max(0.01, (1 - clear)));
+  });
+  const fk = E.out(prog(t, 8.6, 8.9)) * (1 - prog(t, 10.9, 11.1));
+  form.visible = fk > 0.01; form.position.set(OX - 0.35, 2.25, 1.1); form.scale.setScalar(1.2 * fk); form.rotation.set(-0.1, -0.2, 0);
+  form.userData.show(t < 9.3 ? 0 : t < 9.8 ? 1 : t < 10.3 ? 2 : 3);
+  const ck = prog(t, 10.2, 10.7);
+  coin.visible = ck > 0 && ck < 1;
+  coin.position.set(lerp(0.7, -0.95, ck), lerp(1.4, 0.7, ck) + Math.sin(ck * Math.PI) * 1.3, lerp(1.0, 1.35, ck)); coin.rotation.y = ck * 16;
+  jar.userData.fill(t < 10.7 ? 2 : 3);
+
+  // The artist: buried, then happy.
+  const buried = t > 2.4 && t < 5.2;
+  const cheer = E.back(prog(t, 12.9, 13.2)) * (1 - prog(t, 15.3, 15.6));
+  A.pose({ blink: blinkAt(t, 0.6), mouth: buried ? "o" : "smile", lookX: 0.8, sweat: buried, slump: buried ? 0.4 : 0, armL: 0.15 + (buried ? 1.6 : 0) + cheer * 2.4, armR: 0.15 + (buried ? 1.6 : 0) + cheer * 2.4 });
+
+  // Lockie: up to 4 refs.
+  const drop = prog(t, 4.8, 5.15);
+  L.root.visible = t > 4.8;
+  const landK = t > 5.15 ? Math.exp(-(t - 5.15) * 6) * Math.cos((t - 5.15) * 18) : 0;
+  const signUp = E.back(prog(t, 5.5, 5.85)) * (1 - E.inOut(prog(t, 8.3, 8.6)));
+  const click = t > 11.0 ? Math.exp(-(t - 11.0) * 7) : 0;
+  L.root.position.set(-0.3, (1 - E.out(drop)) * 4.5 + party * Math.abs(Math.sin(t * 9 + 1)) * 0.18, 1.1);
+  L.pose({ squash: landK * 0.8 + click * 0.5, open: t < 11.0 ? 1 : 1 - E.out(prog(t, 11.0, 11.15)), armR: 0.25 + signUp * 2.3 + party * 2, armL: 0.25 + party * 2,
+    blink: blinkAt(t, 1.2), lookX: 0.6, mouth: click > 0.3 ? "o" : "smile", tilt: party * Math.sin(t * 9) * 0.15 });
+  poof.position.set(-0.6, 1.0, 1.1); poof.userData.at(prog(t, 4.9, 5.7));
+  sign.visible = signUp > 0.01;
+  sign.position.set(-0.2, 1.35, 1.35); sign.scale.setScalar(0.6 * signUp); sign.rotation.z = -0.06 + Math.sin(t * 3) * 0.03;
+
+  confetti.position.set(0.3, 1.6, 0.6); confetti.userData.at(t - 12.9);
+  showBubbles(t, bub, S.toScreen);
+  outro(t, 15.6, { h: "4 photos.<br>1 very good boy.", p: "Booking + deposits for tattoo artists.<br>Free for founding artists." });
+  S.frame();
+};
+render(0);
+window.READY = true;
+</script></body></html>

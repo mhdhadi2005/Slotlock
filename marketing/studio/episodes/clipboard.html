@@ -1,0 +1,121 @@
+<!doctype html><html data-look="blush"><head><meta charset="utf-8"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/lib.css"><link rel="stylesheet" href="/ui.css"><script src="/lib.js"></script>
+<script type="importmap">{ "imports": { "three": "/three.js", "three/addons/": "/addons/" } }</script>
+<style>
+  /* Blush palette for beauty episodes. */
+  body { background: #fff5f7; color: #3d1f2c; }
+  .glow { background: radial-gradient(60% 38% at 82% 8%, rgba(255,150,190,.55), transparent 70%), radial-gradient(55% 35% at 0% 100%, rgba(255,200,220,.6), transparent 70%); }
+  #cap { font: 700 84px/1.04 "Fraunces", Georgia, serif; letter-spacing: -.03em; color: #3d1f2c; }
+  em { color: #d63a70; font-style: italic; }
+  #foot { color: #a57f8f; }
+  .bub { box-shadow: 0 16px 40px -14px rgba(170,60,105,.5); border: 3px solid #f6cfdc; }
+  .bub::after { border-right: 3px solid #f6cfdc; border-bottom: 3px solid #f6cfdc; }
+  .bub.accent { background: linear-gradient(180deg, #f58ab2, #e0457f); color: #fff; border-color: transparent; } .bub.accent::after { background: #e24f86; border-color: transparent; }
+  .bub.dark { background: #3d1f2c; color: #fff5f7; border-color: #3d1f2c; } .bub.dark::after { background: #3d1f2c; border-color: #3d1f2c; }
+  .sfx { color: #fff; -webkit-text-stroke: 4px #7a1d45; }
+  #outro { background: radial-gradient(60% 40% at 50% 30%, rgba(255,150,190,.55), transparent 70%), #fff5f7; }
+  #outro h2 { font: italic 700 100px/1.02 "Fraunces", Georgia, serif; letter-spacing: -.03em; color: #3d1f2c; }
+  #outro p { color: #6e4b5b; }
+  #outro .cta { background: linear-gradient(180deg, #f58ab2, #e0457f); color: #fff; }
+  #outro .wordmark, #foot .wordmark { color: #3d1f2c; }
+</style>
+</head><body><div id="gl"></div><div id="bubbles"></div>
+<script type="module">
+import { THREE, setup, mesh, toon, flat, makeLockie, makeTech, makeNailTable, makeBlob, makeSign, makeClock, makeJar, makePhone, makeLabel, makeConfetti, makePoof, blinkAt } from "/kit.js";
+import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+import { bubbles, showBubbles } from "/ui.js";
+base();
+await document.fonts.load("900 40px 'Bricolage Grotesque'"); await document.fonts.load("700 40px 'Inter'");
+await document.fonts.load("600 40px 'Fraunces'"); await document.fonts.load("italic 600 40px 'Fraunces'");
+const S = setup({ camPos: [0, 2.3, 10.5], look: [0, 1.75, 0], palette: "blush" });
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+
+const T = makeTech({ skin: 0xc68a64, hair: 0x3a2219, smock: 0xff9ec0 }); T.root.position.set(-0.7, 0, -0.35); S.scene.add(T.root);
+const table = makeNailTable(); table.position.set(0, 0, 0.35); S.scene.add(table);
+const jar = makeJar("DEPOSITS"); jar.position.set(0.05, 0.95, 0.6); jar.scale.setScalar(0.9); jar.userData.fill(2); S.scene.add(jar);
+const L = makeLockie({ color: 0xff7aa8, feet: 0xe0457f, key: 0x7a1d45 }); L.root.scale.setScalar(0.62); S.scene.add(L.root);
+const C = makeBlob(0xd7a6ff, 0.8); S.scene.add(C.root);
+const clock = makeClock(); clock.position.set(1.25, 3.0, -1.2); clock.scale.setScalar(0.7); clock.children[0].material = toon(0xe0457f); S.scene.add(clock);
+// The clipboard: a stack of pages that grows.
+const clip = new THREE.Group(); S.scene.add(clip);
+clip.add(mesh(new RoundedBoxGeometry(0.6, 0.8, 0.04, 2, 0.03), toon(0x8a5a3a), 0.012));
+const clamp = mesh(new RoundedBoxGeometry(0.26, 0.08, 0.06, 2, 0.02), toon(0xd9d2c8), 0.008); clamp.position.set(0, 0.38, 0.03); clip.add(clamp);
+const pages = [...Array(6)].map((_, i) => { const m = makeLabel(["FORM " + (i + 1) + "/6", "ALLERGIES?", "________"], { w: 0.52, h: 0.68, bg: "#ffffff", color: "#3d1f2c" }); m.position.set((i % 2 ? 0.02 : -0.02), -0.03, 0.025 + i * 0.006); m.rotation.z = (i % 3 - 1) * 0.04; clip.add(m); return m; });
+const pen = mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.4, 8), toon(0x3b6fd6), 0.008); pen.rotation.z = 0.7; S.scene.add(pen);
+const sign = makeSign(["SIGNED ON", "THEIR PHONE"], { w: 1.6, h: 0.9, bg: "#ffffff", color: "#e0457f" }); S.scene.add(sign);
+const phone = makePhone([{ lines: ["LASH LIFT", "SAT 2 PM"] }, { lines: ["CONSENT", "✍️ SIGN"] }, { lines: ["$20", "DEPOSIT"] }, { lines: ["SIGNED +", "BOOKED ✓"], bg: "#fff0f5", color: "#e0457f" }]); S.scene.add(phone);
+const poof = makePoof(14, 231); S.scene.add(poof);
+const confetti = makeConfetti(90, 233); S.scene.add(confetti);
+const PINKS = [0xe0457f, 0xff8fb1, 0xffffff, 0xd7a6ff, 0xffc4d8, 0xf3c6b0];
+confetti.children.forEach((m, i) => { m.material = flat(PINKS[i % PINKS.length], { side: THREE.DoubleSide }); });
+const CX = 0.85;
+
+const bub = bubbles([
+  { t0: 0.5, t1: 1.8, text: "hiii i'm here for my lash lift 💕", anchor: () => V(CX + 0.15, 1.05, 1.0), align: 0.75, tail: "75%" },
+  { t0: 1.8, t1: 2.5, sfx: true, text: "THUD!", anchor: () => V(CX - 0.4, 1.9, 1.2), rot: -8 },
+  { t0: 2.6, t1: 3.6, text: "6 pages?? 😳", anchor: () => V(CX + 0.15, 1.05, 1.0), align: 0.75, tail: "75%" },
+  { t0: 3.6, t1: 4.4, sfx: true, text: "scribble… scribble…", anchor: () => V(CX - 0.3, 1.6, 1.2), rot: 4 },
+  { t0: 4.4, t1: 5.3, text: "…my pen died 💀", anchor: () => V(CX + 0.15, 1.05, 1.0), align: 0.75, tail: "75%" },
+  { t0: 5.4, t1: 6.1, sfx: true, text: "POOF!", anchor: () => V(0.72, 1.9, 0.8), rot: 8 },
+  { t0: 12.2, t1: 14.6, text: "signed on my phone last week 💅", anchor: () => V(CX + 0.15, 1.05, 1.0), align: 0.75, tail: "75%" },
+]);
+
+window.DUR = 18.8;
+window.render = (t) => {
+  captions(t, [
+    { t0: 0, t1: 1.8, html: "2:00 PM. <em>Lash lift.</em>" },
+    { t0: 1.8, t1: 5.4, html: "First, <em>six pages</em> of paperwork. 📋" },
+    { t0: 5.6, t1: 8.4, html: "The consent form <em>comes with the booking.</em>" },
+    { t0: 8.4, t1: 11.6, html: "They sign on their phone <em>when they book.</em>" },
+    { t0: 11.6, t1: 15.6, html: "They walk in. <em>You start on time.</em> 💕" },
+  ]);
+  S.aim(V(0, 2.3, 10.5), V(0, 1.75, 0));
+  const rewind = t > 5.4 && t < 11.6;
+  clock.userData.setTime(14 * 60 + keys(t, [[0, 0], [5.3, 25], [5.6, 0], [11.6, 0], [20, 3]]));
+
+  // The client: the clipboard, then the phone.
+  const cin = E.out(prog(t, 0.1, 0.6)), out1 = E.inOut(prog(t, 5.5, 5.9)), in2 = E.out(prog(t, 11.6, 12.0));
+  const away = t > 5.9 && t < 11.6;
+  let cx = lerp(3.2, CX, cin) + out1 * 2.4; if (t > 11.6) cx = lerp(3.2, CX, in2);
+  const dance = prog(t, 12.2, 12.4) * (1 - prog(t, 15.4, 15.6));
+  const moving = (cin > 0 && cin < 1) || (out1 > 0 && out1 < 1) || (in2 > 0 && in2 < 1);
+  C.root.visible = !away || (t > 8.3 && t < 11.4);
+  if (t > 8.3 && t < 11.6) cx = lerp(3.2, CX, E.out(prog(t, 8.3, 8.7))) + E.inOut(prog(t, 11.0, 11.4)) * 2.4;
+  C.root.position.set(cx, (moving ? Math.abs(Math.sin(t * 11)) * 0.14 : 0) + dance * Math.abs(Math.sin(t * 9)) * 0.16, 1.0);
+  const writing = t > 2.6 && t < 5.3;
+  const tapping = t > 8.8 && t < 10.8;
+  C.pose({ blink: blinkAt(t, 1.3), lookX: writing ? -0.3 : -0.6, lookY: writing ? -0.5 : 0.2, mouth: t > 2.6 && t < 5.4 ? "o" : "smile", sweat: t > 4.0 && t < 5.4,
+    armL: 0.3 + (writing ? 1.0 + Math.sin(t * 25) * 0.1 : 0) + (tapping ? 1.1 + Math.abs(Math.sin(t * 20)) * 0.2 : 0) + dance * 1.5, armR: 0.3 + dance * 1.5 });
+  const ck = E.out(prog(t, 1.8, 2.0)) * (1 - prog(t, 5.3, 5.5));
+  clip.visible = ck > 0.01; clip.position.set(CX - 0.6, 1.55 + (1 - E.out(prog(t, 1.8, 2.0))) * 1.5, 1.5); clip.rotation.set(-0.2, 0.2, 0.1); clip.scale.setScalar(1.3 * ck);
+  pen.visible = writing; pen.position.set(CX - 0.4 + Math.sin(t * 25) * 0.05, 1.45, 1.65);
+  pages.forEach((p, i) => { p.visible = i < 1 + Math.floor(prog(t, 2.0, 2.6) * 5); });
+  const pk = E.out(prog(t, 8.6, 8.9)) * (1 - prog(t, 10.9, 11.1));
+  phone.visible = pk > 0.01; phone.position.set(CX - 0.3, 1.8, 1.3); phone.scale.setScalar(1.05 * pk); phone.rotation.set(-0.1, -0.25, 0);
+  phone.userData.show(t < 9.3 ? 0 : t < 9.9 ? 1 : t < 10.4 ? 2 : 3);
+  jar.userData.fill(t < 10.5 ? 2 : 3);
+
+  // The tech: waiting while the clock ticks, then starting on time.
+  const waiting = t > 2.6 && t < 5.5;
+  const cheer = E.back(prog(t, 12.2, 12.5)) * (1 - prog(t, 15.3, 15.6));
+  T.pose({ blink: blinkAt(t, 0.8), lookX: waiting ? 0.9 : 0.5, lookY: waiting ? 0.5 : 0, mouth: waiting ? "flat" : "smile", headTilt: waiting ? 0.1 : 0,
+    armL: 0.1 + cheer * 2.5, armLx: cheer > 0.1 ? 0 : -0.9, armR: 0.1 + cheer * 2.5, armRx: cheer > 0.1 ? 0 : -0.9 });
+
+  // Pink Lockie: consent on the phone.
+  const drop = prog(t, 5.3, 5.65);
+  L.root.visible = t > 5.3;
+  const landK = t > 5.65 ? Math.exp(-(t - 5.65) * 6) * Math.cos((t - 5.65) * 18) : 0;
+  const signUp = E.back(prog(t, 5.9, 6.25)) * (1 - E.inOut(prog(t, 8.2, 8.5)));
+  L.root.position.set(0.72, 0.95 + (1 - E.out(drop)) * 3.5 + dance * Math.abs(Math.sin(t * 9)) * 0.2, 0.45);
+  L.pose({ squash: landK * 0.7, open: 0, armR: 0.25 + signUp * 1.2 + dance * 2, armL: 0.25 + dance * 2, blink: blinkAt(t, 1.4), lookX: 0.4, tilt: dance * Math.sin(t * 9) * 0.15 });
+  poof.position.set(0.72, 1.4, 0.7); poof.userData.at(prog(t, 5.4, 6.2));
+  sign.visible = signUp > 0.01;
+  sign.position.set(0.95, 1.45, 0.95); sign.scale.setScalar(0.5 * signUp); sign.rotation.z = -0.08 + Math.sin(t * 3) * 0.03;
+
+  confetti.position.set(0, 1.4, 0.6); confetti.userData.at(t - 12.2);
+  showBubbles(t, bub, S.toScreen);
+  outro(t, 15.6, { h: "No clipboard.<br>Start on time.", p: "Booking + deposits for nail techs,<br>lash artists & beauty pros." });
+  S.frame();
+};
+render(0);
+window.READY = true;
+</script></body></html>

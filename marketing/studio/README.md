@@ -69,6 +69,11 @@ Add every new episode here so ideas never repeat.
 | 2026-09-23 | ghosted | No-deposit client vanishes at 2pm; Lockie's "DEPOSIT FIRST" sign scares the ghost off | Ghost-proof your books. |
 | 2026-09-23 | bouncer | Lockie bounces "I'll pay later" at the calendar's velvet rope | Hire the bouncer. |
 | 2026-09-23 | flood | DM bubbles bury the artist; Lockie bursts out with one link | One link. Zero chaos. |
+| 2026-10-02 | didyouget | Deposit sent, then "did u get it?" ×6 in 4 minutes; Lockie's "I SENT IT" button, the artist gets the email and confirms in one tap, the client gets "You're booked" | "Did you get it?" Yes. Booked. |
+| 2026-10-02 | bridaltrial | Bride's checklist: dress ✓ cake ✓ venue ✓ nails ✗; pink Lockie says book both now, trial (Sep 12) and wedding day (Oct 3), two deposits | Trial booked. Big day booked. |
+| 2026-10-02 | dogportrait | Pet portrait of Biscuit the dog, then 200 reference photos bury the artist; Lockie's consult form takes up to 4 refs, quote, deposit; Biscuit approves the tattoo | 4 photos. 1 very good boy. |
+| 2026-10-02 | clipboard | Lash lift client gets 6 pages of paper forms and her pen dies; rewind, she signs the consent form on her phone when booking and walks in on time | No clipboard. Start on time. |
+| 2026-10-02 | sickday | Artist sick (thermometer, scarf) with 4 clients tomorrow; Lockie: cancel in the dashboard with a note, each client gets an email and rebooks next week; soup | Sick day? Four clicks, not four DMs. |
 | 2026-10-01 | mompays | Tough guy wants a giant skull, "my mom's paying"; mom squints at the phone, Lockie points her to the deposit, she sends it and gives Lockie a cookie | Anyone can pay. Everyone pays first. |
 | 2026-10-01 | pricepls | DMs full of "pp?" ×47; the tech types the price list again; pink Lockie puts prices on the page, clients book with deposits; next "pp?" gets "link in bio" | "pp?" Link in bio. |
 | 2026-10-01 | facetime | Consult day with the group chat on FaceTime ("BIGGER", "add a wolf", "make it pink"); Lockie's IDEA + REFS FIRST, consult form, quote, deposit; one rose, group chat approved | One idea. Not twelve opinions. |
@@ -110,6 +115,7 @@ Add every new episode here so ideas never repeat.
 ## Idea backlog
 
 - Client asks to move the appointment 6 times
-- The client who asks "can I bring my dog?" and the dog books its own slot (pet portrait tattoo)
-- Beauty: bridal trial vs. wedding day, both booked in one go
 - Lockie's birthday: every client brings a deposit instead of a present
+- Beauty: the client who books "just a fill" and asks for a full new set in the chair; services and times are set at booking
+- The client who sends the deposit to the wrong Venmo; the page shows the artist's exact handle
+- Tattoo convention week: the artist is away, books closed with a waitlist, opens after
